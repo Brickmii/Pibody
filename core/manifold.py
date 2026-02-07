@@ -55,11 +55,17 @@ import json
 import os
 import logging
 
+import math
+
 from .nodes import Node, SelfNode, Axis, Frame, Order, assert_self_valid, migrate_node_v1_to_v2, birth_randomizer, mark_birth_complete, is_birth_spent
-from .compression import compress, decompress, get_axis_coordinates, positions_share_prefix
+from .hypersphere import (
+    SpherePosition, angular_distance, place_evenly, place_node_near,
+    find_neighbors, self_position,
+)
+from .color_cube import CubePosition, evaluate_righteousness as cube_evaluate_righteousness
 from .node_constants import (
-    K, PHI, 
-    # Direction systems (12 = 6 Self + 6 Universal)
+    K, PHI, INV_PHI,
+    # Direction systems (12 = 6 cardinal + 6 self-relative)
     DIRECTIONS_SELF, DIRECTIONS_UNIVERSAL, DIRECTIONS,
     SELF_DIRECTIONS, ALL_DIRECTIONS, OPPOSITES,  # Legacy
     SELF_DIRECTIONS_SELF, SELF_DIRECTIONS_UNIVERSAL,
@@ -122,8 +128,6 @@ class Manifold:
     conscience_node: Optional[Node] = None
     
     # Indexes for fast lookup
-    nodes_by_position: Dict[str, str] = field(default_factory=dict)           # Self position → node_id
-    nodes_by_universal: Dict[str, str] = field(default_factory=dict)          # Universal position → node_id
     nodes_by_concept: Dict[str, str] = field(default_factory=dict)            # Concept → node_id
     
     # State tracking
@@ -172,49 +176,37 @@ class Manifold:
     def add_node(self, node: Node) -> None:
         """
         Add a node to the manifold and update indexes.
-        
+
         Sets node.created_t_K to current manifold time.
-        Indexes by: id, position (Self), universal_position, concept
+        Indexes by: id, concept
         """
         # Set creation time if not already set
         if node.created_t_K == 0 and self.self_node:
             node.created_t_K = self.get_time()
-        
+
         self.nodes[node.id] = node
-        self.nodes_by_position[node.position] = node.id
         self.nodes_by_concept[node.concept] = node.id
-        
-        # Index by universal position if set (for righteous frame lookup)
-        if node.universal_position:
-            self.nodes_by_universal[node.universal_position] = node.id
-        
+
         logger.debug(f"Added node: {node}")
     
     def get_node(self, node_id: str) -> Optional[Node]:
         """Get node by ID."""
         return self.nodes.get(node_id)
     
-    def get_node_by_position(self, position: str) -> Optional[Node]:
-        """Get node by Self position path (navigation coordinates)."""
-        node_id = self.nodes_by_position.get(position)
-        if node_id:
-            return self.nodes.get(node_id)
-        if position == "" and self.self_node:
-            return self.self_node
-        return None
-    
-    def get_node_by_universal(self, universal_position: str) -> Optional[Node]:
-        """
-        Get node by Universal position (location coordinates).
-        
-        Universal positions locate righteous frames in world coordinates.
-        """
-        if universal_position == "origin" and self.self_node:
-            return self.self_node
-        node_id = self.nodes_by_universal.get(universal_position)
-        if node_id:
-            return self.nodes.get(node_id)
-        return None
+    def get_node_by_angular(self, theta: float, phi: float, tolerance: float = None) -> Optional[Node]:
+        """Get the nearest node to an angular position within tolerance."""
+        if tolerance is None:
+            tolerance = INV_PHI ** 6  # Movement threshold ~0.056 rad
+        target = SpherePosition(theta=theta, phi=phi)
+        best_node = None
+        best_dist = float('inf')
+        for node in self.nodes.values():
+            sp = SpherePosition(theta=node.theta, phi=node.phi, radius=node.radius)
+            dist = angular_distance(target, sp)
+            if dist < best_dist and dist < tolerance:
+                best_dist = dist
+                best_node = node
+        return best_node
     
     def get_node_by_concept(self, concept: str) -> Optional[Node]:
         """Get node by concept name."""
@@ -225,26 +217,29 @@ class Manifold:
             return self.self_node
         return None
     
-    def position_occupied(self, position: str) -> bool:
-        """Check if a position is already taken."""
-        return position in self.nodes_by_position
+    def position_occupied(self, theta: float, phi: float, min_separation: float = None) -> bool:
+        """Check if an angular position is too close to an existing node."""
+        if min_separation is None:
+            min_separation = INV_PHI ** 6  # Movement threshold
+        target = SpherePosition(theta=theta, phi=phi)
+        for node in self.nodes.values():
+            sp = SpherePosition(theta=node.theta, phi=node.phi, radius=node.radius)
+            if angular_distance(target, sp) < min_separation:
+                return True
+        return False
     
     def remove_node(self, node_id: str) -> bool:
         """Remove a node from the manifold and all indexes."""
         node = self.nodes.get(node_id)
         if not node:
             return False
-        
+
         # Remove from all indexes
         if node_id in self.nodes:
             del self.nodes[node_id]
-        if node.position in self.nodes_by_position:
-            del self.nodes_by_position[node.position]
         if node.concept in self.nodes_by_concept:
             del self.nodes_by_concept[node.concept]
-        if node.universal_position and node.universal_position in self.nodes_by_universal:
-            del self.nodes_by_universal[node.universal_position]
-        
+
         logger.debug(f"Removed node: {node_id}")
         return True
     
@@ -389,58 +384,50 @@ class Manifold:
     
     def evaluate_righteousness(self, node: Node, frame: Node = None) -> float:
         """
-        R is a continuous function of position coordinates and order.
-        R yields 0 when the node is in the correct righteousness frame.
+        R is angular deviation from the cube frame via Conscience (cos projection).
+        R yields 0 when the node is perfectly aligned.
+
+        Uses angular distance on the hypersphere between node and reference,
+        projected through the Conscience (cos) function for cube alignment.
         """
         if frame is None:
             frame = self.self_node
-        
-        node_dirs = get_axis_coordinates(node.position)
-        node_x = node_dirs['e'] - node_dirs['w']
-        node_y = node_dirs['n'] - node_dirs['s']
-        node_z = node_dirs['u'] - node_dirs['d']
-        
-        if hasattr(frame, 'position') and frame.position:
-            frame_dirs = get_axis_coordinates(frame.position)
-            frame_x = frame_dirs['e'] - frame_dirs['w']
-            frame_y = frame_dirs['n'] - frame_dirs['s']
-            frame_z = frame_dirs['u'] - frame_dirs['d']
+
+        # Angular distance between node and reference frame
+        node_sp = SpherePosition(theta=node.theta, phi=node.phi, radius=node.radius)
+
+        if frame and frame.radius > 0:
+            frame_sp = SpherePosition(theta=frame.theta, phi=frame.phi, radius=frame.radius)
         else:
-            frame_x, frame_y, frame_z = 0, 0, 0
-        
-        dx = node_x - frame_x
-        dy = node_y - frame_y
-        dz = node_z - frame_z
-        
-        r_xy = (dx**2 + dy**2) ** 0.5
-        abstraction_factor = 1.0 / (1.0 + abs(node_z))
-        expected_order = len(node.position)
-        order_deviation = abs(node.order - expected_order) * 0.1
-        
-        R = (r_xy * abstraction_factor) + order_deviation
-        
+            # Frame is at center (Self) — measure from origin
+            frame_sp = self_position()
+
+        angle = angular_distance(node_sp, frame_sp) if node.radius > 0 else 0.0
+
+        # Conscience projection: cos maps alignment to cube frame
+        # cos(0) = 1.0 (aligned), cos(π) = -1.0 (opposed)
+        # R = 1 - cos(angle) → R=0 when aligned, R=2 when opposed
+        R = 1.0 - math.cos(angle)
+
         return R
-    
+
     def find_righteous_frame(self, node: Node) -> Node:
-        """Find a frame where this node's R would yield 0."""
-        node_dirs = get_axis_coordinates(node.position)
-        node_x = node_dirs['e'] - node_dirs['w']
-        node_y = node_dirs['n'] - node_dirs['s']
-        
+        """Find the nearest frame where this node's R would yield ~0."""
+        node_sp = SpherePosition(theta=node.theta, phi=node.phi, radius=node.radius)
+        best_r = float('inf')
+        best_frame = self.self_node
+
         for candidate in self.nodes.values():
             if candidate.id == node.id:
                 continue
-            
-            cand_dirs = get_axis_coordinates(candidate.position)
-            cand_x = cand_dirs['e'] - cand_dirs['w']
-            cand_y = cand_dirs['n'] - cand_dirs['s']
-            
-            if cand_x == node_x and cand_y == node_y:
-                r = self.evaluate_righteousness(node, candidate)
-                if r < 0.01:
-                    return candidate
-        
-        return self.self_node
+            cand_sp = SpherePosition(theta=candidate.theta, phi=candidate.phi, radius=candidate.radius)
+            angle = angular_distance(node_sp, cand_sp)
+            r = 1.0 - math.cos(angle)
+            if r < best_r:
+                best_r = r
+                best_frame = candidate
+
+        return best_frame
     
     # ═══════════════════════════════════════════════════════════════════════════
     # EXISTENCE / SALIENCE
@@ -606,8 +593,8 @@ class Manifold:
         if node.existence == EXISTENCE_ARCHIVED:
             return
         
-        # Self never changes
-        if node.position == "":
+        # Self never changes (radius=0 is the center)
+        if node.radius == 0.0:
             return
         
         salience = self.calculate_salience(node)
@@ -672,41 +659,48 @@ class Manifold:
         are preserved for history. This is irreversible via 
         update_existence (must be manually restored).
         """
-        if node.position == "":
+        if node.radius == 0.0:
             logger.warning("Cannot archive Self")
             return
         
         node.existence = EXISTENCE_ARCHIVED
         logger.info(f"Archived: {node.concept}")
     
-    def create_potential_node(self, concept: str, position: str, heat: float = None) -> Node:
+    def create_potential_node(self, concept: str, theta: float = None, phi: float = None, heat: float = None) -> Node:
         """
         Create a new node in POTENTIAL state.
-        
+
         New concepts start as POTENTIAL until environment confirms.
         Use confirm_existence() after environment validation.
-        
+
         Args:
             concept: The concept name
-            position: Position in manifold
+            theta: Polar angle on hypersphere (default π/2 = equator)
+            phi: Azimuthal angle on hypersphere (default 0.0)
             heat: Initial heat (default K)
-            
+
         Returns:
             New node in POTENTIAL state
         """
         if heat is None:
             heat = K
-        
+        if theta is None:
+            theta = math.pi / 2
+        if phi is None:
+            phi = 0.0
+
         node = Node(
             concept=concept,
-            position=position,
+            theta=theta,
+            phi=phi,
+            radius=1.0,
             heat=heat,
             existence=EXISTENCE_POTENTIAL,
             righteousness=1.0,  # Not yet righteous
         )
         self.add_node(node)
-        
-        logger.debug(f"Created potential: {concept} @ {position}")
+
+        logger.debug(f"Created potential: {concept} @ theta={theta:.3f},phi={phi:.3f}")
         return node
     
     # ═══════════════════════════════════════════════════════════════════════════
@@ -729,16 +723,18 @@ class Manifold:
         Get the effective distance between nodes accounting for warping.
         Strong axes pull nodes closer together.
         """
-        # Base distance from position strings
-        base_distance = len(from_node.position) + len(to_node.position)
-        
+        # Base distance = angular distance on hypersphere
+        from_sp = SpherePosition(theta=from_node.theta, phi=from_node.phi, radius=from_node.radius)
+        to_sp = SpherePosition(theta=to_node.theta, phi=to_node.phi, radius=to_node.radius)
+        base_distance = angular_distance(from_sp, to_sp)
+
         # Find any axis directly connecting them
         for axis in from_node.frame.axes.values():
             if axis.target_id == to_node.id:
                 warp = self.calculate_warp_factor(axis)
                 # Higher warp = shorter effective distance
                 return base_distance * (1.0 - warp * 0.9)  # Max 90% reduction
-        
+
         return base_distance
     
     # ═══════════════════════════════════════════════════════════════════════════
@@ -1007,10 +1003,14 @@ class Manifold:
         # Get or create pattern node
         pattern_node = self.get_node_by_concept(pattern)
         if not pattern_node:
-            # Create pattern node
+            # Place pattern node near Ego on the hypersphere
+            ego_sp = SpherePosition(theta=self.ego_node.theta, phi=self.ego_node.phi)
+            existing = [SpherePosition(theta=n.theta, phi=n.phi) for n in self.nodes.values()]
+            new_sp = place_node_near(ego_sp, existing)
             pattern_node = Node(
                 concept=pattern,
-                position=self.ego_node.position + 'e',  # Extend from Ego
+                theta=new_sp.theta,
+                phi=new_sp.phi,
                 heat=K,
                 polarity=1 if success else -1,
                 existence="actual",
@@ -1297,92 +1297,94 @@ class Manifold:
         logger.info("═══ BIRTH ═══")
         
         # ─────────────────────────────────────────────────────────────────────
-        # 1. SELF EMERGES AT ORIGIN (Cubic space)
+        # 1. SELF EMERGES AT CENTER OF HYPERSPHERE
         # ─────────────────────────────────────────────────────────────────────
         self.self_node = SelfNode()
-        logger.info(f"Self emerged at origin: {self.self_node}")
+        logger.info(f"Self emerged at center: {self.self_node}")
         assert_self_valid(self.self_node)
-        
+
         # ─────────────────────────────────────────────────────────────────────
-        # 2. FIRES 1-5: Physical space bootstrap (n, s, e, w, u)
-        #    Each fire contributes K × φⁿ heat (Planck-grounded scaling)
+        # 2. FIRES 1-5: Bootstrap nodes on hypersphere surface
+        #    Each fire at a cardinal direction, K × φⁿ heat scaling
+        #    Placed at the 6 cube poles projected onto the sphere
         # ─────────────────────────────────────────────────────────────────────
-        logger.info("Fires 1-5: Physical space (cubic lattice) with φⁿ scaling...")
-        
-        # Map directions to fire numbers for proper scaling
-        direction_to_fire = {'n': 1, 's': 2, 'e': 3, 'w': 4, 'u': 5}
-        
-        for direction in SELF_DIRECTIONS:  # n, s, e, w, u
-            position = direction
-            fire_num = direction_to_fire.get(direction, 1)
+        logger.info("Fires 1-5: Bootstrap nodes on hypersphere with K*phi^n scaling...")
+
+        # Map cardinal directions to angular positions and fire numbers
+        # theta=π/2 is equator (present), phi determines chromatic direction
+        fire_positions = {
+            'N': {'fire': 1, 'theta': math.pi / 2, 'phi': math.pi / 2,     'polarity': +1},  # +Y (Green)
+            'S': {'fire': 2, 'theta': math.pi / 2, 'phi': 3 * math.pi / 2, 'polarity': -1},  # -Y (Red)
+            'E': {'fire': 3, 'theta': math.pi / 2, 'phi': 0.0,             'polarity': +1},  # +X (Yellow)
+            'W': {'fire': 4, 'theta': math.pi / 2, 'phi': math.pi,         'polarity': -1},  # -X (Blue)
+            'U': {'fire': 5, 'theta': 0.0,         'phi': 0.0,             'polarity': +1},  # +Z (Future)
+        }
+
+        for direction, info in fire_positions.items():
+            fire_num = info['fire']
             fire_heat = FIRE_HEAT[fire_num]
             motion_type = FIRE_TO_MOTION[fire_num]
-            
+            opposite = OPPOSITES.get(direction, 'S')
+
             node = Node(
                 concept=f"bootstrap_{direction}",
-                position=position,
+                theta=info['theta'],
+                phi=info['phi'],
                 heat=fire_heat,  # K × φⁿ scaling
-                polarity=1 if direction in ['n', 'e', 'u'] else -1,
+                polarity=info['polarity'],
                 existence=EXISTENCE_ACTUAL,
                 righteousness=1.0,
                 order=fire_num,
-                constraint_type="successor",  # Spatial nodes use successor constraint
+                constraint_type="successor",
             )
             node.frame.origin = node.concept
-            
-            # Connect Self to this node via spatial axis
+
+            # Connect Self to this node via cardinal axis
             self.self_node.add_axis(
                 direction=direction,
                 target_id=node.id,
-                polarity=1 if direction in ['n', 'e', 'u'] else -1
+                polarity=info['polarity']
             )
-            
+
             # Connect node back to Self
             node.add_axis(
-                direction=OPPOSITES[direction],
+                direction=opposite,
                 target_id=self.self_node.id,
-                polarity=1 if direction in ['n', 'e', 'u'] else -1
+                polarity=info['polarity']
             )
-            
+
             self.add_node(node)
-            logger.info(f"  Fire {fire_num} ({motion_type}): {node.concept} @ {position} | heat={fire_heat:.2f} K")
-        
+            logger.info(f"  Fire {fire_num} ({motion_type}): {node.concept} @ theta={info['theta']:.3f},phi={info['phi']:.3f} | heat={fire_heat:.2f} K")
+
         # ─────────────────────────────────────────────────────────────────────
-        # 3. FIRE 6: Abstract space creation (d) - THE ONLY DOWNWARD FIRE
+        # 3. FIRE 6: Abstract space root (south pole — past direction)
         #    Ignites at BODY_TEMPERATURE (K × φ¹¹ ≈ 304 K)
         #    This is where psychology emerges!
         # ─────────────────────────────────────────────────────────────────────
         logger.info(f"Fire 6 (movement): Abstract space - ignites at BODY_TEMPERATURE ({BODY_TEMPERATURE:.2f} K)...")
-        
-        # Create the abstract space root node at position "d"
+
+        # Abstract space root at south pole (-Z / past)
         bootstrap_d = Node(
             concept="bootstrap_d",
-            position="d",
+            theta=math.pi,     # South pole (-Z)
+            phi=0.0,
             heat=FIRE_HEAT[6],  # BODY_TEMPERATURE = K × φ¹¹
-            polarity=-1,  # Downward = negative
+            polarity=-1,
             existence=EXISTENCE_ACTUAL,
             righteousness=0.0,  # Abstract root is righteous
             order=6,
-            constraint_type="identity",  # Abstract space uses identity constraint
+            constraint_type="identity",
         )
         bootstrap_d.frame.origin = "bootstrap_d"
-        
+
         # Connect Self to abstract space
-        self.self_node.add_axis(
-            direction="d",
-            target_id=bootstrap_d.id,
-            polarity=-1
-        )
-        
+        self.self_node.add_axis(direction="D", target_id=bootstrap_d.id, polarity=-1)
+
         # Connect abstract root back to Self
-        bootstrap_d.add_axis(
-            direction="u",
-            target_id=self.self_node.id,
-            polarity=1
-        )
-        
+        bootstrap_d.add_axis(direction="U", target_id=self.self_node.id, polarity=1)
+
         self.add_node(bootstrap_d)
-        logger.info(f"  Fire d: {bootstrap_d.concept} @ d (abstract space root)")
+        logger.info(f"  Fire 6: {bootstrap_d.concept} @ south pole (abstract space root)")
         
         # ─────────────────────────────────────────────────────────────────────
         # 4. PSYCHOLOGY EMERGES FROM 6TH FIRE (Freudian heat distribution)
@@ -1400,48 +1402,56 @@ class Manifold:
         props = birth_randomizer(connected, self.self_node.heat, "psychology")
         total_psychology_heat = props['heat']
         
-        # Identity (Id) - 70% - Amplitude axis - The massive unconscious reservoir
+        # Psychology nodes placed near south pole (abstract space)
+        # Offset from bootstrap_d by golden angle increments
+        golden_angle = 2 * math.pi / (PHI ** 2)
+        psych_theta_base = math.pi * 0.85  # Near south pole but not on it
+
+        # Identity (Id) - 70% - Amplitude axis - sin(1/φ)
         identity_heat = total_psychology_heat * FREUD_IDENTITY_RATIO
         self.identity_node = Node(
             concept="identity",
-            position="d",  # Cubic position (via abstract root)
+            theta=psych_theta_base,
+            phi=0.0,
             trig_position=TRIG_IDENTITY,  # (sin(1/φ), 0, 0) - amplitude axis
             heat=identity_heat,
             polarity=1,
             existence=EXISTENCE_ACTUAL,
-            righteousness=0.0,  # Righteous frame
+            righteousness=0.0,
             order=1,
         )
         self.identity_node.frame.origin = "identity"
         self.add_node(self.identity_node)
         logger.info(f"  Identity (Id): heat={identity_heat:.3f} ({FREUD_IDENTITY_RATIO*100:.0f}%) @ trig{TRIG_IDENTITY}")
-        
-        # Ego - 10% - Phase axis - The conscious tip (smallest but visible)
+
+        # Ego - 10% - Phase axis - tan(1/φ)
         ego_heat = total_psychology_heat * FREUD_EGO_RATIO
         self.ego_node = Node(
             concept="ego",
-            position="d",  # Cubic position (via abstract root)
+            theta=psych_theta_base,
+            phi=golden_angle,
             trig_position=TRIG_EGO,  # (0, tan(1/φ), 0) - phase axis
             heat=ego_heat,
             polarity=1,
             existence=EXISTENCE_ACTUAL,
-            righteousness=0.0,  # Righteous frame
+            righteousness=0.0,
             order=2,
         )
         self.ego_node.frame.origin = "ego"
         self.add_node(self.ego_node)
         logger.info(f"  Ego: heat={ego_heat:.3f} ({FREUD_EGO_RATIO*100:.0f}%) @ trig{TRIG_EGO}")
-        
-        # Conscience (Superego) - 20% - Spread axis - The moral judge
+
+        # Conscience (Superego) - 20% - Spread axis - cos(1/φ)
         conscience_heat = total_psychology_heat * FREUD_CONSCIENCE_RATIO
         self.conscience_node = Node(
             concept="conscience",
-            position="d",  # Cubic position (via abstract root)
+            theta=psych_theta_base,
+            phi=2 * golden_angle,
             trig_position=TRIG_CONSCIENCE,  # (0, 0, cos(1/φ)) - spread axis
             heat=conscience_heat,
             polarity=1,
             existence=EXISTENCE_ACTUAL,
-            righteousness=0.0,  # Righteous frame
+            righteousness=0.0,
             order=3,
         )
         self.conscience_node.frame.origin = "conscience"
@@ -1494,7 +1504,7 @@ class Manifold:
         self.loop_number = 0
         
         logger.info("═══ BIRTH COMPLETE ═══")
-        logger.info(f"  Physical nodes: 6 (n,s,e,w,u,d)")
+        logger.info(f"  Bootstrap nodes: 6 (N,S,E,W,U + abstract root)")
         logger.info(f"  Psychology nodes: 3 (identity, ego, conscience)")
         logger.info(f"  Total: {len(self.nodes)} nodes")
         logger.info(f"  Self's frame: x={self.self_node.frame.x_axis}, y={self.self_node.frame.y_axis}, z={self.self_node.frame.z_axis}")
@@ -1556,12 +1566,13 @@ class Manifold:
                 lines.append(f"  {dir}: → {axis.target_id[:8]} (×{axis.traversal_count})")
         
         lines.append("\nNODES:")
-        for node in sorted(self.nodes.values(), key=lambda n: (len(n.position), n.position)):
+        for node in sorted(self.nodes.values(), key=lambda n: n.theta):
             spatial = len(node.spatial_axes)
             semantic = len(node.semantic_axes)
             proper = len(node.proper_axes)
-            lines.append(f"  {node.concept:20} @ {node.position or '(origin)':10} | "
-                        f"heat={node.heat:8.2f} | R={node.righteousness:.2f} | "
+            pos_str = f"θ={node.theta:.3f},φ={node.phi:.3f}" if node.radius > 0 else "(center)"
+            lines.append(f"  {node.concept:20} @ {pos_str:20} | "
+                        f"heat={node.heat:8.2f} | R={node.righteousness:.2f} Q={node.quadrant} | "
                         f"axes: S{spatial} C{semantic} P{proper}")
         
         lines.append("═══════════════════════════════════════════════════════════")
@@ -1744,8 +1755,6 @@ class Manifold:
         
         # Clear indexes
         self.nodes = {}
-        self.nodes_by_position = {}
-        self.nodes_by_universal = {}
         self.nodes_by_concept = {}
         
         # Load Identity
@@ -1755,10 +1764,7 @@ class Manifold:
                 identity_data = json.load(f)
             node = Node.from_dict(identity_data["node"])
             self.nodes[node.id] = node
-            self.nodes_by_position[node.position] = node.id
             self.nodes_by_concept[node.concept] = node.id
-            if node.universal_position:
-                self.nodes_by_universal[node.universal_position] = node.id
             self.identity_node = node
         
         # Load Ego
@@ -1768,10 +1774,7 @@ class Manifold:
                 ego_data = json.load(f)
             node = Node.from_dict(ego_data["node"])
             self.nodes[node.id] = node
-            self.nodes_by_position[node.position] = node.id
             self.nodes_by_concept[node.concept] = node.id
-            if node.universal_position:
-                self.nodes_by_universal[node.universal_position] = node.id
             self.ego_node = node
         
         # Load Conscience
@@ -1781,10 +1784,7 @@ class Manifold:
                 conscience_data = json.load(f)
             node = Node.from_dict(conscience_data["node"])
             self.nodes[node.id] = node
-            self.nodes_by_position[node.position] = node.id
             self.nodes_by_concept[node.concept] = node.id
-            if node.universal_position:
-                self.nodes_by_universal[node.universal_position] = node.id
             self.conscience_node = node
         
         # Load other nodes
@@ -1795,10 +1795,7 @@ class Manifold:
             for nid, ndata in nodes_data.get("nodes", {}).items():
                 node = Node.from_dict(ndata)
                 self.nodes[nid] = node
-                self.nodes_by_position[node.position] = nid
                 self.nodes_by_concept[node.concept] = nid
-                if node.universal_position:
-                    self.nodes_by_universal[node.universal_position] = nid
         
         if self.born:
             mark_birth_complete()
@@ -1831,19 +1828,14 @@ class Manifold:
         
         # Reconstruct nodes
         self.nodes = {}
-        self.nodes_by_position = {}
-        self.nodes_by_universal = {}
         self.nodes_by_concept = {}
-        
+
         for nid, ndata in data.get("nodes", {}).items():
             if file_version < 2:
                 ndata = migrate_node_v1_to_v2(ndata)
             node = Node.from_dict(ndata)
             self.nodes[nid] = node
-            self.nodes_by_position[node.position] = nid
             self.nodes_by_concept[node.concept] = nid
-            if node.universal_position:
-                self.nodes_by_universal[node.universal_position] = nid
         
         # Restore psychology node references
         psychology = data.get("psychology", {})
@@ -1868,24 +1860,29 @@ class Manifold:
     # ═══════════════════════════════════════════════════════════════════════════
     
     def traces_to_self(self, node: Node, max_depth: int = 100) -> bool:
-        """Verify that a node can trace back to Self."""
-        if node.position == "":
-            return True
-        
-        current_pos = node.position
-        visited = set()
-        
-        while current_pos:
-            if current_pos in visited:
-                logger.error(f"Cycle detected at position {current_pos}")
-                return False
-            visited.add(current_pos)
-            current_pos = current_pos[:-1]
-            
-            if len(visited) > max_depth:
-                logger.error(f"Max depth exceeded tracing {node.concept}")
-                return False
-        
+        """Verify that a node can trace back to Self.
+
+        On the hypersphere, every surface node (radius=1.0) traces to Self
+        at the center (radius=0.0) by definition — Self is the origin.
+        We verify the node has valid angular coordinates.
+        """
+        if node.radius == 0.0:
+            return True  # This IS Self
+
+        # All surface nodes on the hypersphere trace to Self at center
+        # Verify valid angular coordinates
+        if not (0.0 <= node.theta <= math.pi):
+            logger.error(f"Node {node.concept} has invalid theta: {node.theta}")
+            return False
+        if not (0.0 <= node.phi < 2 * math.pi + 0.001):
+            logger.error(f"Node {node.concept} has invalid phi: {node.phi}")
+            return False
+
+        # Verify radius is valid (0.0 = Self, 1.0 = surface)
+        if not (0.0 <= node.radius <= 1.0):
+            logger.error(f"Node {node.concept} has invalid radius: {node.radius}")
+            return False
+
         return True
     
     def verify_all_trace_to_self(self) -> bool:

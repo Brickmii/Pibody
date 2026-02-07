@@ -1,7 +1,7 @@
 """
 PBAI Blackjack - Play manually or watch PBAI play
 
-PBAI uses card counting, manifold memory, LLM options, thermal decisions.
+PBAI uses card counting, manifold memory, thermal decisions.
 
 Run:
     python drivers/tasks/blackjack.py
@@ -120,11 +120,12 @@ class BlackjackApp:
 
         self.pbai_on = False
         self.driver = None
+        self.env_core = None
         self.use_llm = use_llm
         self.delay = 800
         self.last_state = None
         self.last_action = None
-        self.last_situation_key = None  # Tracks count bracket at decision time
+        self.last_situation_key = None
 
         self.setup_ui()
 
@@ -280,13 +281,17 @@ class BlackjackApp:
                 self.balance += self.current_bet
                 self.message.config(text="Push - both BJ")
                 if self.driver:
-                    self.driver.record_blackjack(won=False, amount=self.current_bet)
+                    result = self.driver.record_blackjack(won=False, amount=self.current_bet)
+                    if self.env_core:
+                        self.env_core.feedback(result)
             else:
                 win = int(self.current_bet * 2.5)
                 self.balance += win
                 self.message.config(text=f"Blackjack! +${win - self.current_bet}")
                 if self.driver:
-                    self.driver.record_blackjack(won=True, amount=self.current_bet)
+                    result = self.driver.record_blackjack(won=True, amount=self.current_bet)
+                    if self.env_core:
+                        self.env_core.feedback(result)
             self.reset_game()
             self.update_nodes()
             if self.pbai_on:
@@ -316,12 +321,12 @@ class BlackjackApp:
         if not self.player_hands:
             return
         h = self.player_hands[self.current_hand_index]
-        
+
         # Capture situation BEFORE card is dealt (with current count)
         if self.driver and self.last_state:
             self.last_situation_key = self.driver.record_decision(self.last_state, "hit")
             self.last_action = "hit"
-        
+
         c = self.deck.deal()
         h.add_card(c)
         if self.driver:
@@ -335,8 +340,10 @@ class BlackjackApp:
             h.is_finished = True
             self.message.config(text="Bust!")
             if self.driver and self.last_situation_key:
-                self.driver.record_outcome(self.last_state, "hit", False, h.bet, 
-                                          situation_key=self.last_situation_key)
+                result = self.driver.record_outcome(self.last_state, "hit", False, h.bet,
+                                                    situation_key=self.last_situation_key)
+                if self.env_core:
+                    self.env_core.feedback(result)
             self.next_hand()
         else:
             self.last_state = self._get_state()
@@ -379,8 +386,10 @@ class BlackjackApp:
         if h.is_busted():
             self.message.config(text="Bust on double!")
             if self.driver and self.last_situation_key:
-                self.driver.record_outcome(self.last_state, "double", False, h.bet,
-                                          situation_key=self.last_situation_key)
+                result = self.driver.record_outcome(self.last_state, "double", False, h.bet,
+                                                    situation_key=self.last_situation_key)
+                if self.env_core:
+                    self.env_core.feedback(result)
 
         self.next_hand()
         self.update_nodes()
@@ -471,11 +480,15 @@ class BlackjackApp:
 
             if self.driver and self.last_action and i == 0:
                 if push:
-                    self.driver.record_push(self.last_state, self.last_action, h.bet,
-                                           situation_key=self.last_situation_key)
+                    result = self.driver.record_push(self.last_state, self.last_action, h.bet,
+                                                     situation_key=self.last_situation_key)
+                    if self.env_core:
+                        self.env_core.feedback(result)
                 elif not h.is_busted():
-                    self.driver.record_outcome(self.last_state, self.last_action, won, h.bet,
-                                              situation_key=self.last_situation_key)
+                    result = self.driver.record_outcome(self.last_state, self.last_action, won, h.bet,
+                                                        situation_key=self.last_situation_key)
+                    if self.env_core:
+                        self.env_core.feedback(result)
 
         self.balance += total
         self.balance_label.config(text=f"${self.balance}")
@@ -491,7 +504,7 @@ class BlackjackApp:
 
         self.reset_game()
         self.update_nodes()
-        
+
         # Save to unified growth map
         self.save_growth()
 
@@ -554,6 +567,7 @@ class BlackjackApp:
             return
         from core import get_pbai_manifold, get_growth_path
         from drivers.blackjack_driver import BlackjackDriver
+        from drivers.environment import EnvironmentCore
 
         self.message.config(text="Loading PBAI...")
         self.root.update()
@@ -562,11 +576,15 @@ class BlackjackApp:
         self.growth_path = get_growth_path("growth_map.json")
         manifold = get_pbai_manifold(self.growth_path)
         self.message.config(text=f"Loaded {len(manifold.nodes)} nodes")
-        
-        self.driver = BlackjackDriver(manifold)
+
+        self.driver = BlackjackDriver(manifold=manifold)
+        self.env_core = EnvironmentCore(manifold=manifold)
+        self.env_core.register_driver(self.driver)
+        self.env_core.activate_driver("blackjack")
+
         self.message.config(text="PBAI ready")
         self.update_nodes()
-    
+
     def save_growth(self):
         """Save to unified growth map."""
         if self.driver and hasattr(self, 'growth_path'):
@@ -607,16 +625,19 @@ class BlackjackApp:
 
     def pbai_action(self):
         if not self.pbai_on or not self.game_active:
-            # Don't schedule deals here - finish_game handles that
             return
 
         state = self._get_state()
         if not state:
-            # State is invalid, move to next hand or finish
             self.next_hand()
             return
 
-        action = self.driver.get_action(state, self.balance)
+        # Route through EnvironmentCore: set_hand_state → perceive → decide
+        self.driver.set_hand_state(state, self.balance)
+        perception = self.env_core.perceive()
+        action_obj = self.env_core.decide(perception)
+        action = action_obj.action_type  # "hit", "stand", "double", "split"
+
         self.message.config(text=f"PBAI: {action.upper()}")
 
         try:
@@ -641,12 +662,11 @@ class BlackjackApp:
         self.update_nodes()
 
     def pbai_next(self):
-        """Continue to next action if game still active. Don't schedule new deals - finish_game handles that."""
+        """Continue to next action if game still active."""
         if not self.pbai_on:
             return
         if self.game_active:
             self.pbai_action()
-        # If game is over, finish_game will schedule the next deal - don't double-schedule
 
 
 if __name__ == "__main__":

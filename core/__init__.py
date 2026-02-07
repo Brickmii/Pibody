@@ -1,3 +1,4 @@
+
 """
 PBAI Thermal Manifold - Core Module
 
@@ -7,7 +8,8 @@ THE 6 CORE FILES (aligned with 6 motion functions):
 - manifold.py         : Order (Q) + Heat (Σ) - arithmetic validator + psychology
 - clock_node.py       : Existence (δ) - persistence validator (Self IS clock)
 - decision_node.py    : Movement (Lin) - vectorized output (5 scalars → 1 vector)
-- compression.py      : Utility - position encoding
+- color_cube.py       : Base righteous/ordered reference frame
+- hypersphere.py      : Node topology (angular coordinates)
 
 SUPPORT FILE:
 - driver_node.py      : IO dataclasses (SensorReport, MotorAction, ActionPlan)
@@ -120,10 +122,20 @@ from .node_constants import (
     get_project_root, get_growth_path, GROWTH_DEFAULT
 )
 
-from .compression import (
-    compress, decompress, validate_position,
-    get_axis_coordinates, get_depth, position_length,
-    positions_share_prefix, run_compression_tests
+from .color_cube import (
+    CubePosition, evaluate_righteousness as cube_evaluate_righteousness,
+    heat_from_position, heat_zone, wave_amplitude,
+    cube_pole, quadrant_center, opponent_color, color_to_axis,
+    normalize_to_cube, cube_origin, clamp_chromatic,
+    robinson_identity, robinson_successor, robinson_addition, robinson_multiplication,
+    apply_robinson, get_quadrant_alignment,
+)
+
+from .hypersphere import (
+    SpherePosition, angular_distance, relationship_strength,
+    are_aligned, are_opposed, place_evenly, place_node_near,
+    find_neighbors, k_nearest, great_circle_path,
+    self_position, sphere_to_quadrant, nodes_in_quadrant,
 )
 
 from .nodes import (
@@ -148,6 +160,10 @@ from .driver_node import (
 from .decision_node import (
     Choice, ChoiceNode, DecisionNode, EnvironmentNode, PBAILoop,
     get_decisions_path
+)
+
+from .introspector import (
+    Introspector, SimulationResult
 )
 
 from .clock_node import (
@@ -234,10 +250,19 @@ __all__ = [
     'get_motion_for_direction', 'get_direction_for_motion',
     'get_project_root', 'get_growth_path', 'GROWTH_DEFAULT',
     
-    # Compression
-    'compress', 'decompress', 'validate_position',
-    'get_axis_coordinates', 'get_depth', 'position_length',
-    'positions_share_prefix', 'run_compression_tests',
+    # Color Cube (base reference frame)
+    'CubePosition', 'cube_evaluate_righteousness',
+    'heat_from_position', 'heat_zone', 'wave_amplitude',
+    'cube_pole', 'quadrant_center', 'opponent_color', 'color_to_axis',
+    'normalize_to_cube', 'cube_origin', 'clamp_chromatic',
+    'robinson_identity', 'robinson_successor', 'robinson_addition', 'robinson_multiplication',
+    'apply_robinson', 'get_quadrant_alignment',
+
+    # Hypersphere (node topology)
+    'SpherePosition', 'angular_distance', 'relationship_strength',
+    'are_aligned', 'are_opposed', 'place_evenly', 'place_node_near',
+    'find_neighbors', 'k_nearest', 'great_circle_path',
+    'self_position', 'sphere_to_quadrant', 'nodes_in_quadrant',
     
     # Nodes & Axes (v2 unified architecture with nested capability)
     'Element', 'Graphic', 'Transition', 'Movement', 'Order', 'Axis', 'Frame',
@@ -260,7 +285,10 @@ __all__ = [
     # Decision Node (EXIT point - 5 scalars → 1 vector - saves to decisions/)
     'Choice', 'ChoiceNode', 'DecisionNode', 'EnvironmentNode', 'PBAILoop',
     'get_decisions_path',
-    
+
+    # Introspector (cube-native simulation + short-term memory)
+    'Introspector', 'SimulationResult',
+
     # Environment (from drivers/)
     'PortState', 'PortMessage', 'Port', 'NullPort',
     'Perception', 'Action', 'ActionResult', 'Driver', 'MockDriver',

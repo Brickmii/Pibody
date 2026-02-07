@@ -61,7 +61,7 @@ class MazeGenerator:
     def place_goals(self):
         open_cells = [(r, c) for r in range(1, self.height - 1) for c in range(1, self.width - 1)
                       if self.grid[r][c] == 0 and abs(r - self.start[0]) + abs(c - self.start[1]) >= 8]
-        
+
         if len(open_cells) < 2:
             self.goal1, self.goal2 = (self.height - 4, self.width - 4), (self.height - 6, self.width - 7)
         else:
@@ -69,7 +69,7 @@ class MazeGenerator:
             open_cells.remove(self.goal1)
             far = [c for c in open_cells if abs(c[0] - self.goal1[0]) + abs(c[1] - self.goal1[1]) >= 6]
             self.goal2 = random.choice(far) if far else random.choice(open_cells)
-        
+
         self.grid[self.goal1[0]][self.goal1[1]] = 0
         self.grid[self.goal2[0]][self.goal2[1]] = 0
 
@@ -86,10 +86,11 @@ class MazeApp:
         self.maze = MazeGenerator(self.maze_size, self.maze_size)
         self.player_pos = self.maze.start
         self.won = False
-        
+
         # PBAI
         self.pbai_on = False
         self.driver = None
+        self.env_core = None
         self.delay = 100
 
         self.build_ui()
@@ -98,7 +99,7 @@ class MazeApp:
         self.root.focus_set()
 
     def build_ui(self):
-        tk.Label(self.root, text="PBAI Maze", font=("Arial", 16, "bold"), 
+        tk.Label(self.root, text="PBAI Maze", font=("Arial", 16, "bold"),
                  bg="#0f1923", fg="#e0e0e0").pack(pady=8)
 
         frame = tk.Frame(self.root, bg="#1d3557", bd=3, relief="sunken")
@@ -140,13 +141,13 @@ class MazeApp:
         self.maze.generate()
         self.player_pos = self.maze.start
         self.won = False
-        
+
         if self.driver:
             self.driver.new_maze(self.player_pos, self.maze.goal1, self.maze.goal2)
             # Initial observation at start
             goals = [self.maze.goal1, self.maze.goal2]
             self.driver.observe(self.player_pos, self.maze.grid, self.maze_size, goals)
-        
+
         self.draw()
         self.status.config(text="WASD/Arrows or PBAI Auto", fg="#6ee7b7")
 
@@ -154,17 +155,17 @@ class MazeApp:
         self.stop_pbai()
         self.player_pos = self.maze.start
         self.won = False
-        
+
         if self.driver:
             self.driver.new_maze(self.player_pos, self.maze.goal1, self.maze.goal2)
             goals = [self.maze.goal1, self.maze.goal2]
             self.driver.observe(self.player_pos, self.maze.grid, self.maze_size, goals)
-        
+
         self.draw()
 
     def draw(self):
         self.canvas.delete("all")
-        
+
         # Get mapped cells from driver
         mapped = self.driver.observed_cells if self.driver else {}
 
@@ -172,7 +173,7 @@ class MazeApp:
             for c in range(self.maze_size):
                 x1, y1 = c * self.cell_size, r * self.cell_size
                 x2, y2 = x1 + self.cell_size, y1 + self.cell_size
-                
+
                 if self.maze.grid[r][c] == 1:
                     color = "#374151"  # Wall
                 elif (r, c) in mapped:
@@ -180,7 +181,7 @@ class MazeApp:
                     color = "#1e3a5f" if v == 1 else "#2d4a6f" if v == 2 else "#3d5a7f"
                 else:
                     color = "#0a1929"  # Unmapped
-                    
+
                 self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="#111827")
 
         # Goals
@@ -240,6 +241,12 @@ class MazeApp:
                 # Observe new position (maps it)
                 goals = [self.maze.goal1, self.maze.goal2]
                 self.driver.observe(self.player_pos, self.maze.grid, self.maze_size, goals)
+                # Route through EnvironmentCore for psychology
+                if self.env_core:
+                    from drivers.environment import Action
+                    perception = self.env_core.perceive()
+                    result = self.env_core.act(Action(action_type=d, target=d))
+                    self.env_core.feedback(result, Action(action_type=d, target=d))
             self.draw()
             self.check_win()
 
@@ -252,18 +259,23 @@ class MazeApp:
             return
         from core import get_pbai_manifold, get_growth_path
         from drivers.maze_driver import MazeDriver
-        
+        from drivers.environment import EnvironmentCore
+
         # Get the ONE PBAI manifold (loads existing or births on first run)
         self.growth_path = get_growth_path("growth_map.json")
         manifold = get_pbai_manifold(self.growth_path)
-        
-        self.driver = MazeDriver(manifold)
+
+        self.driver = MazeDriver(manifold=manifold)
+        self.env_core = EnvironmentCore(manifold=manifold)
+        self.env_core.register_driver(self.driver)
+        self.env_core.activate_driver("maze")
+
         self.driver.new_maze(self.player_pos, self.maze.goal1, self.maze.goal2)
-        
+
         # Initial observation
         goals = [self.maze.goal1, self.maze.goal2]
         self.driver.observe(self.player_pos, self.maze.grid, self.maze_size, goals)
-    
+
     def save_growth(self):
         """Save to unified growth map."""
         if self.driver and hasattr(self, 'growth_path'):
@@ -293,15 +305,15 @@ class MazeApp:
             return
 
         goals = [self.maze.goal1, self.maze.goal2]
-        
-        # Observe current position (updates map)
+
+        # Observe current position (updates map, builds internal state)
         obs = self.driver.observe(self.player_pos, self.maze.grid, self.maze_size, goals)
 
         # Win?
         if obs['at_goal']:
             self.won = True
             self.driver.record_completion()
-            self.save_growth()  # Save to unified growth map
+            self.save_growth()
             self.status.config(text=f"🎉 Maze {self.driver.maze_count} mapped! Next...", fg="#22c55e")
             self.draw()
             self.root.after(1500, self.pbai_next_maze)
@@ -316,10 +328,15 @@ class MazeApp:
                 self.do_backtrack(moves, 0)
                 return
 
-        # Get direction
-        d = self.driver.get_direction(obs)
+        # Route through EnvironmentCore: perceive → tick → decide
+        perception = self.env_core.perceive()  # Calls driver.perceive() → Clock
+        action = self.env_core.decide(perception)  # DecisionNode picks direction
+        d = action.action_type
+
         if d and self.move(d):
             self.driver.record_move(self.player_pos, d)
+            result = self.env_core.act(action)  # Calls driver.act() → ActionResult
+            self.env_core.feedback(result, action)  # Psychology updates
 
         self.draw()
         try:
@@ -335,9 +352,14 @@ class MazeApp:
         d = moves[i]
         if self.move(d):
             self.driver.record_move(self.player_pos, d, backtracking=True)
-            # Observe during backtrack too (reinforces map)
+            # Observe during backtrack (reinforces map)
             goals = [self.maze.goal1, self.maze.goal2]
             self.driver.observe(self.player_pos, self.maze.grid, self.maze_size, goals)
+            # Route backtrack through EnvironmentCore for psychology
+            from drivers.environment import Action
+            perception = self.env_core.perceive()
+            result = self.env_core.act(Action(action_type=d, target=d))
+            self.env_core.feedback(result, Action(action_type=d, target=d))
             self.draw()
         self.root.after(30, lambda: self.do_backtrack(moves, i + 1))
 

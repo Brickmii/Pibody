@@ -82,6 +82,7 @@ ARCHITECTURE
 ════════════════════════════════════════════════════════════════════════════════
 """
 
+import math
 import os
 import json
 import logging
@@ -90,8 +91,9 @@ from typing import Dict, List, Optional, Any, Tuple
 from time import time
 
 from .nodes import Node, Axis, Order, Element
+from .hypersphere import SpherePosition, angular_distance, place_node_near
 from .node_constants import (
-    K, PHI, THRESHOLD_ORDER, THRESHOLD_EXISTENCE, 
+    K, PHI, THRESHOLD_ORDER, THRESHOLD_EXISTENCE,
     CONFIDENCE_EXPLOIT_THRESHOLD,
     EXISTENCE_ACTUAL, EXISTENCE_DORMANT, EXISTENCE_POTENTIAL,
     get_growth_path
@@ -229,9 +231,12 @@ class ChoiceNode:
         if existing:
             self.node = existing
         else:
+            # Place on hypersphere near north pole (task-level, "above" the equator)
             self.node = Node(
                 concept=self.name,
-                position="u",
+                theta=math.pi / 6,  # 30° from north pole (task level)
+                phi=0.0,
+                radius=1.0,
                 heat=K,
                 polarity=1,
                 existence="actual",
@@ -870,50 +875,61 @@ class DecisionNode(ChoiceNode):
         
         return None
     
-    def _find_candidate_nodes(self, state_key: str, 
+    def _find_candidate_nodes(self, state_key: str,
                               context: Dict[str, Any] = None) -> List[Node]:
         """
         Find nodes related to current state for collapse.
-        
+
         Candidates are nodes that might be the CENTER:
         - The current state node (if exists)
-        - Similar state nodes (share prefix)
+        - Angular neighbors on the hypersphere (proximity-based)
         - Context-related nodes
+        - Nodes connected to current decision node
         """
         if not self.manifold:
             return []
-        
+
         candidates = []
-        
+        seen_ids = set()
+
         # 1. Current state node
         state_node = self.manifold.get_node_by_concept(state_key)
         if state_node:
             candidates.append(state_node)
-        
-        # 2. Similar states (share prefix)
-        # e.g., "blackjack_hard_16" might relate to "blackjack_hard_17"
-        prefix = state_key.rsplit('_', 1)[0] if '_' in state_key else state_key
-        for concept, node_id in self.manifold.nodes_by_concept.items():
-            if concept != state_key and concept.startswith(prefix):
-                node = self.manifold.get_node(node_id)
-                if node and node.existence != "archived":
+            seen_ids.add(state_node.id)
+
+        # 2. Angular proximity on hypersphere (replaces string prefix matching)
+        # Find nodes near the state node's position
+        if state_node:
+            target_sp = SpherePosition(theta=state_node.theta, phi=state_node.phi)
+            proximity_threshold = math.pi / 4  # 45° neighborhood
+            for node in self.manifold.nodes.values():
+                if node.id in seen_ids:
+                    continue
+                if node.existence == "archived":
+                    continue
+                node_sp = SpherePosition(theta=node.theta, phi=node.phi)
+                if angular_distance(target_sp, node_sp) < proximity_threshold:
                     candidates.append(node)
-        
+                    seen_ids.add(node.id)
+
         # 3. Context-related nodes
         if context:
             for ctx_key, ctx_value in context.items():
                 if ctx_value:  # Only active contexts
                     ctx_node = self.manifold.get_node_by_concept(f"ctx:{ctx_key}")
-                    if ctx_node:
+                    if ctx_node and ctx_node.id not in seen_ids:
                         candidates.append(ctx_node)
-        
+                        seen_ids.add(ctx_node.id)
+
         # 4. Nodes connected to current decision node
         for axis in self.node.frame.axes.values():
-            if axis.target_id:
+            if axis.target_id and axis.target_id not in seen_ids:
                 target = self.manifold.get_node(axis.target_id)
-                if target and target not in candidates:
+                if target:
                     candidates.append(target)
-        
+                    seen_ids.add(target.id)
+
         return candidates
     
     # ═══════════════════════════════════════════════════════════════════════════

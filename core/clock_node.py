@@ -110,6 +110,7 @@ CREATIVE CYCLE (when no external input):
 ════════════════════════════════════════════════════════════════════════════════
 """
 
+import math
 import threading
 import time
 import logging
@@ -117,6 +118,7 @@ from typing import Optional, Callable, List
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from .nodes import Node
 from .node_constants import (
     K, PHI, COST_TICK, COST_TRAVERSE, COST_EVALUATE, COST_ACTION,
     THRESHOLD_EXISTENCE, PSYCHOLOGY_MIN_HEAT,
@@ -461,8 +463,6 @@ class Clock:
         Returns:
             Heat gained from processing inputs
         """
-        from .node_constants import EXISTENCE_ACTUAL, COST_TRAVERSE, PSYCHOLOGY_MIN_HEAT
-        
         heat_gained = 0.0
         
         # Get pending inputs (thread-safe)
@@ -527,8 +527,17 @@ class Clock:
                 # Find or create concept node using manifold directly
                 node = self.manifold.get_node_by_concept(concept)
                 if not node:
-                    # Create new concept as potential node
-                    node = self.manifold.create_potential_node(concept, self._find_position_for_concept())
+                    # Create new concept as potential node on the hypersphere
+                    theta, phi = self._find_angular_position_for_concept()
+                    node = Node(
+                        concept=concept,
+                        theta=theta,
+                        phi=phi,
+                        radius=1.0,
+                        heat=0.0,
+                        existence=EXISTENCE_POTENTIAL,
+                    )
+                    self.manifold.add_node(node)
                 
                 # Update Identity's awareness of this concept
                 self.manifold.update_identity(concept, heat_delta=0.1, known=(node is not None))
@@ -538,44 +547,35 @@ class Clock:
         self.stats.total_heat_gained += heat_gained
         return heat_gained
     
-    def _find_position_for_concept(self) -> str:
-        """Find an available position for a new concept node."""
-        import random
-        from .node_constants import SELF_DIRECTIONS, ALL_DIRECTIONS
-        
-        def find_space(start, depth=0, max_depth=50):
-            directions = SELF_DIRECTIONS if start.position == "" else ALL_DIRECTIONS
-            
-            available = []
-            children = []
-            
-            for d in directions:
-                pos = start.position + d
-                if not self.manifold.position_occupied(pos):
-                    available.append(pos)
-                else:
-                    child = self.manifold.get_node_by_position(pos)
-                    if child:
-                        children.append(child)
-            
-            if available:
-                return random.choice(available)
-            
-            if depth < max_depth and children:
-                random.shuffle(children)
-                for child in children:
-                    result = find_space(child, depth + 1, max_depth)
-                    if result:
-                        return result
-            return None
-        
-        if self.manifold.self_node:
-            pos = find_space(self.manifold.self_node)
-            if pos:
-                return pos
-        
-        # Fallback: just append 'n' to self position
-        return "n"
+    def _find_angular_position_for_concept(self):
+        """Find an available angular position on the hypersphere for a new concept node.
+
+        Uses place_node_near from hypersphere to find a spot near the identity node
+        (since Identity is where new concepts enter the manifold).
+
+        Returns:
+            Tuple of (theta, phi) for the new node.
+        """
+        from .hypersphere import SpherePosition, place_node_near
+
+        # Place near identity node (concepts enter through Identity)
+        if self.manifold.identity_node:
+            target = SpherePosition(
+                theta=self.manifold.identity_node.theta,
+                phi=self.manifold.identity_node.phi,
+            )
+        else:
+            # Fallback: equator
+            target = SpherePosition(theta=math.pi / 2, phi=0.0)
+
+        # Gather existing positions
+        existing = [
+            SpherePosition(theta=n.theta, phi=n.phi)
+            for n in self.manifold.nodes.values()
+        ]
+
+        placed = place_node_near(target, existing)
+        return placed.theta, placed.phi
     
     # ═══════════════════════════════════════════════════════════════════════════
     # TICK LOOP

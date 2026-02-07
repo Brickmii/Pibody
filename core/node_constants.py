@@ -183,6 +183,66 @@ MAX_ENTROPIC_PROBABILITY = THRESHOLD_DENOMINATOR / THRESHOLD_NUMERATOR  # 44/45 
 STRUCTURAL_CONSTRAINT = 1 / THRESHOLD_NUMERATOR  # 1/45 ≈ 0.0222
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# COLOR CUBE — Axis-to-Color Mapping (Base Righteous + Ordered Frame)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# The Color Cube is the absolute reference frame. All Righteousness evaluation
+# projects back to these axes. Heat is NOT an axis — it's magnitude from motion.
+#
+#   X axis (E/W): Yellow(+1) ↔ Blue(-1)
+#   Y axis (N/S): Green(+1)  ↔ Red(-1)
+#   Z axis (U/D): Future(+τ) ↔ Past(-τ)
+#
+# Four quadrants (base righteous frame):
+#   Q1 (+X,+Y): Yellow+Green  (NE)
+#   Q2 (-X,+Y): Blue+Green    (NW)
+#   Q3 (-X,-Y): Blue+Red      (SW)
+#   Q4 (+X,-Y): Yellow+Red    (SE)
+#
+# Heat = √(x² + y²) — magnitude derived from chromatic position, not an axis.
+#
+
+# Cube axis indices
+CUBE_AXIS_X = 0  # E/W — Blue/Yellow
+CUBE_AXIS_Y = 1  # N/S — Red/Green
+CUBE_AXIS_Z = 2  # U/D — Time (τ)
+
+# Positive poles
+CUBE_POLE_POSITIVE_X = "yellow"   # +X = East = Yellow
+CUBE_POLE_POSITIVE_Y = "green"    # +Y = North = Green
+CUBE_POLE_POSITIVE_Z = "future"   # +Z = Up = Future (+τ)
+
+# Negative poles
+CUBE_POLE_NEGATIVE_X = "blue"     # -X = West = Blue
+CUBE_POLE_NEGATIVE_Y = "red"      # -Y = South = Red
+CUBE_POLE_NEGATIVE_Z = "past"     # -Z = Down = Past (-τ)
+
+# Axis labels (for lookup)
+CUBE_AXES = {
+    'x': {'positive': CUBE_POLE_POSITIVE_X, 'negative': CUBE_POLE_NEGATIVE_X,
+           'cardinal_pos': 'E', 'cardinal_neg': 'W'},
+    'y': {'positive': CUBE_POLE_POSITIVE_Y, 'negative': CUBE_POLE_NEGATIVE_Y,
+           'cardinal_pos': 'N', 'cardinal_neg': 'S'},
+    'z': {'positive': CUBE_POLE_POSITIVE_Z, 'negative': CUBE_POLE_NEGATIVE_Z,
+           'cardinal_pos': 'U', 'cardinal_neg': 'D'},
+}
+
+# Cardinal-to-axis mapping (replaces legacy DIRECTION_TO_MOTION for geometry)
+CARDINAL_TO_AXIS = {
+    'E': ('x', +1), 'W': ('x', -1),
+    'N': ('y', +1), 'S': ('y', -1),
+    'U': ('z', +1), 'D': ('z', -1),
+}
+
+# Quadrant definitions (base righteous frame)
+CUBE_QUADRANTS = {
+    'Q1': {'x': +1, 'y': +1, 'colors': ('yellow', 'green'), 'cardinal': 'NE'},
+    'Q2': {'x': -1, 'y': +1, 'colors': ('blue', 'green'),   'cardinal': 'NW'},
+    'Q3': {'x': -1, 'y': -1, 'colors': ('blue', 'red'),     'cardinal': 'SW'},
+    'Q4': {'x': +1, 'y': -1, 'colors': ('yellow', 'red'),   'cardinal': 'SE'},
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # BODY TEMPERATURE AND FIRE SCALING
 # ═══════════════════════════════════════════════════════════════════════════════
 #

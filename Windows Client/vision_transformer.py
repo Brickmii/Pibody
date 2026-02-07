@@ -857,13 +857,39 @@ def build_world_state(model: PBAIVisionTransformer,
             color_tensor = (three_frame[b, py, px, :3] * 255).int().cpu()
             color = [int(c) for c in color_tensor.numpy().tolist()]
             
+            # Map pixel position to hypersphere angular coordinates
+            # dx, dy normalized to [-1, 1] from center
+            cx_half = model.resolution / 2
+            dx = (px - cx_half) / cx_half  # -1 to 1
+            dy = (py - cx_half) / cx_half  # -1 to 1
+            dist = math.sqrt(dx * dx + dy * dy)
+            angle = math.atan2(dy, dx)
+
+            # theta: center (dist=0) → equator, edge (dist=1) → pole
+            theta = math.pi / 2 + min(dist, 1.0) * math.pi / 2
+            theta = min(theta, math.pi)
+            # phi: angle in [0, 2π)
+            phi = angle % (2 * math.pi)
+
+            # Cube projection: X=Blue/Yellow, Y=Red/Green, Z=Past/Future
+            cube_x = math.sin(theta) * math.cos(phi)
+            cube_y = math.sin(theta) * math.sin(phi)
+            cube_tau = math.cos(theta)
+
             peaks.append({
                 'x': int(px),
                 'y': int(py),
                 'heat': round(heat_val, 4),
                 'features': features,
                 'color': color,
-                'existence': 'actual' if heat_val > THRESHOLD_EXISTENCE else 'potential'
+                'existence': 'actual' if heat_val > THRESHOLD_EXISTENCE else 'potential',
+                # Hypersphere angular coordinates
+                'theta': round(theta, 4),
+                'phi': round(phi, 4),
+                # Color Cube projection
+                'cube_x': round(cube_x, 4),   # Blue(-1) / Yellow(+1)
+                'cube_y': round(cube_y, 4),   # Red(-1) / Green(+1)
+                'cube_tau': round(cube_tau, 4) # Past(-) / Future(+)
             })
         
         # Heat stats

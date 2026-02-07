@@ -14,20 +14,30 @@ K = 4/φ² ≈ 1.528  (THE thermal quantum)
 K × φ² = 4        (exact identity)
 
 ════════════════════════════════════════════════════════════════════════════════
-THE 12 MOVEMENT DIRECTIONS (6 Self × 2 frames)
+POSITION ON HYPERSPHERE
 ════════════════════════════════════════════════════════════════════════════════
 
-    Self (egocentric):         Universal (world):
-    ──────────────────         ─────────────────
-    up                         above
-    down                       below
-    left                       W
-    right                      E
-    forward                    N
-    reverse                    S
+    Node position = angular coordinates (theta, phi) on hypersphere surface.
+    Projects onto Color Cube axes:
+        x = r·sin(θ)·cos(φ)  → Blue/Yellow balance
+        y = r·sin(θ)·sin(φ)  → Red/Green balance
+        τ = r·cos(θ)          → Time position
+        heat = √(x² + y²)    → Chromatic magnitude (NOT an axis)
 
-    Self directions    → For NAVIGATION (moving through manifold)
-    Universal coords   → For LOCATION (where righteous frames ARE)
+    Self at center (radius=0). All other nodes on surface (radius=1).
+
+════════════════════════════════════════════════════════════════════════════════
+THE 12 MOVEMENT DIRECTIONS (6 cardinal + 6 self-relative)
+════════════════════════════════════════════════════════════════════════════════
+
+    Cardinal (fixed to cube):       Self-relative (psychology trig basis):
+    ─────────────────────────       ──────────────────────────────────────
+    N (+Y), S (-Y)                  forward, reverse
+    E (+X), W (-X)                  left, right
+    U (+Z), D (-Z)                  above, below
+
+    Cardinal directions → Fixed to the Color Cube (absolute)
+    Self-relative       → Rotate with the trig gyroscope
 
 ════════════════════════════════════════════════════════════════════════════════
 FRAME STRUCTURE
@@ -40,16 +50,16 @@ Every node has a local Frame (2D plane minimum):
     - axes: All axes spinning out from this node
 
 FRAME TYPES:
-    RIGHTEOUS FRAME: Located by Universal coordinates (WHERE it is)
+    RIGHTEOUS FRAME: Aligned with Color Cube (WHERE it is)
                      Has conception (semantic link exists)
     PROPER FRAME:    Defined by Properties via Order (WHAT it contains)
                      Has Order (Robinson arithmetic for measurement)
 
 AXIS TYPES:
-    - Self:      up/down/left/right/forward/reverse (navigation)
-    - Universal: N/S/E/W/above/below (location)
+    - Cardinal:  N/S/E/W/U/D (fixed to cube)
+    - Self:      forward/reverse/left/right/above/below (rotate with trig basis)
     - Semantic:  predicate names (conceptual relationships)
-    
+
 All are unified as Axis objects with polarity.
 
 ════════════════════════════════════════════════════════════════════════════════
@@ -72,6 +82,7 @@ from typing import Dict, List, Optional, Any, Tuple, Set, TYPE_CHECKING
 from time import time
 from uuid import uuid4
 import json
+import math
 
 if TYPE_CHECKING:
     from .constraints import Spec
@@ -620,8 +631,16 @@ class Axis:
     
     @property
     def is_spatial(self) -> bool:
-        """Is this a spatial axis (n/s/e/w/u/d)?"""
-        return self.direction in ('n', 's', 'e', 'w', 'u', 'd')
+        """Is this a spatial axis (cardinal or self-relative direction)?"""
+        return self.direction in (
+            # Cardinal (fixed to cube)
+            'N', 'S', 'E', 'W', 'U', 'D',
+            # Self-relative (fixed to psychology trig basis)
+            'forward', 'reverse', 'left', 'right', 'above', 'below',
+            # Legacy
+            'n', 's', 'e', 'w', 'u', 'd',
+            'up', 'down',
+        )
     
     @property
     def is_semantic(self) -> bool:
@@ -876,24 +895,33 @@ class Node:
     """
     A node is not a data point—it's a self-contained motion unit.
     The six functions define what a node IS, not what it HAS.
-    
+
     Every node has:
     - 6 motion functions (Heat, Polarity, Existence, Righteousness, Order, Movement)
     - A local Frame (coordinate system with axes spinning out)
-    
-    POSITION SPACES (two coordinate systems):
-    
-    1. Self position (str): Path from Self using Self directions
-       Navigation path: "forward-right-up" or legacy "nnwwu"
-       
-    2. Universal position (str): Location using Universal coordinates
-       World address: "N-E-above" (for righteous frames)
-       
-    3. Trig position (tuple): Abstract space for psychology nodes
-       (amplitude, phase, spread) at golden angle
-    
+
+    POSITION ON HYPERSPHERE:
+
+    Angular coordinates (theta, phi) on the hypersphere surface.
+    Projects onto Color Cube axes:
+        theta, phi → (x, y, τ) in cube space
+        x = Blue/Yellow balance
+        y = Red/Green balance
+        τ = time position
+        heat = √(x² + y²)
+
+    Self is at the center (radius=0). All other nodes on surface (radius=1).
+
+    Psychology nodes additionally carry trig_position:
+        (amplitude, phase, spread) at golden angle — portable trig basis.
+
+    12 DIRECTIONS:
+    - 6 cardinal (fixed to cube): N, S, E, W, U, D
+    - 6 self-relative (fixed to psychology trig basis): forward, reverse,
+      left, right, above, below — rotate with the gyroscope
+
     FRAME TYPES:
-    - Righteous frame: Has universal_position (WHERE it is)
+    - Righteous frame: Aligned with Color Cube (WHERE it is)
     - Proper frame: Has Order (WHAT it contains)
     """
     # ─────────────────────────────────────────────────────────────────────────
@@ -901,32 +929,70 @@ class Node:
     # ─────────────────────────────────────────────────────────────────────────
     id: str = field(default_factory=lambda: str(uuid4()))
     concept: str = ""                   # The concept (1:1 with node)
-    
+
     # ─────────────────────────────────────────────────────────────────────────
-    # POSITION - Two coordinate systems (12 = 6 Self + 6 Universal)
+    # POSITION ON HYPERSPHERE — Angular coordinates
     # ─────────────────────────────────────────────────────────────────────────
-    
-    # Self position: Navigation path from Self (egocentric)
-    # Uses: up/down/left/right/forward/reverse (or legacy n/s/e/w/u/d)
-    position: str = ""
-    
-    # Universal position: World coordinates (for locating righteous frames)
-    # Uses: N/S/E/W/above/below
-    universal_position: Optional[str] = None
-    
+
+    # Polar angle [0, π]: 0 = +Z (future), π/2 = equator (present), π = -Z (past)
+    theta: float = math.pi / 2         # Default: equator (present moment)
+
+    # Azimuthal angle [0, 2π): 0 = +X (yellow/east), π/2 = +Y (green/north)
+    phi: float = 0.0                    # Default: +X direction
+
+    # Radius: 1.0 = surface (normal nodes), 0.0 = center (Self)
+    radius: float = 1.0
+
     # ─────────────────────────────────────────────────────────────────────────
     # ABSTRACT SPACE POSITION (for psychology nodes - 6th fire)
     # ─────────────────────────────────────────────────────────────────────────
     # Trigonometric coordinates at golden angle: (amplitude, phase, spread)
-    # Identity: (sin(1/φ), 0, 0) - amplitude axis
-    # Ego:      (0, tan(1/φ), 0) - phase axis  
-    # Conscience: (0, 0, cos(1/φ)) - spread axis
+    # Identity:   (sin(1/φ), 0, 0) - amplitude axis  — 70% heat
+    # Ego:        (0, tan(1/φ), 0) - phase axis       — 10% heat
+    # Conscience: (0, 0, cos(1/φ)) - spread axis      — 20% heat
     trig_position: Optional[Tuple[float, float, float]] = None
     
     # ─────────────────────────────────────────────────────────────────────────
+    # CUBE PROJECTION (derived from angular position)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    @property
+    def cube_x(self) -> float:
+        """Blue(-1) ↔ Yellow(+1) balance — projected from sphere."""
+        return self.radius * math.sin(self.theta) * math.cos(self.phi)
+
+    @property
+    def cube_y(self) -> float:
+        """Red(-1) ↔ Green(+1) balance — projected from sphere."""
+        return self.radius * math.sin(self.theta) * math.sin(self.phi)
+
+    @property
+    def cube_tau(self) -> float:
+        """Time position — projected from sphere."""
+        return self.radius * math.cos(self.theta)
+
+    @property
+    def heat_magnitude(self) -> float:
+        """Heat from chromatic position: √(x² + y²). NOT an axis."""
+        return math.sqrt(self.cube_x ** 2 + self.cube_y ** 2)
+
+    @property
+    def quadrant(self) -> str:
+        """Which Color Cube quadrant this node projects into."""
+        x, y = self.cube_x, self.cube_y
+        if x >= 0 and y >= 0:
+            return "Q1"  # Yellow+Green
+        elif x < 0 and y >= 0:
+            return "Q2"  # Blue+Green
+        elif x < 0 and y < 0:
+            return "Q3"  # Blue+Red
+        else:
+            return "Q4"  # Yellow+Red
+
+    # ─────────────────────────────────────────────────────────────────────────
     # THE SIX MOTION FUNCTIONS
     # ─────────────────────────────────────────────────────────────────────────
-    
+
     # 1. HEAT (Σ) - Magnitude (only accumulates, never subtracts)
     #    Heat IS the substance. K = 4/φ² is the quantum.
     heat: float = 1.0
@@ -1119,7 +1185,9 @@ class Node:
         data = {
             "id": self.id,
             "concept": self.concept,
-            "position": self.position,
+            "theta": self.theta,
+            "phi": self.phi,
+            "radius": self.radius,
             "heat": self.heat,
             "polarity": self.polarity,
             "existence": self.existence,
@@ -1132,10 +1200,7 @@ class Node:
             "tags": list(self.tags),
             "frame": self.frame.to_dict()
         }
-        # Only include universal_position if set
-        if self.universal_position is not None:
-            data["universal_position"] = self.universal_position
-        # Only include trig_position if set (abstract space nodes)
+        # Only include trig_position if set (psychology nodes)
         if self.trig_position is not None:
             data["trig_position"] = list(self.trig_position)
         return data
@@ -1145,20 +1210,21 @@ class Node:
         """Deserialize node from dictionary."""
         frame_data = data.get("frame", {"origin": data.get("concept", "")})
         frame = Frame.from_dict(frame_data)
-        
+
         # Handle trig_position if present
         trig_pos = data.get("trig_position")
         if trig_pos is not None:
             trig_pos = tuple(trig_pos)
-        
+
         # Handle tags
         tags = set(data.get("tags", []))
-        
+
         return cls(
             id=data["id"],
             concept=data.get("concept", ""),
-            position=data.get("position", ""),
-            universal_position=data.get("universal_position"),
+            theta=data.get("theta", math.pi / 2),
+            phi=data.get("phi", 0.0),
+            radius=data.get("radius", 1.0),
             trig_position=trig_pos,
             heat=data.get("heat", 1.0),
             polarity=data.get("polarity", 1),
@@ -1177,12 +1243,14 @@ class Node:
         s_count = len(self.spatial_axes)
         c_count = len(self.semantic_axes)
         p_count = len(self.proper_axes)
-        pos_str = self.position or "(origin)"
+        pos_str = f"θ={self.theta:.3f},φ={self.phi:.3f}"
+        if self.radius < 1e-6:
+            pos_str = "(center)"
         if self.trig_position:
-            pos_str = f"{self.position}→trig{self.trig_position}"
+            pos_str = f"{pos_str}→trig{self.trig_position}"
         tags_str = f" tags={self.tags}" if self.tags else ""
-        return (f"Node({self.concept!r} @ {pos_str!r} | "
-                f"heat={self.heat:.2f} R={self.righteousness:.2f} | "
+        return (f"Node({self.concept!r} @ {pos_str} | "
+                f"heat={self.heat:.2f} R={self.righteousness:.2f} Q={self.quadrant} | "
                 f"axes: S{s_count} C{c_count} P{p_count}{tags_str})")
     
     # ═══════════════════════════════════════════════════════════════════════
@@ -1239,22 +1307,25 @@ class Node:
 class SelfNode(Node):
     """
     Self is the first and foundational node - AND the clock.
-    
+
     SELF IS THE CLOCK:
-        - Universal origin (position = "", universal_position = origin)
+        - Center of the hypersphere (radius=0)
+        - Bridge between environment and manifold
+        - Identity of the learning matrix
         - t_K origin (Self's t_K IS manifold time)
         - Each tick = one K-quantum of heat flow
         - Existence = ticking
-        
+
     Uses "sun model" for heat - radiates without depleting.
-    
+
     DIRECTIONS FROM SELF:
         Self frame:      up, left, right, forward, reverse (down blocked - Self is there)
         Universal frame: N, S, E, W, above (below blocked - Self is there)
     """
     concept: str = "self"
-    position: str = ""                   # Empty string = Self origin
-    universal_position: str = "origin"   # Universal origin
+    theta: float = math.pi / 2          # Angular position (irrelevant at r=0)
+    phi: float = 0.0                     # Angular position (irrelevant at r=0)
+    radius: float = 0.0                  # CENTER of hypersphere
     heat: float = float('inf')           # Always hottest (sun model)
     polarity: int = 0                    # Neutral (center of all axes)
     existence: str = "actual"            # Always actual
@@ -1312,12 +1383,13 @@ class SelfNode(Node):
     def from_dict(cls, data: dict) -> 'SelfNode':
         frame_data = data.get("frame", {"origin": "self"})
         frame = Frame.from_dict(frame_data)
-        
+
         node = cls(
             id=data["id"],
             concept=data.get("concept", "self"),
-            position=data.get("position", ""),
-            universal_position=data.get("universal_position", "origin"),
+            theta=data.get("theta", math.pi / 2),
+            phi=data.get("phi", 0.0),
+            radius=data.get("radius", 0.0),
             heat=data.get("heat", float('inf')),
             polarity=data.get("polarity", 0),
             existence=data.get("existence", "actual"),
@@ -1341,17 +1413,16 @@ class SelfNode(Node):
 def assert_self_valid(self_node: SelfNode) -> bool:
     """
     Check Self node invariants.
-    
-    Self IS the clock:
-    - Position = origin (empty string for self, "origin" for universal)
+
+    Self IS the clock, center of the hypersphere:
+    - Radius = 0 (center of hypersphere)
     - Heat = infinite (sun model)
     - Polarity = neutral (center)
     - Existence = actual (always exists)
     - Righteousness = 0 (perfectly aligned)
     - t_K >= 0 (time only flows forward)
     """
-    assert self_node.position == "", f"Self position must be empty string"
-    assert self_node.universal_position == "origin", f"Self universal_position must be 'origin'"
+    assert self_node.radius == 0.0, f"Self must be at center (radius=0)"
     assert self_node.concept == "self", f"Self concept must be 'self'"
     assert self_node.existence == "actual", f"Self must always be actual"
     assert self_node.righteousness == 0.0, f"Self must always be righteous (R=0)"
@@ -1372,7 +1443,9 @@ def migrate_node_v1_to_v2(old_data: dict) -> dict:
     new_data = {
         "id": old_data["id"],
         "concept": old_data.get("concept", ""),
-        "position": old_data.get("position", ""),
+        "theta": old_data.get("theta", math.pi / 2),
+        "phi": old_data.get("phi", 0.0),
+        "radius": old_data.get("radius", 1.0),
         "heat": old_data.get("heat", 1.0),
         "polarity": old_data.get("polarity", 1),
         "existence": old_data.get("existence", "actual"),

@@ -1,1 +1,58 @@
-
+{
+  "node": {
+    "id": "d2cd06f9-dac2-4457-aec4-e5b068e993c3",
+    "concept": "conscience",
+    "theta": 2.670353755551324,
+    "phi": 4.799926459457306,
+    "radius": 1.0,
+    "heat": 62.870610496769125,
+    "polarity": 1,
+    "existence": "actual",
+    "righteousness": 0.0,
+    "order": 3,
+    "constraint_type": "identity",
+    "t_K": 0,
+    "created_t_K": 0,
+    "potential_units": 0,
+    "tags": [],
+    "frame": {
+      "origin": "conscience",
+      "x_axis": "abstract_root",
+      "y_axis": "ego",
+      "z_axis": "identity",
+      "axes": {
+        "abstract_root": {
+          "target_id": "71bc0816-5bca-4f5a-9d62-2b5afa80bbc6",
+          "direction": "abstract_root",
+          "polarity": 1,
+          "traversal_count": 1,
+          "last_traversed": 1770494935.314514,
+          "order": null
+        },
+        "ego": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "ego",
+          "polarity": 1,
+          "traversal_count": 1,
+          "last_traversed": 1770494935.3145194,
+          "order": null
+        },
+        "identity": {
+          "target_id": "39a6b07d-7027-41d0-be0e-5a0b50a49cd1",
+          "direction": "identity",
+          "polarity": 1,
+          "traversal_count": 1,
+          "last_traversed": 1770494935.314522,
+          "order": null
+        }
+      }
+    },
+    "trig_position": [
+      0.0,
+      0.0,
+      0.8150192046878789
+    ]
+  },
+  "heat": 62.870610496769125,
+  "axes_count": 3
+}

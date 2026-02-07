@@ -160,10 +160,28 @@ class VisualFeature:
             self.existence = "actual"
     
     def to_node_data(self) -> dict:
-        """Convert to data suitable for Node creation."""
+        """Convert to data suitable for Node creation.
+
+        Maps scan-space (x, y, angle) to hypersphere angular coordinates:
+            theta: distance_from_center mapped to [0, π] (center→equator, edge→poles)
+            phi:   angle in scan space mapped to [0, 2π)
+        """
+        # Map distance_from_center to theta:
+        #   center (dist=0) → equator (theta=π/2, present moment)
+        #   edge (dist=max) → poles (theta→0 or π, past/future)
+        max_dist = 45.0  # diagonal of 64x64 grid
+        normalized_dist = min(1.0, self.distance_from_center / max_dist)
+        theta = math.pi / 2 + (normalized_dist * math.pi / 2)  # equator → south pole
+        theta = min(theta, math.pi)
+
+        # Map angle directly to phi [0, 2π)
+        phi = self.angle % (2 * math.pi)
+
         return {
-            "position": f"v_{self.x}_{self.y}",
             "concept": f"visual_{self.x}_{self.y}",
+            "theta": theta,
+            "phi": phi,
+            "radius": 1.0,
             "heat": self.heat * K,  # Scale to K units
             "righteousness": self.righteous_alignment,
             "existence": self.existence,
@@ -504,12 +522,14 @@ def integrate_vision_step(manifold, vision_step: VisionStep) -> int:
             existing.add_heat(node_data["heat"])
             affected += 1
         else:
-            # Create new node
+            # Create new node with angular coordinates
             try:
                 from core.nodes import Node
                 node = Node(
                     concept=node_data["concept"],
-                    position=node_data["position"],
+                    theta=node_data["theta"],
+                    phi=node_data["phi"],
+                    radius=node_data["radius"],
                     heat=node_data["heat"],
                     righteousness=node_data["righteousness"],
                     existence=node_data["existence"]

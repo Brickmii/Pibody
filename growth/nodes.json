@@ -1,0 +1,227 @@
+{
+  "count": 6,
+  "nodes": {
+    "b18b03df-b44a-4979-9d4d-594fbce8fe37": {
+      "id": "b18b03df-b44a-4979-9d4d-594fbce8fe37",
+      "concept": "bootstrap_N",
+      "theta": 1.5707963267948966,
+      "phi": 1.5707963267948966,
+      "radius": 1.0,
+      "heat": 2.4721359549995796,
+      "polarity": 1,
+      "existence": "actual",
+      "righteousness": 1.0,
+      "order": 1,
+      "constraint_type": "successor",
+      "t_K": 0,
+      "created_t_K": 0,
+      "potential_units": 0,
+      "tags": [],
+      "frame": {
+        "origin": "bootstrap_N",
+        "x_axis": "S",
+        "y_axis": null,
+        "z_axis": null,
+        "axes": {
+          "S": {
+            "target_id": "afbbaf61-dcbf-48c0-90ee-b1e2632eaf7a",
+            "direction": "S",
+            "polarity": 1,
+            "traversal_count": 1,
+            "last_traversed": 1770494935.3130543,
+            "order": null
+          }
+        }
+      }
+    },
+    "789ad3f0-23f5-4d9c-bdf5-dd0d4e257785": {
+      "id": "789ad3f0-23f5-4d9c-bdf5-dd0d4e257785",
+      "concept": "bootstrap_S",
+      "theta": 1.5707963267948966,
+      "phi": 4.71238898038469,
+      "radius": 1.0,
+      "heat": 4.0,
+      "polarity": -1,
+      "existence": "actual",
+      "righteousness": 1.0,
+      "order": 2,
+      "constraint_type": "successor",
+      "t_K": 0,
+      "created_t_K": 0,
+      "potential_units": 0,
+      "tags": [],
+      "frame": {
+        "origin": "bootstrap_S",
+        "x_axis": "N",
+        "y_axis": null,
+        "z_axis": null,
+        "axes": {
+          "N": {
+            "target_id": "afbbaf61-dcbf-48c0-90ee-b1e2632eaf7a",
+            "direction": "N",
+            "polarity": -1,
+            "traversal_count": 1,
+            "last_traversed": 1770494935.3133316,
+            "order": null
+          }
+        }
+      }
+    },
+    "d3d5fddb-a3e9-417c-abe8-bef70e284439": {
+      "id": "d3d5fddb-a3e9-417c-abe8-bef70e284439",
+      "concept": "bootstrap_E",
+      "theta": 1.5707963267948966,
+      "phi": 0.0,
+      "radius": 1.0,
+      "heat": 6.47213595499958,
+      "polarity": 1,
+      "existence": "actual",
+      "righteousness": 1.0,
+      "order": 3,
+      "constraint_type": "successor",
+      "t_K": 0,
+      "created_t_K": 0,
+      "potential_units": 0,
+      "tags": [],
+      "frame": {
+        "origin": "bootstrap_E",
+        "x_axis": "W",
+        "y_axis": null,
+        "z_axis": null,
+        "axes": {
+          "W": {
+            "target_id": "afbbaf61-dcbf-48c0-90ee-b1e2632eaf7a",
+            "direction": "W",
+            "polarity": 1,
+            "traversal_count": 1,
+            "last_traversed": 1770494935.3135116,
+            "order": null
+          }
+        }
+      }
+    },
+    "93eab5ad-3cc4-404d-b35f-f2882714a1db": {
+      "id": "93eab5ad-3cc4-404d-b35f-f2882714a1db",
+      "concept": "bootstrap_W",
+      "theta": 1.5707963267948966,
+      "phi": 3.141592653589793,
+      "radius": 1.0,
+      "heat": 10.472135954999581,
+      "polarity": -1,
+      "existence": "actual",
+      "righteousness": 1.0,
+      "order": 4,
+      "constraint_type": "successor",
+      "t_K": 0,
+      "created_t_K": 0,
+      "potential_units": 0,
+      "tags": [],
+      "frame": {
+        "origin": "bootstrap_W",
+        "x_axis": "E",
+        "y_axis": null,
+        "z_axis": null,
+        "axes": {
+          "E": {
+            "target_id": "afbbaf61-dcbf-48c0-90ee-b1e2632eaf7a",
+            "direction": "E",
+            "polarity": -1,
+            "traversal_count": 1,
+            "last_traversed": 1770494935.3136811,
+            "order": null
+          }
+        }
+      }
+    },
+    "ac55c5e7-c5f2-410b-9696-dfd5e7a90744": {
+      "id": "ac55c5e7-c5f2-410b-9696-dfd5e7a90744",
+      "concept": "bootstrap_U",
+      "theta": 0.0,
+      "phi": 0.0,
+      "radius": 1.0,
+      "heat": 16.944271909999163,
+      "polarity": 1,
+      "existence": "actual",
+      "righteousness": 1.0,
+      "order": 5,
+      "constraint_type": "successor",
+      "t_K": 0,
+      "created_t_K": 0,
+      "potential_units": 0,
+      "tags": [],
+      "frame": {
+        "origin": "bootstrap_U",
+        "x_axis": "S",
+        "y_axis": null,
+        "z_axis": null,
+        "axes": {
+          "S": {
+            "target_id": "afbbaf61-dcbf-48c0-90ee-b1e2632eaf7a",
+            "direction": "S",
+            "polarity": 1,
+            "traversal_count": 1,
+            "last_traversed": 1770494935.3138373,
+            "order": null
+          }
+        }
+      }
+    },
+    "71bc0816-5bca-4f5a-9d62-2b5afa80bbc6": {
+      "id": "71bc0816-5bca-4f5a-9d62-2b5afa80bbc6",
+      "concept": "bootstrap_d",
+      "theta": 3.141592653589793,
+      "phi": 0.0,
+      "radius": 1.0,
+      "heat": 304.0526224699858,
+      "polarity": -1,
+      "existence": "actual",
+      "righteousness": 0.0,
+      "order": 6,
+      "constraint_type": "identity",
+      "t_K": 0,
+      "created_t_K": 0,
+      "potential_units": 0,
+      "tags": [],
+      "frame": {
+        "origin": "bootstrap_d",
+        "x_axis": "U",
+        "y_axis": "identity",
+        "z_axis": "ego",
+        "axes": {
+          "U": {
+            "target_id": "afbbaf61-dcbf-48c0-90ee-b1e2632eaf7a",
+            "direction": "U",
+            "polarity": 1,
+            "traversal_count": 1,
+            "last_traversed": 1770494935.3140144,
+            "order": null
+          },
+          "identity": {
+            "target_id": "39a6b07d-7027-41d0-be0e-5a0b50a49cd1",
+            "direction": "identity",
+            "polarity": 1,
+            "traversal_count": 1,
+            "last_traversed": 1770494935.3145044,
+            "order": null
+          },
+          "ego": {
+            "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+            "direction": "ego",
+            "polarity": 1,
+            "traversal_count": 1,
+            "last_traversed": 1770494935.3145072,
+            "order": null
+          },
+          "conscience": {
+            "target_id": "d2cd06f9-dac2-4457-aec4-e5b068e993c3",
+            "direction": "conscience",
+            "polarity": 1,
+            "traversal_count": 1,
+            "last_traversed": 1770494935.3145096,
+            "order": null
+          }
+        }
+      }
+    }
+  }
+}

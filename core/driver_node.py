@@ -409,9 +409,11 @@ def create_plan(name: str, goal: str, steps: List[MotorAction],
 # DRIVER NODE - Environment interface with tag-based integration
 # ═══════════════════════════════════════════════════════════════════════════════
 
+import math
 import os
 import json
 from .node_constants import K, THRESHOLD_ORDER, THRESHOLD_RIGHTEOUSNESS, get_growth_path
+from .hypersphere import SpherePosition, place_node_near
 
 
 class DriverNode:
@@ -494,10 +496,12 @@ class DriverNode:
         
         from .nodes import Node
         
-        # Create node
+        # Create node — place near north pole (task level, "above" equator)
         self.node = Node(
             concept=self.name,
-            position="u",  # Drivers go "up" (task level)
+            theta=math.pi / 4,  # 45° from north pole (task level)
+            phi=0.0,
+            radius=1.0,
             heat=K,
             polarity=1,
             existence="actual",
@@ -657,9 +661,21 @@ class DriverNode:
             from .nodes import Node
             task_node = self.manifold.get_node_by_concept(state_key)
             if not task_node:
+                # Place near this driver's node on the hypersphere
+                if self.node:
+                    target = SpherePosition(theta=self.node.theta, phi=self.node.phi)
+                else:
+                    target = SpherePosition(theta=math.pi / 4, phi=0.0)
+                existing = [
+                    SpherePosition(theta=n.theta, phi=n.phi)
+                    for n in self.manifold.nodes.values()
+                ]
+                placed = place_node_near(target, existing)
                 task_node = Node(
                     concept=state_key,
-                    position=self.node.position + "n" if self.node else "un",
+                    theta=placed.theta,
+                    phi=placed.phi,
+                    radius=1.0,
                     heat=K * 0.5,
                     righteousness=0.5
                 )

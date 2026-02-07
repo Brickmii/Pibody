@@ -204,6 +204,20 @@ class APIHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._send_error(str(e))
         
+        elif path == '/request_world':
+            # Request world state from connected PC body
+            if not self.daemon.body_server or not self.daemon.body_server.has_body:
+                self._send_error("No body connected", 503)
+                return
+            try:
+                world = self.daemon.body_server.request_world(timeout=10.0)
+                if world:
+                    self._send_json({"status": "ok", "world": world})
+                else:
+                    self._send_error("World request timed out or failed", 504)
+            except Exception as e:
+                self._send_error(str(e))
+
         elif path == '/choose':
             # Force environment choice
             if self.daemon.chooser:

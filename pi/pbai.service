@@ -1,0 +1,26 @@
+[Unit]
+Description=PBAI Thermal Manifold Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/pbai
+Environment="PYTHONPATH=/home/pi/pbai"
+Environment="ANTHROPIC_API_KEY="
+ExecStart=/usr/bin/python3 -m pi.daemon --port 8420
+Restart=always
+RestartSec=10
+
+# Resource limits
+MemoryMax=2G
+CPUQuota=80%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pbai
+
+[Install]
+WantedBy=multi-user.target

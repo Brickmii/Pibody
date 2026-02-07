@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "created": "2026-01-27T21:26:55.453973",
+    "last_modified": "2026-01-31T10:29:16.201222",
+    "node_count": 2278,
+    "total_heat": 72787.24535398437,
+    "loop_number": 86034,
+    "entropy": 1546813.0955673214,
+    "version": 2,
+    "born": true,
+    "distributed": true
+  },
+  "self": {
+    "id": "483304d5-c195-40eb-8cc9-ca4cc0f4e144",
+    "concept": "self",
+    "position": "",
+    "heat": Infinity,
+    "polarity": 0,
+    "existence": "actual",
+    "righteousness": 0.0,
+    "order": 0,
+    "constraint_type": "identity",
+    "t_K": 86034,
+    "created_t_K": 0,
+    "potential_units": 0,
+    "tags": [],
+    "frame": {
+      "origin": "self",
+      "x_axis": null,
+      "y_axis": null,
+      "z_axis": null,
+      "axes": {}
+    },
+    "universal_position": "origin",
+    "is_self": true
+  },
+  "psychology": {
+    "identity": "eb80a09f-9597-4557-8bb4-ea5846976873",
+    "ego": "edb0268d-6739-4a2f-bcc7-80e14e9277f5",
+    "conscience": "2cb59948-1969-4185-bbb7-3a3d6e40fbd3"
+  }
+}

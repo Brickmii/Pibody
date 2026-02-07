@@ -111,7 +111,9 @@ class APIHandler(BaseHTTPRequestHandler):
                 "node_list": [
                     {
                         "concept": n.concept,
-                        "position": n.position,
+                        "theta": n.theta,
+                        "phi": n.phi,
+                        "radius": n.radius,
                         "heat": n.heat,
                         "axes": len(n.frame.axes)
                     }

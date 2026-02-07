@@ -285,15 +285,16 @@ class PBAIDaemon:
             simulated_thermal: Use simulated thermal (for testing)
             enable_vision: Enable visual cortex integration
         """
-        self.save_path = save_path or os.path.expanduser("~/.pbai/growth_map.json")
+        self.save_path = save_path  # None = use default growth/ directory
         self.enable_api = enable_api
         self.api_port = api_port
         self.enable_body = enable_body
         self.body_port = body_port
         self.enable_vision = enable_vision
         
-        # Ensure save directory exists
-        os.makedirs(os.path.dirname(self.save_path), exist_ok=True)
+        # Ensure save directory exists (only for custom paths)
+        if self.save_path:
+            os.makedirs(os.path.dirname(self.save_path), exist_ok=True)
         
         # Core components (initialized in start())
         self.manifold: Optional[Manifold] = None
@@ -415,23 +416,10 @@ class PBAIDaemon:
         logger.info("═══ PBAI DAEMON STOPPED ═══")
     
     def _init_manifold(self):
-        """Initialize or load the manifold."""
-        self.manifold = Manifold()
-        
-        # Try to load existing state
-        if os.path.exists(self.save_path):
-            try:
-                self.manifold.load_growth_map(self.save_path)
-                logger.info(f"Loaded manifold from {self.save_path}")
-                logger.info(f"  Nodes: {len(self.manifold.nodes)}")
-                logger.info(f"  Loop: {self.manifold.loop_number}")
-                return
-            except Exception as e:
-                logger.warning(f"Failed to load manifold: {e}")
-        
-        # Fresh start
-        self.manifold.birth()
-        logger.info("Fresh manifold created")
+        """Initialize or load the manifold using the singleton loader."""
+        from core import get_pbai_manifold
+        self.manifold = get_pbai_manifold(self.save_path)
+        logger.info(f"Manifold ready: {len(self.manifold.nodes)} nodes, born={self.manifold.born}")
     
     def _init_visual_cortex(self):
         """Initialize visual cortex for vision integration."""

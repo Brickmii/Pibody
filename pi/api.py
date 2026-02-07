@@ -218,6 +218,18 @@ class APIHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._send_error(str(e))
 
+        elif path == '/body/action':
+            # Send raw motor command to connected PC body
+            if not self.daemon.body_server or not self.daemon.body_server.has_body:
+                self._send_error("No body connected", 503)
+                return
+            try:
+                body = self._read_body()
+                success = self.daemon.body_server.send_action(body, timeout=5.0)
+                self._send_json({"status": "ok", "sent": success})
+            except Exception as e:
+                self._send_error(str(e))
+
         elif path == '/choose':
             # Force environment choice
             if self.daemon.chooser:

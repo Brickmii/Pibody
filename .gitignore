@@ -2,3 +2,8 @@
 .claude/
 __pycache__/
 *.pyc
+decisions/
+drivers/blackjack/
+drivers/maze/
+drivers/minecraft/frame.json
+drivers/test_driver/

@@ -5,10 +5,10 @@
     "theta": 2.670353755551324,
     "phi": 2.399963229728653,
     "radius": 1.0,
-    "heat": 194.99535029548858,
+    "heat": 0.05572809000084118,
     "polarity": 1,
     "existence": "actual",
-    "righteousness": 0.0,
+    "righteousness": 2.0,
     "order": 2,
     "constraint_type": "identity",
     "t_K": 0,
@@ -25,8 +25,8 @@
           "target_id": "71bc0816-5bca-4f5a-9d62-2b5afa80bbc6",
           "direction": "abstract_root",
           "polarity": 1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.314513,
+          "traversal_count": 3,
+          "last_traversed": 1770503969.6074553,
           "order": null
         },
         "identity": {
@@ -41,8 +41,8 @@
           "target_id": "d2cd06f9-dac2-4457-aec4-e5b068e993c3",
           "direction": "conscience",
           "polarity": 1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.3145177,
+          "traversal_count": 1748,
+          "last_traversed": 1770504550.0482368,
           "order": null
         }
       }
@@ -53,6 +53,6 @@
       0.0
     ]
   },
-  "heat": 194.99535029548858,
+  "heat": 0.05572809000084118,
   "axes_count": 3
 }

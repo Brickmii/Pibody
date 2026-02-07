@@ -5,7 +5,7 @@
     "theta": 2.670353755551324,
     "phi": 0.0,
     "radius": 1.0,
-    "heat": 460.23940788138964,
+    "heat": 0.05572809000084118,
     "polarity": 1,
     "existence": "actual",
     "righteousness": 0.0,
@@ -25,24 +25,32 @@
           "target_id": "71bc0816-5bca-4f5a-9d62-2b5afa80bbc6",
           "direction": "abstract_root",
           "polarity": 1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.3145115,
+          "traversal_count": 1572,
+          "last_traversed": 1770504595.3171914,
           "order": null
         },
         "ego": {
           "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
           "direction": "ego",
           "polarity": 1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.314515,
+          "traversal_count": 3287,
+          "last_traversed": 1770504595.3172264,
           "order": null
         },
         "conscience": {
           "target_id": "d2cd06f9-dac2-4457-aec4-e5b068e993c3",
           "direction": "conscience",
           "polarity": 1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.3145208,
+          "traversal_count": 3449,
+          "last_traversed": 1770504595.2150757,
+          "order": null
+        },
+        "bootstrap_d": {
+          "target_id": "71bc0816-5bca-4f5a-9d62-2b5afa80bbc6",
+          "direction": "bootstrap_d",
+          "polarity": 1,
+          "traversal_count": 4847,
+          "last_traversed": 1770504595.3171933,
           "order": null
         }
       }
@@ -53,6 +61,6 @@
       0.0
     ]
   },
-  "heat": 460.23940788138964,
-  "axes_count": 3
+  "heat": 0.05572809000084118,
+  "axes_count": 4
 }

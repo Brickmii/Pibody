@@ -5,7 +5,7 @@
     "theta": 2.670353755551324,
     "phi": 4.799926459457306,
     "radius": 1.0,
-    "heat": 62.870610496769125,
+    "heat": 144.2079209151766,
     "polarity": 1,
     "existence": "actual",
     "righteousness": 0.0,
@@ -44,6 +44,4526 @@
           "traversal_count": 1,
           "last_traversed": 1770494935.314522,
           "order": null
+        },
+        "maze_4_9|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_9|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502152.4504719,
+          "order": null
+        },
+        "maze_9_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770496511.3524005,
+          "order": null
+        },
+        "maze_2_13|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_13|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502012.910982,
+          "order": null
+        },
+        "maze_1_6|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_6|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770499141.9777324,
+          "order": null
+        },
+        "maze_2_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503102.1086993,
+          "order": null
+        },
+        "maze_1_2|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_2|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 12,
+          "last_traversed": 1770502180.386924,
+          "order": null
+        },
+        "maze_3_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502061.622817,
+          "order": null
+        },
+        "maze_5_2|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_2|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502067.573541,
+          "order": null
+        },
+        "maze_7_3|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_3|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770502188.554648,
+          "order": null
+        },
+        "maze_6_7|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_7|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502010.1341531,
+          "order": null
+        },
+        "maze_5_12|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_12|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770496769.3674474,
+          "order": null
+        },
+        "maze_3_11|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_11|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770496770.0698388,
+          "order": null
+        },
+        "maze_3_8|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_8|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770499142.2063813,
+          "order": null
+        },
+        "maze_8_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 9,
+          "last_traversed": 1770502183.4640777,
+          "order": null
+        },
+        "maze_2_7|u:S\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_7|u:S\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770498084.4064167,
+          "order": null
+        },
+        "maze_3_10|u:E\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_10|u:E\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770498084.412575,
+          "order": null
+        },
+        "maze_1_11|u:EW\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_11|u:EW\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770498084.4267547,
+          "order": null
+        },
+        "maze_1_1|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_1|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 12,
+          "last_traversed": 1770502180.2308154,
+          "order": null
+        },
+        "maze_1_3|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_3|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770499142.4766147,
+          "order": null
+        },
+        "maze_1_3|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_3|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 9,
+          "last_traversed": 1770503101.1361687,
+          "order": null
+        },
+        "maze_1_4|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_4|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 10,
+          "last_traversed": 1770503101.2951367,
+          "order": null
+        },
+        "maze_3_6|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_6|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770498084.4696252,
+          "order": null
+        },
+        "maze_1_7|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_7|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502151.1910894,
+          "order": null
+        },
+        "maze_2_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502012.329529,
+          "order": null
+        },
+        "maze_3_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502175.588964,
+          "order": null
+        },
+        "maze_5_9|u:S\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_9|u:S\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770498084.5251093,
+          "order": null
+        },
+        "maze_7_10|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_10|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502178.4007416,
+          "order": null
+        },
+        "maze_6_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502144.4189272,
+          "order": null
+        },
+        "maze_8_15|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_15|u:S\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770498084.5676045,
+          "order": null
+        },
+        "maze_9_16|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_16|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770498084.5783565,
+          "order": null
+        },
+        "maze_11_17|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_17|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503109.7990208,
+          "order": null
+        },
+        "maze_11_15|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_15|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770498084.6011934,
+          "order": null
+        },
+        "maze_12_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770498084.6117988,
+          "order": null
+        },
+        "maze_1_2|u:E\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_2|u:E\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770498084.6377592,
+          "order": null
+        },
+        "maze_1_7|u:E\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_7|u:E\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770498084.6576626,
+          "order": null
+        },
+        "maze_2_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 11,
+          "last_traversed": 1770503099.0299587,
+          "order": null
+        },
+        "maze_3_1|u:S\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_1|u:S\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502123.747088,
+          "order": null
+        },
+        "maze_3_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 15,
+          "last_traversed": 1770503099.2930627,
+          "order": null
+        },
+        "maze_1_3|u:E\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_3|u:E\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499141.8695588,
+          "order": null
+        },
+        "maze_1_5|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_5|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 7,
+          "last_traversed": 1770503101.4605825,
+          "order": null
+        },
+        "maze_1_6|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_6|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 7,
+          "last_traversed": 1770503101.6872218,
+          "order": null
+        },
+        "maze_1_8|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_8|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502151.3442645,
+          "order": null
+        },
+        "maze_1_9|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_9|u:S\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499142.0992534,
+          "order": null
+        },
+        "maze_1_9|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_9|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502151.5459988,
+          "order": null
+        },
+        "maze_2_9|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_9|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502151.8990915,
+          "order": null
+        },
+        "maze_3_9|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_9|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499142.1801128,
+          "order": null
+        },
+        "maze_3_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770503102.2675989,
+          "order": null
+        },
+        "maze_4_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770503102.4199297,
+          "order": null
+        },
+        "maze_5_7|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_7|u:S\u2192W",
+          "polarity": -1,
+          "traversal_count": 2,
+          "last_traversed": 1770499142.2851863,
+          "order": null
+        },
+        "maze_5_7|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_7|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499142.3391228,
+          "order": null
+        },
+        "maze_1_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503101.9266167,
+          "order": null
+        },
+        "maze_3_7|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_7|u:S\u2192N",
+          "polarity": -1,
+          "traversal_count": 2,
+          "last_traversed": 1770499142.6679296,
+          "order": null
+        },
+        "maze_5_7|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_7|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502010.280811,
+          "order": null
+        },
+        "maze_5_8|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_8|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502010.5420532,
+          "order": null
+        },
+        "maze_5_9|u:NS\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_9|u:NS\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499142.8107228,
+          "order": null
+        },
+        "maze_6_9|u:S\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_9|u:S\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499142.8368597,
+          "order": null
+        },
+        "maze_6_9|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_9|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502153.03903,
+          "order": null
+        },
+        "maze_7_9|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_9|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502153.2245357,
+          "order": null
+        },
+        "maze_7_8|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_8|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502153.6243234,
+          "order": null
+        },
+        "maze_7_7|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_7|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502153.7776852,
+          "order": null
+        },
+        "maze_7_6|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_6|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502154.6058784,
+          "order": null
+        },
+        "maze_7_5|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_5|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502154.7599778,
+          "order": null
+        },
+        "maze_6_5|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_5|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502154.913545,
+          "order": null
+        },
+        "maze_5_5|u:N\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_5|u:N\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499143.0509143,
+          "order": null
+        },
+        "maze_5_5|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_5|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502155.1757205,
+          "order": null
+        },
+        "maze_4_5|u:N\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_5|u:N\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499143.104103,
+          "order": null
+        },
+        "maze_4_5|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_5|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503103.0422306,
+          "order": null
+        },
+        "maze_3_5|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_5|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502156.4144697,
+          "order": null
+        },
+        "maze_3_4|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_4|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502157.1586082,
+          "order": null
+        },
+        "maze_3_3|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_3|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 7,
+          "last_traversed": 1770502181.1998317,
+          "order": null
+        },
+        "maze_3_2|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_2|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 7,
+          "last_traversed": 1770502181.3536968,
+          "order": null
+        },
+        "maze_4_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 14,
+          "last_traversed": 1770503099.4462883,
+          "order": null
+        },
+        "maze_5_1|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_1|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499143.355164,
+          "order": null
+        },
+        "maze_5_1|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_1|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 7,
+          "last_traversed": 1770503099.5989437,
+          "order": null
+        },
+        "maze_5_2|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_2|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 7,
+          "last_traversed": 1770503100.2572775,
+          "order": null
+        },
+        "maze_5_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770502125.0524008,
+          "order": null
+        },
+        "maze_6_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770502125.2044568,
+          "order": null
+        },
+        "maze_1_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 10,
+          "last_traversed": 1770503098.5332553,
+          "order": null
+        },
+        "maze_4_1|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_1|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502181.770573,
+          "order": null
+        },
+        "maze_5_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 9,
+          "last_traversed": 1770502187.8324664,
+          "order": null
+        },
+        "maze_6_1|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_1|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502182.7964718,
+          "order": null
+        },
+        "maze_6_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 9,
+          "last_traversed": 1770502187.9865959,
+          "order": null
+        },
+        "maze_7_1|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_1|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770502188.1399636,
+          "order": null
+        },
+        "maze_7_2|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_2|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770502188.293465,
+          "order": null
+        },
+        "maze_7_3|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_3|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502104.362318,
+          "order": null
+        },
+        "maze_6_3|u:N\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_3|u:N\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499143.8427246,
+          "order": null
+        },
+        "maze_6_3|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_3|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502158.9414282,
+          "order": null
+        },
+        "maze_5_3|u:N\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_3|u:N\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499143.9052007,
+          "order": null
+        },
+        "maze_5_3|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_3|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503100.4096808,
+          "order": null
+        },
+        "maze_4_3|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_3|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503100.562102,
+          "order": null
+        },
+        "maze_3_3|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_3|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502068.4427845,
+          "order": null
+        },
+        "maze_3_4|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_4|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502068.702516,
+          "order": null
+        },
+        "maze_3_5|u:E\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_5|u:E\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499144.0827081,
+          "order": null
+        },
+        "maze_3_5|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_5|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770499144.1122544,
+          "order": null
+        },
+        "maze_3_6|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_6|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502155.633555,
+          "order": null
+        },
+        "maze_7_4|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_4|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502188.7071767,
+          "order": null
+        },
+        "maze_7_5|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_5|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503103.8682444,
+          "order": null
+        },
+        "maze_7_6|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_6|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503104.021479,
+          "order": null
+        },
+        "maze_7_7|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_7|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503104.177367,
+          "order": null
+        },
+        "maze_7_8|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_8|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500752.757631,
+          "order": null
+        },
+        "maze_7_8|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_8|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503104.3312066,
+          "order": null
+        },
+        "maze_7_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503104.4842587,
+          "order": null
+        },
+        "maze_6_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503104.918784,
+          "order": null
+        },
+        "maze_5_9|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_9|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503105.3221257,
+          "order": null
+        },
+        "maze_5_10|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_10|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503105.71527,
+          "order": null
+        },
+        "maze_5_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503105.9761746,
+          "order": null
+        },
+        "maze_6_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503106.1289299,
+          "order": null
+        },
+        "maze_7_11|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_11|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503106.6310794,
+          "order": null
+        },
+        "maze_7_12|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_12|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503106.785446,
+          "order": null
+        },
+        "maze_7_13|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_13|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500754.8169541,
+          "order": null
+        },
+        "maze_7_14|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_14|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500754.955284,
+          "order": null
+        },
+        "maze_7_15|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_15|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503108.5586495,
+          "order": null
+        },
+        "maze_7_16|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_16|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503108.7111855,
+          "order": null
+        },
+        "maze_7_17|u:NS\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_17|u:NS\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503108.9718235,
+          "order": null
+        },
+        "maze_8_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770503109.1242032,
+          "order": null
+        },
+        "maze_9_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770503109.2771113,
+          "order": null
+        },
+        "maze_10_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770503109.429354,
+          "order": null
+        },
+        "maze_11_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502145.6428494,
+          "order": null
+        },
+        "maze_12_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502145.795139,
+          "order": null
+        },
+        "maze_13_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503110.9836404,
+          "order": null
+        },
+        "maze_14_17|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_17|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500756.6440012,
+          "order": null
+        },
+        "maze_14_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503111.1368299,
+          "order": null
+        },
+        "maze_15_17|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_17|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500757.0096834,
+          "order": null
+        },
+        "maze_15_16|u:W\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_16|u:W\u2192E",
+          "polarity": -1,
+          "traversal_count": 2,
+          "last_traversed": 1770500757.2566664,
+          "order": null
+        },
+        "maze_15_16|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_16|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500757.7102787,
+          "order": null
+        },
+        "maze_15_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502018.6398683,
+          "order": null
+        },
+        "maze_16_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502018.8176422,
+          "order": null
+        },
+        "maze_17_15|u:EW\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_15|u:EW\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502019.0804787,
+          "order": null
+        },
+        "maze_17_14|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_14|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502019.2275565,
+          "order": null
+        },
+        "maze_17_13|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_13|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502022.044782,
+          "order": null
+        },
+        "maze_17_12|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_12|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502164.2141275,
+          "order": null
+        },
+        "maze_17_11|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_11|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503118.665787,
+          "order": null
+        },
+        "maze_17_10|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_10|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503118.818073,
+          "order": null
+        },
+        "maze_17_9|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_9|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503118.9704692,
+          "order": null
+        },
+        "maze_17_8|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_8|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503119.1226144,
+          "order": null
+        },
+        "maze_17_7|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_7|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500759.3527055,
+          "order": null
+        },
+        "maze_16_7|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_7|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500759.491901,
+          "order": null
+        },
+        "maze_15_7|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_7|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500759.6315238,
+          "order": null
+        },
+        "maze_14_7|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_7|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500759.7710536,
+          "order": null
+        },
+        "maze_13_7|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_7|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500760.126989,
+          "order": null
+        },
+        "maze_13_8|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_8|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500760.2665784,
+          "order": null
+        },
+        "maze_13_9|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_9|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502025.3016555,
+          "order": null
+        },
+        "maze_13_10|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_10|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500760.5454924,
+          "order": null
+        },
+        "maze_13_10|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_10|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502025.6707635,
+          "order": null
+        },
+        "maze_13_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770500761.0216622,
+          "order": null
+        },
+        "maze_5_2|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_2|u:E\u2192W",
+          "polarity": -1,
+          "traversal_count": 3,
+          "last_traversed": 1770503099.7575068,
+          "order": null
+        },
+        "maze_5_3|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_3|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502175.8944404,
+          "order": null
+        },
+        "maze_5_4|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_4|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502176.1565793,
+          "order": null
+        },
+        "maze_5_5|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_5|u:S\u2192W",
+          "polarity": -1,
+          "traversal_count": 2,
+          "last_traversed": 1770502007.9754717,
+          "order": null
+        },
+        "maze_5_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503103.3218646,
+          "order": null
+        },
+        "maze_6_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503103.71512,
+          "order": null
+        },
+        "maze_7_7|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_7|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502009.986734,
+          "order": null
+        },
+        "maze_5_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502078.9981437,
+          "order": null
+        },
+        "maze_4_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502079.258855,
+          "order": null
+        },
+        "maze_3_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502011.2699835,
+          "order": null
+        },
+        "maze_2_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502011.4229152,
+          "order": null
+        },
+        "maze_1_9|u:EW\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_9|u:EW\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502011.5683076,
+          "order": null
+        },
+        "maze_1_10|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_10|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502011.8222914,
+          "order": null
+        },
+        "maze_1_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502012.1842523,
+          "order": null
+        },
+        "maze_3_11|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_11|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502012.4748368,
+          "order": null
+        },
+        "maze_3_12|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_12|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502012.6201398,
+          "order": null
+        },
+        "maze_3_13|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_13|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502012.7654994,
+          "order": null
+        },
+        "maze_1_13|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_13|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502013.0573287,
+          "order": null
+        },
+        "maze_1_14|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_14|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502013.202846,
+          "order": null
+        },
+        "maze_1_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502013.3488235,
+          "order": null
+        },
+        "maze_2_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502013.494953,
+          "order": null
+        },
+        "maze_3_15|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_15|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502143.0896115,
+          "order": null
+        },
+        "maze_3_16|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_16|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502143.6989548,
+          "order": null
+        },
+        "maze_3_17|u:NS\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_17|u:NS\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502143.8515987,
+          "order": null
+        },
+        "maze_4_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502144.1123533,
+          "order": null
+        },
+        "maze_5_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502144.2657585,
+          "order": null
+        },
+        "maze_7_17|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_17|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502014.8483415,
+          "order": null
+        },
+        "maze_7_16|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_16|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502014.994213,
+          "order": null
+        },
+        "maze_7_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502049.8663538,
+          "order": null
+        },
+        "maze_8_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502050.127643,
+          "order": null
+        },
+        "maze_9_15|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_15|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502114.500997,
+          "order": null
+        },
+        "maze_9_14|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_14|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502114.6532838,
+          "order": null
+        },
+        "maze_9_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502015.7397807,
+          "order": null
+        },
+        "maze_10_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502015.8865337,
+          "order": null
+        },
+        "maze_11_13|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_13|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502016.0518994,
+          "order": null
+        },
+        "maze_11_14|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_14|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502016.2497122,
+          "order": null
+        },
+        "maze_11_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503110.1270394,
+          "order": null
+        },
+        "maze_12_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503110.2815266,
+          "order": null
+        },
+        "maze_13_15|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_15|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502016.9318175,
+          "order": null
+        },
+        "maze_13_14|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_14|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502017.2806385,
+          "order": null
+        },
+        "maze_13_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502017.5087287,
+          "order": null
+        },
+        "maze_14_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502017.7397687,
+          "order": null
+        },
+        "maze_15_13|u:E\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_13|u:E\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502017.9201162,
+          "order": null
+        },
+        "maze_15_13|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_13|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502018.2352252,
+          "order": null
+        },
+        "maze_15_14|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_14|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502018.4182801,
+          "order": null
+        },
+        "maze_17_13|u:W\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_13|u:W\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502019.37503,
+          "order": null
+        },
+        "maze_17_15|u:E\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_15|u:E\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502019.7182367,
+          "order": null
+        },
+        "maze_17_15|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_15|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502171.735024,
+          "order": null
+        },
+        "maze_17_16|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_16|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502171.8880932,
+          "order": null
+        },
+        "maze_17_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502172.0411277,
+          "order": null
+        },
+        "maze_16_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502172.1950758,
+          "order": null
+        },
+        "maze_15_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502172.3478734,
+          "order": null
+        },
+        "maze_14_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502172.50077,
+          "order": null
+        },
+        "maze_13_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502172.65333,
+          "order": null
+        },
+        "maze_12_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502172.8063717,
+          "order": null
+        },
+        "maze_11_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502046.5190465,
+          "order": null
+        },
+        "maze_10_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502046.6888444,
+          "order": null
+        },
+        "maze_17_7|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_7|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503119.2758403,
+          "order": null
+        },
+        "maze_17_6|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_6|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503119.4294646,
+          "order": null
+        },
+        "maze_17_5|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_5|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502165.3887753,
+          "order": null
+        },
+        "maze_16_5|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_5|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502165.541426,
+          "order": null
+        },
+        "maze_15_5|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_5|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502135.6857626,
+          "order": null
+        },
+        "maze_15_6|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_6|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502135.8382564,
+          "order": null
+        },
+        "maze_15_7|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_7|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770503117.2030604,
+          "order": null
+        },
+        "maze_15_8|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_8|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770503117.3606248,
+          "order": null
+        },
+        "maze_15_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502076.1448824,
+          "order": null
+        },
+        "maze_14_9|u:N\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_9|u:N\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502024.9166243,
+          "order": null
+        },
+        "maze_14_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502076.2971382,
+          "order": null
+        },
+        "maze_13_11|u:NS\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_11|u:NS\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502025.8345275,
+          "order": null
+        },
+        "maze_12_11|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_11|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502025.9858086,
+          "order": null
+        },
+        "maze_11_11|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_11|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502026.134521,
+          "order": null
+        },
+        "maze_10_11|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_11|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502026.283357,
+          "order": null
+        },
+        "maze_9_11|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_11|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502026.431715,
+          "order": null
+        },
+        "maze_9_10|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_10|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502026.580196,
+          "order": null
+        },
+        "maze_9_9|u:NS\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_9|u:NS\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502026.7282534,
+          "order": null
+        },
+        "maze_10_9|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_9|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502026.8769734,
+          "order": null
+        },
+        "maze_11_9|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_9|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503116.2836943,
+          "order": null
+        },
+        "maze_11_8|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_8|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503116.4357605,
+          "order": null
+        },
+        "maze_11_7|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_7|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502027.3247664,
+          "order": null
+        },
+        "maze_11_6|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_6|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502027.47396,
+          "order": null
+        },
+        "maze_11_5|u:N\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_5|u:N\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502027.6229534,
+          "order": null
+        },
+        "maze_11_5|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_5|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502027.9683511,
+          "order": null
+        },
+        "maze_10_5|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_5|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502028.225348,
+          "order": null
+        },
+        "maze_9_5|u:EW\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_5|u:EW\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502028.3747969,
+          "order": null
+        },
+        "maze_9_4|u:W\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_4|u:W\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502028.523642,
+          "order": null
+        },
+        "maze_9_5|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_5|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502028.6730177,
+          "order": null
+        },
+        "maze_9_6|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_6|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502028.8222382,
+          "order": null
+        },
+        "maze_9_4|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_4|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502133.70326,
+          "order": null
+        },
+        "maze_9_3|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_3|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502104.0585604,
+          "order": null
+        },
+        "maze_8_3|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_3|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502104.2104578,
+          "order": null
+        },
+        "maze_7_3|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_3|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502125.3565643,
+          "order": null
+        },
+        "maze_7_2|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_2|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502125.5083928,
+          "order": null
+        },
+        "maze_7_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 7,
+          "last_traversed": 1770502183.3105447,
+          "order": null
+        },
+        "maze_9_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770502183.617587,
+          "order": null
+        },
+        "maze_10_1|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_1|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502030.4457557,
+          "order": null
+        },
+        "maze_10_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 7,
+          "last_traversed": 1770502183.7705479,
+          "order": null
+        },
+        "maze_11_1|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_1|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770502168.031742,
+          "order": null
+        },
+        "maze_3_1|u:E\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_1|u:E\u2192N",
+          "polarity": -1,
+          "traversal_count": 2,
+          "last_traversed": 1770502032.9069488,
+          "order": null
+        },
+        "maze_3_1|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_1|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502175.0654209,
+          "order": null
+        },
+        "maze_3_2|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_2|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502175.3270924,
+          "order": null
+        },
+        "maze_4_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502175.7417147,
+          "order": null
+        },
+        "maze_7_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502188.8600357,
+          "order": null
+        },
+        "maze_8_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502189.012517,
+          "order": null
+        },
+        "maze_9_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502189.1653864,
+          "order": null
+        },
+        "maze_10_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502189.3186178,
+          "order": null
+        },
+        "maze_11_5|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_5|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502189.4711993,
+          "order": null
+        },
+        "maze_11_4|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_4|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502189.8643205,
+          "order": null
+        },
+        "maze_11_3|u:W\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_3|u:W\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502035.8161054,
+          "order": null
+        },
+        "maze_11_3|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_3|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502190.1250784,
+          "order": null
+        },
+        "maze_11_2|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_2|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502190.2775855,
+          "order": null
+        },
+        "maze_11_1|u:NS\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_1|u:NS\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502190.430321,
+          "order": null
+        },
+        "maze_12_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502190.600252,
+          "order": null
+        },
+        "maze_13_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502127.5567236,
+          "order": null
+        },
+        "maze_14_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502127.7089434,
+          "order": null
+        },
+        "maze_15_1|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_1|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502128.0800452,
+          "order": null
+        },
+        "maze_15_2|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_2|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502128.2333405,
+          "order": null
+        },
+        "maze_15_3|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_3|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502191.383179,
+          "order": null
+        },
+        "maze_15_4|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_4|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502191.5360954,
+          "order": null
+        },
+        "maze_15_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502038.4627233,
+          "order": null
+        },
+        "maze_16_5|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_5|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502038.614234,
+          "order": null
+        },
+        "maze_16_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502038.8537326,
+          "order": null
+        },
+        "maze_17_5|u:EW\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_5|u:EW\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502039.0057664,
+          "order": null
+        },
+        "maze_17_4|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_4|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503120.3348215,
+          "order": null
+        },
+        "maze_17_3|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_3|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503120.488242,
+          "order": null
+        },
+        "maze_17_2|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_2|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503120.7492263,
+          "order": null
+        },
+        "maze_17_5|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_5|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502040.4025092,
+          "order": null
+        },
+        "maze_17_6|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_6|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502040.554202,
+          "order": null
+        },
+        "maze_17_7|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_7|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502040.7057595,
+          "order": null
+        },
+        "maze_17_7|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_7|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502040.9459505,
+          "order": null
+        },
+        "maze_17_8|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_8|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502041.0975108,
+          "order": null
+        },
+        "maze_17_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502041.249409,
+          "order": null
+        },
+        "maze_16_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502041.4255,
+          "order": null
+        },
+        "maze_15_9|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_9|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503117.5133011,
+          "order": null
+        },
+        "maze_15_10|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_10|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503117.6658063,
+          "order": null
+        },
+        "maze_15_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503117.818852,
+          "order": null
+        },
+        "maze_16_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503117.9713094,
+          "order": null
+        },
+        "maze_17_11|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_11|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502042.2980442,
+          "order": null
+        },
+        "maze_17_12|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_12|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503118.277676,
+          "order": null
+        },
+        "maze_17_13|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_13|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502171.428422,
+          "order": null
+        },
+        "maze_17_14|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_14|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502171.581852,
+          "order": null
+        },
+        "maze_17_15|u:N\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_15|u:N\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502042.9050636,
+          "order": null
+        },
+        "maze_17_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503112.8598948,
+          "order": null
+        },
+        "maze_16_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503113.038108,
+          "order": null
+        },
+        "maze_15_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502140.0141945,
+          "order": null
+        },
+        "maze_14_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502140.2758372,
+          "order": null
+        },
+        "maze_13_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502140.6460207,
+          "order": null
+        },
+        "maze_12_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502140.7988555,
+          "order": null
+        },
+        "maze_11_15|u:E\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_15|u:E\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502044.620269,
+          "order": null
+        },
+        "maze_11_15|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_15|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502044.86003,
+          "order": null
+        },
+        "maze_11_16|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_16|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502045.012213,
+          "order": null
+        },
+        "maze_11_17|u:NS\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_17|u:NS\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502045.1637514,
+          "order": null
+        },
+        "maze_15_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503111.5420454,
+          "order": null
+        },
+        "maze_16_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503111.6947408,
+          "order": null
+        },
+        "maze_9_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502046.971341,
+          "order": null
+        },
+        "maze_8_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502047.131147,
+          "order": null
+        },
+        "maze_7_17|u:N\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_17|u:N\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502047.2899847,
+          "order": null
+        },
+        "maze_7_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502047.5341182,
+          "order": null
+        },
+        "maze_6_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502110.6959622,
+          "order": null
+        },
+        "maze_5_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502110.8482816,
+          "order": null
+        },
+        "maze_4_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502111.0003006,
+          "order": null
+        },
+        "maze_3_17|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_17|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502111.1541195,
+          "order": null
+        },
+        "maze_3_16|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_16|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502111.3075473,
+          "order": null
+        },
+        "maze_3_15|u:S\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_15|u:S\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502048.558416,
+          "order": null
+        },
+        "maze_3_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502048.9075377,
+          "order": null
+        },
+        "maze_4_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502049.060403,
+          "order": null
+        },
+        "maze_5_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502109.584874,
+          "order": null
+        },
+        "maze_6_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502109.8449726,
+          "order": null
+        },
+        "maze_7_15|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_15|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502049.6259716,
+          "order": null
+        },
+        "maze_1_3|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_3|u:S\u2192W",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502180.6486628,
+          "order": null
+        },
+        "maze_1_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770502180.8894439,
+          "order": null
+        },
+        "maze_2_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 6,
+          "last_traversed": 1770502181.0425544,
+          "order": null
+        },
+        "maze_5_1|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_1|u:S\u2192N",
+          "polarity": -1,
+          "traversal_count": 3,
+          "last_traversed": 1770502102.317995,
+          "order": null
+        },
+        "maze_9_5|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_5|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502133.5503683,
+          "order": null
+        },
+        "maze_9_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502055.881037,
+          "order": null
+        },
+        "maze_10_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502056.0351293,
+          "order": null
+        },
+        "maze_11_3|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_3|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502056.1869469,
+          "order": null
+        },
+        "maze_11_4|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_4|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502056.3390784,
+          "order": null
+        },
+        "maze_11_5|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_5|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502072.0637147,
+          "order": null
+        },
+        "maze_11_6|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_6|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502072.323808,
+          "order": null
+        },
+        "maze_11_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503116.588915,
+          "order": null
+        },
+        "maze_12_7|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_7|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502057.0547724,
+          "order": null
+        },
+        "maze_12_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503116.7413101,
+          "order": null
+        },
+        "maze_13_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503116.8941934,
+          "order": null
+        },
+        "maze_14_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770503117.0472941,
+          "order": null
+        },
+        "maze_15_7|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_7|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502057.7739894,
+          "order": null
+        },
+        "maze_15_6|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_6|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502058.1430538,
+          "order": null
+        },
+        "maze_15_5|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_5|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502191.6888537,
+          "order": null
+        },
+        "maze_1_5|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_5|u:S\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502060.9748166,
+          "order": null
+        },
+        "maze_1_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502061.2303073,
+          "order": null
+        },
+        "maze_2_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502061.3985844,
+          "order": null
+        },
+        "maze_4_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502061.9974713,
+          "order": null
+        },
+        "maze_5_7|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_7|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503102.5832546,
+          "order": null
+        },
+        "maze_5_6|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_6|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503102.7357645,
+          "order": null
+        },
+        "maze_5_5|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_5|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502066.9930136,
+          "order": null
+        },
+        "maze_5_4|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_4|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502067.253097,
+          "order": null
+        },
+        "maze_5_3|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_3|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502067.4047873,
+          "order": null
+        },
+        "maze_5_1|u:NS\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_1|u:NS\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502067.7263877,
+          "order": null
+        },
+        "maze_4_1|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_1|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502067.8789275,
+          "order": null
+        },
+        "maze_8_1|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_1|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502069.5865984,
+          "order": null
+        },
+        "maze_11_2|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_2|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 5,
+          "last_traversed": 1770502168.1843164,
+          "order": null
+        },
+        "maze_11_3|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_3|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502070.9120486,
+          "order": null
+        },
+        "maze_10_3|u:N\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_3|u:N\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502071.0644727,
+          "order": null
+        },
+        "maze_10_3|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_3|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502071.304438,
+          "order": null
+        },
+        "maze_9_3|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_3|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502160.4876182,
+          "order": null
+        },
+        "maze_9_4|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_4|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502160.6399975,
+          "order": null
+        },
+        "maze_13_7|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_7|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502072.913029,
+          "order": null
+        },
+        "maze_13_6|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_6|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502073.0649116,
+          "order": null
+        },
+        "maze_13_5|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_5|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502073.217196,
+          "order": null
+        },
+        "maze_13_4|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_4|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502073.3691437,
+          "order": null
+        },
+        "maze_13_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502191.0777218,
+          "order": null
+        },
+        "maze_14_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502191.2305808,
+          "order": null
+        },
+        "maze_15_8|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_8|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502075.0477114,
+          "order": null
+        },
+        "maze_13_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503115.8691597,
+          "order": null
+        },
+        "maze_12_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503116.0216029,
+          "order": null
+        },
+        "maze_11_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502076.8635485,
+          "order": null
+        },
+        "maze_10_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502077.137329,
+          "order": null
+        },
+        "maze_9_9|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_9|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502077.296253,
+          "order": null
+        },
+        "maze_9_8|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_8|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502077.453977,
+          "order": null
+        },
+        "maze_9_7|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_7|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502077.83741,
+          "order": null
+        },
+        "maze_8_7|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_7|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502077.995715,
+          "order": null
+        },
+        "maze_7_7|u:EW\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_7|u:EW\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502078.1480649,
+          "order": null
+        },
+        "maze_7_7|u:EW\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_7|u:EW\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502078.3884237,
+          "order": null
+        },
+        "maze_3_9|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_9|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502107.5055163,
+          "order": null
+        },
+        "maze_3_10|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_10|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502107.6664436,
+          "order": null
+        },
+        "maze_3_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502079.716876,
+          "order": null
+        },
+        "maze_4_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502079.8692875,
+          "order": null
+        },
+        "maze_7_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502080.6749039,
+          "order": null
+        },
+        "maze_8_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502080.9355507,
+          "order": null
+        },
+        "maze_9_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502119.6267169,
+          "order": null
+        },
+        "maze_10_11|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_11|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502120.0193717,
+          "order": null
+        },
+        "maze_11_11|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_11|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502120.171653,
+          "order": null
+        },
+        "maze_11_12|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_12|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502120.3240752,
+          "order": null
+        },
+        "maze_11_13|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_13|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502081.8332896,
+          "order": null
+        },
+        "maze_10_13|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_13|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502082.0940197,
+          "order": null
+        },
+        "maze_9_13|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_13|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503107.4873385,
+          "order": null
+        },
+        "maze_9_14|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_14|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503107.7497754,
+          "order": null
+        },
+        "maze_9_15|u:N\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_15|u:N\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502082.6593552,
+          "order": null
+        },
+        "maze_9_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503108.0109906,
+          "order": null
+        },
+        "maze_8_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770503108.405852,
+          "order": null
+        },
+        "maze_7_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502141.5968142,
+          "order": null
+        },
+        "maze_6_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502141.7501175,
+          "order": null
+        },
+        "maze_5_15|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_15|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502084.2090898,
+          "order": null
+        },
+        "maze_5_16|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_16|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502084.361988,
+          "order": null
+        },
+        "maze_5_17|u:NS\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_17|u:NS\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502084.5142226,
+          "order": null
+        },
+        "maze_7_17|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_17|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502144.8137856,
+          "order": null
+        },
+        "maze_13_17|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_17|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502085.841516,
+          "order": null
+        },
+        "maze_13_16|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_16|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502085.994195,
+          "order": null
+        },
+        "maze_13_15|u:NS\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_15|u:NS\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502086.1470602,
+          "order": null
+        },
+        "maze_13_15|u:NS\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_15|u:NS\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502086.3878238,
+          "order": null
+        },
+        "maze_13_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502086.819636,
+          "order": null
+        },
+        "maze_14_15|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_15|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502086.9718118,
+          "order": null
+        },
+        "maze_15_15|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_15|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502087.123724,
+          "order": null
+        },
+        "maze_15_16|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_16|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502087.3845067,
+          "order": null
+        },
+        "maze_11_1|u:E\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_1|u:E\u2192N",
+          "polarity": -1,
+          "traversal_count": 2,
+          "last_traversed": 1770502092.4820495,
+          "order": null
+        },
+        "maze_11_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502168.7144215,
+          "order": null
+        },
+        "maze_12_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502168.8708584,
+          "order": null
+        },
+        "maze_15_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502093.8773293,
+          "order": null
+        },
+        "maze_16_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502094.0293,
+          "order": null
+        },
+        "maze_17_3|u:EW\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_3|u:EW\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502094.1827598,
+          "order": null
+        },
+        "maze_17_4|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_4|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502094.4439104,
+          "order": null
+        },
+        "maze_5_3|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_3|u:S\u2192N",
+          "polarity": -1,
+          "traversal_count": 2,
+          "last_traversed": 1770502097.513602,
+          "order": null
+        },
+        "maze_7_3|u:W\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_3|u:W\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502098.4066641,
+          "order": null
+        },
+        "maze_7_1|u:NS\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_1|u:NS\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502098.9505365,
+          "order": null
+        },
+        "maze_9_1|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_1|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502103.6462948,
+          "order": null
+        },
+        "maze_9_2|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_2|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502103.7980552,
+          "order": null
+        },
+        "maze_9_3|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_3|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502099.5588334,
+          "order": null
+        },
+        "maze_7_1|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_1|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502103.1020353,
+          "order": null
+        },
+        "maze_3_3|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_3|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503100.7211733,
+          "order": null
+        },
+        "maze_2_3|u:N\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_3|u:N\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502105.36293,
+          "order": null
+        },
+        "maze_2_3|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_3|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503100.9832256,
+          "order": null
+        },
+        "maze_3_11|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_11|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502107.8265033,
+          "order": null
+        },
+        "maze_2_11|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_11|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502107.9880538,
+          "order": null
+        },
+        "maze_1_11|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_11|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502108.2515512,
+          "order": null
+        },
+        "maze_1_12|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_12|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502108.406629,
+          "order": null
+        },
+        "maze_1_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502108.5609658,
+          "order": null
+        },
+        "maze_2_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502108.713717,
+          "order": null
+        },
+        "maze_3_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502108.865778,
+          "order": null
+        },
+        "maze_4_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502109.1270883,
+          "order": null
+        },
+        "maze_5_13|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_13|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502109.279606,
+          "order": null
+        },
+        "maze_5_14|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_14|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502109.4325411,
+          "order": null
+        },
+        "maze_7_17|u:NS\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_17|u:NS\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502110.5432312,
+          "order": null
+        },
+        "maze_3_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502111.4596183,
+          "order": null
+        },
+        "maze_2_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502111.8285449,
+          "order": null
+        },
+        "maze_1_15|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_15|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502112.222044,
+          "order": null
+        },
+        "maze_1_16|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_16|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502112.3742952,
+          "order": null
+        },
+        "maze_11_16|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_16|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770503109.9633458,
+          "order": null
+        },
+        "maze_11_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502140.9528131,
+          "order": null
+        },
+        "maze_10_15|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_15|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502141.1101675,
+          "order": null
+        },
+        "maze_9_13|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_13|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502114.8054388,
+          "order": null
+        },
+        "maze_8_13|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_13|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502114.9576943,
+          "order": null
+        },
+        "maze_7_13|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_13|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502115.1095712,
+          "order": null
+        },
+        "maze_7_12|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_12|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502115.369718,
+          "order": null
+        },
+        "maze_7_11|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_11|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502115.5392644,
+          "order": null
+        },
+        "maze_6_11|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_11|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502115.7067275,
+          "order": null
+        },
+        "maze_5_11|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_11|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502115.86087,
+          "order": null
+        },
+        "maze_5_10|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_10|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502116.01275,
+          "order": null
+        },
+        "maze_5_9|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_9|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502116.164878,
+          "order": null
+        },
+        "maze_5_8|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_8|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502116.3168945,
+          "order": null
+        },
+        "maze_5_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502176.6144392,
+          "order": null
+        },
+        "maze_6_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502177.3564026,
+          "order": null
+        },
+        "maze_7_7|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_7|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502116.7736416,
+          "order": null
+        },
+        "maze_7_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502132.8315806,
+          "order": null
+        },
+        "maze_8_7|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_7|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502133.0926967,
+          "order": null
+        },
+        "maze_9_7|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_7|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502118.0193803,
+          "order": null
+        },
+        "maze_9_8|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_8|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502118.1720896,
+          "order": null
+        },
+        "maze_9_9|u:EN\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_9|u:EN\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502118.324635,
+          "order": null
+        },
+        "maze_9_9|u:EN\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_9|u:EN\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502118.565381,
+          "order": null
+        },
+        "maze_8_9|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_9|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502118.8261266,
+          "order": null
+        },
+        "maze_9_9|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_9|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502119.105275,
+          "order": null
+        },
+        "maze_9_10|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_10|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502119.2575758,
+          "order": null
+        },
+        "maze_11_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502120.4762833,
+          "order": null
+        },
+        "maze_5_3|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_3|u:S\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502124.8123574,
+          "order": null
+        },
+        "maze_13_3|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_3|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502127.012358,
+          "order": null
+        },
+        "maze_13_2|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_2|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502127.1644785,
+          "order": null
+        },
+        "maze_13_1|u:S\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_1|u:S\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502127.3166711,
+          "order": null
+        },
+        "maze_5_3|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_3|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502131.6509078,
+          "order": null
+        },
+        "maze_9_7|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_7|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502133.2456791,
+          "order": null
+        },
+        "maze_9_6|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_6|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502133.3979592,
+          "order": null
+        },
+        "maze_9_3|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_3|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502133.8558893,
+          "order": null
+        },
+        "maze_9_2|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_2|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502134.008441,
+          "order": null
+        },
+        "maze_9_1|u:NS\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_1|u:NS\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502134.1614265,
+          "order": null
+        },
+        "maze_11_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502184.1646726,
+          "order": null
+        },
+        "maze_13_1|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_1|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502190.7687447,
+          "order": null
+        },
+        "maze_13_2|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_2|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 4,
+          "last_traversed": 1770502190.9244416,
+          "order": null
+        },
+        "maze_13_3|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_3|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502184.7780416,
+          "order": null
+        },
+        "maze_13_4|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_4|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502184.9315336,
+          "order": null
+        },
+        "maze_13_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502185.0846164,
+          "order": null
+        },
+        "maze_14_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502185.237736,
+          "order": null
+        },
+        "maze_15_9|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_9|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502136.541683,
+          "order": null
+        },
+        "maze_16_9|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_9|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502136.7155712,
+          "order": null
+        },
+        "maze_16_9|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_9|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502137.1025093,
+          "order": null
+        },
+        "maze_17_9|u:EW\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_9|u:EW\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502137.2643483,
+          "order": null
+        },
+        "maze_17_10|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_10|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502137.4189353,
+          "order": null
+        },
+        "maze_17_11|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_11|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502137.6802564,
+          "order": null
+        },
+        "maze_16_11|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_11|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502137.8330224,
+          "order": null
+        },
+        "maze_15_11|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_11|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502163.4501166,
+          "order": null
+        },
+        "maze_15_12|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_12|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502163.6028337,
+          "order": null
+        },
+        "maze_15_13|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_13|u:S\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502138.2929049,
+          "order": null
+        },
+        "maze_15_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502163.7555313,
+          "order": null
+        },
+        "maze_16_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502163.9084067,
+          "order": null
+        },
+        "maze_17_14|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_14|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502139.0995219,
+          "order": null
+        },
+        "maze_5_15|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_15|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502141.9031239,
+          "order": null
+        },
+        "maze_5_14|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_14|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502142.062655,
+          "order": null
+        },
+        "maze_5_13|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_13|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502142.4578316,
+          "order": null
+        },
+        "maze_4_13|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_4_13|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502142.6288574,
+          "order": null
+        },
+        "maze_3_13|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_13|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502142.784085,
+          "order": null
+        },
+        "maze_3_14|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_14|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502142.9368792,
+          "order": null
+        },
+        "maze_3_16|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_16|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502143.4585624,
+          "order": null
+        },
+        "maze_7_17|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_17|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502144.572085,
+          "order": null
+        },
+        "maze_3_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502147.5967205,
+          "order": null
+        },
+        "maze_2_17|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_2_17|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502147.765739,
+          "order": null
+        },
+        "maze_1_17|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_1_17|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502147.9339614,
+          "order": null
+        },
+        "maze_3_9|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_9|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502152.1399915,
+          "order": null
+        },
+        "maze_5_9|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_9|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502152.8647304,
+          "order": null
+        },
+        "maze_7_8|u:W\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_8|u:W\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502153.3809469,
+          "order": null
+        },
+        "maze_7_6|u:W\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_6|u:W\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502154.364625,
+          "order": null
+        },
+        "maze_3_5|u:EW\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_3_5|u:EW\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502155.4811177,
+          "order": null
+        },
+        "maze_7_1|u:E\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_1|u:E\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502158.2426176,
+          "order": null
+        },
+        "maze_7_3|u:NS\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_3|u:NS\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502158.7890983,
+          "order": null
+        },
+        "maze_7_3|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_3|u:S\u2192W",
+          "polarity": -1,
+          "traversal_count": 2,
+          "last_traversed": 1770502159.220352,
+          "order": null
+        },
+        "maze_7_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502160.1832201,
+          "order": null
+        },
+        "maze_8_3|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_3|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502160.3351297,
+          "order": null
+        },
+        "maze_9_5|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_9_5|u:S\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502160.792581,
+          "order": null
+        },
+        "maze_11_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502161.5541575,
+          "order": null
+        },
+        "maze_12_5|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_5|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502161.7064872,
+          "order": null
+        },
+        "maze_13_5|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_5|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502191.994604,
+          "order": null
+        },
+        "maze_13_6|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_6|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502192.147689,
+          "order": null
+        },
+        "maze_15_10|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_10|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502163.035836,
+          "order": null
+        },
+        "maze_17_13|u:EW\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_13|u:EW\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502164.0614913,
+          "order": null
+        },
+        "maze_15_5|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_5|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 3,
+          "last_traversed": 1770502185.406521,
+          "order": null
+        },
+        "maze_15_4|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_4|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502165.9552312,
+          "order": null
+        },
+        "maze_15_3|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_3|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502166.1078818,
+          "order": null
+        },
+        "maze_15_2|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_2|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502166.370539,
+          "order": null
+        },
+        "maze_15_1|u:NS\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_1|u:NS\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502166.5441654,
+          "order": null
+        },
+        "maze_14_1|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_1|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502166.7363205,
+          "order": null
+        },
+        "maze_13_1|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_1|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502166.9156015,
+          "order": null
+        },
+        "maze_12_1|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_12_1|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502167.1894977,
+          "order": null
+        },
+        "maze_11_1|u:EN\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_1|u:EN\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502167.345947,
+          "order": null
+        },
+        "maze_10_1|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_10_1|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502167.5086384,
+          "order": null
+        },
+        "maze_11_3|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_3|u:S\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502168.3371425,
+          "order": null
+        },
+        "maze_15_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502169.4864652,
+          "order": null
+        },
+        "maze_16_1|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_1|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502169.6393144,
+          "order": null
+        },
+        "maze_17_1|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_1|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502169.9017239,
+          "order": null
+        },
+        "maze_17_2|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_2|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502170.0548916,
+          "order": null
+        },
+        "maze_17_13|u:E\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_13|u:E\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502171.1866817,
+          "order": null
+        },
+        "maze_5_5|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_5|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502176.309327,
+          "order": null
+        },
+        "maze_5_6|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_6|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502176.4617603,
+          "order": null
+        },
+        "maze_6_7|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_7|u:S\u2192N",
+          "polarity": -1,
+          "traversal_count": 2,
+          "last_traversed": 1770502176.7668138,
+          "order": null
+        },
+        "maze_7_9|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_9|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502178.2472217,
+          "order": null
+        },
+        "maze_11_1|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_1|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502183.9234424,
+          "order": null
+        },
+        "maze_11_4|u:W\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_11_4|u:W\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502189.6236844,
+          "order": null
+        },
+        "maze_14_5|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_5|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770502191.8416533,
+          "order": null
+        },
+        "maze_5_5|u:NS\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_5_5|u:NS\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503102.8885188,
+          "order": null
+        },
+        "maze_6_9|u:N\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_6_9|u:N\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503104.6433659,
+          "order": null
+        },
+        "maze_7_11|u:E\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_11|u:E\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503106.3905387,
+          "order": null
+        },
+        "maze_7_13|u:S\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_13|u:S\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503106.9383152,
+          "order": null
+        },
+        "maze_7_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_7_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503107.180854,
+          "order": null
+        },
+        "maze_8_13|u:S\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_8_13|u:S\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503107.334098,
+          "order": null
+        },
+        "maze_13_15|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_15|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503110.4345644,
+          "order": null
+        },
+        "maze_13_16|u:E\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_16|u:E\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503110.5885494,
+          "order": null
+        },
+        "maze_13_16|u:E\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_16|u:E\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503110.8300617,
+          "order": null
+        },
+        "maze_15_17|u:S\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_17|u:S\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503111.3003159,
+          "order": null
+        },
+        "maze_17_17|u:W\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_17|u:W\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503111.954613,
+          "order": null
+        },
+        "maze_17_17|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_17|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503112.2479777,
+          "order": null
+        },
+        "maze_17_16|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_16|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503112.447448,
+          "order": null
+        },
+        "maze_15_15|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_15|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503113.2156796,
+          "order": null
+        },
+        "maze_15_14|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_14|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503113.39987,
+          "order": null
+        },
+        "maze_15_13|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_15_13|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503113.5748756,
+          "order": null
+        },
+        "maze_14_13|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_14_13|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503113.839047,
+          "order": null
+        },
+        "maze_13_13|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_13|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503113.992699,
+          "order": null
+        },
+        "maze_13_12|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_12|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503114.2550662,
+          "order": null
+        },
+        "maze_13_11|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_11|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503114.8650067,
+          "order": null
+        },
+        "maze_13_10|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_10|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503115.0172875,
+          "order": null
+        },
+        "maze_13_9|u:N\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_13_9|u:N\u2192E",
+          "polarity": -1,
+          "traversal_count": 2,
+          "last_traversed": 1770503115.169888,
+          "order": null
+        },
+        "maze_17_11|u:EW\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_11|u:EW\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503118.1244607,
+          "order": null
+        },
+        "maze_17_5|u:W\u2192E": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_5|u:W\u2192E",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503119.5840046,
+          "order": null
+        },
+        "maze_17_5|u:W\u2192W": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_5|u:W\u2192W",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503119.9368787,
+          "order": null
+        },
+        "maze_17_1|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_17_1|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503120.901817,
+          "order": null
+        },
+        "maze_16_1|u:N\u2192S": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_1|u:N\u2192S",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503121.0571764,
+          "order": null
+        },
+        "maze_16_1|u:N\u2192N": {
+          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
+          "direction": "maze_16_1|u:N\u2192N",
+          "polarity": 1,
+          "traversal_count": 2,
+          "last_traversed": 1770503121.30002,
+          "order": null
         }
       }
     },
@@ -53,6 +4573,6 @@
       0.8150192046878789
     ]
   },
-  "heat": 62.870610496769125,
-  "axes_count": 3
+  "heat": 144.2079209151766,
+  "axes_count": 568
 }

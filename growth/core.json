@@ -1,11 +1,11 @@
 {
   "metadata": {
     "created": "2026-02-07T15:08:55.312360",
-    "last_modified": "2026-02-07T15:08:55.314805",
-    "node_count": 9,
-    "total_heat": 658.7663547288294,
+    "last_modified": "2026-02-07T17:25:21.419425",
+    "node_count": 513,
+    "total_heat": 7519.682758897277,
     "loop_number": 0,
-    "entropy": 8922.094877909438,
+    "entropy": 52457.63736708206,
     "version": 2,
     "born": true,
     "distributed": true
@@ -28,83 +28,10 @@
     "tags": [],
     "frame": {
       "origin": "self",
-      "x_axis": "identity",
-      "y_axis": "ego",
-      "z_axis": "conscience",
-      "axes": {
-        "N": {
-          "target_id": "b18b03df-b44a-4979-9d4d-594fbce8fe37",
-          "direction": "N",
-          "polarity": 1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.3130453,
-          "order": null
-        },
-        "S": {
-          "target_id": "789ad3f0-23f5-4d9c-bdf5-dd0d4e257785",
-          "direction": "S",
-          "polarity": -1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.3133278,
-          "order": null
-        },
-        "E": {
-          "target_id": "d3d5fddb-a3e9-417c-abe8-bef70e284439",
-          "direction": "E",
-          "polarity": 1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.3135076,
-          "order": null
-        },
-        "W": {
-          "target_id": "93eab5ad-3cc4-404d-b35f-f2882714a1db",
-          "direction": "W",
-          "polarity": -1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.313678,
-          "order": null
-        },
-        "U": {
-          "target_id": "ac55c5e7-c5f2-410b-9696-dfd5e7a90744",
-          "direction": "U",
-          "polarity": 1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.3138356,
-          "order": null
-        },
-        "D": {
-          "target_id": "71bc0816-5bca-4f5a-9d62-2b5afa80bbc6",
-          "direction": "D",
-          "polarity": -1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.3140097,
-          "order": null
-        },
-        "identity": {
-          "target_id": "39a6b07d-7027-41d0-be0e-5a0b50a49cd1",
-          "direction": "identity",
-          "polarity": 1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.3144972,
-          "order": null
-        },
-        "ego": {
-          "target_id": "7dbb0315-3d1c-4329-9f5e-80970488124f",
-          "direction": "ego",
-          "polarity": 1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.3144999,
-          "order": null
-        },
-        "conscience": {
-          "target_id": "d2cd06f9-dac2-4457-aec4-e5b068e993c3",
-          "direction": "conscience",
-          "polarity": 1,
-          "traversal_count": 1,
-          "last_traversed": 1770494935.3145013,
-          "order": null
-        }
-      }
+      "x_axis": null,
+      "y_axis": null,
+      "z_axis": null,
+      "axes": {}
     },
     "is_self": true
   },

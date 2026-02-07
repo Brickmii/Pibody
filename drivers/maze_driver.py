@@ -139,15 +139,18 @@ class MazeDriver(Driver):
         if at_goal:
             heat = K
             outcome = f"{direction}_goal"
+            success = True
         elif is_new:
             heat = K * 0.1
             outcome = f"{direction}_new"
+            success = True           # Discovery IS success
         else:
             heat = 0.0
             outcome = f"{direction}_revisit"
+            success = False          # Only revisits are failure
 
         return ActionResult(
-            success=at_goal,
+            success=success,
             outcome=outcome,
             heat_value=self.scale_heat(heat)
         )
@@ -360,65 +363,72 @@ class MazeDriver(Driver):
 
     def get_backtrack_target(self) -> Optional[Tuple[int, int]]:
         """
-        Find nearest cell with unexplored path using concept-based lookup.
+        BFS from current position to find nearest observed cell
+        that has an unvisited open neighbor.
         """
-        for (row, col) in reversed(list(self.observed_cells.keys())):
-            cell = self._get_cell(row, col)
-            if not cell:
-                continue
+        from collections import deque
 
-            # Check each connection from this cell
-            if hasattr(cell, 'frame') and cell.frame:
-                for axis_name, conn in cell.frame.axes.items():
-                    target_node = self.manifold.get_node(conn.target_id)
-                    if not target_node:
-                        continue
+        start = self.current_pos
+        queue = deque([start])
+        visited = {start}
 
-                    # Parse grid coords from concept "maze_R_C"
-                    concept = target_node.concept
-                    if not concept.startswith("maze_"):
-                        continue
-                    parts = concept.split("_")
-                    if len(parts) != 3:
-                        continue
-                    try:
-                        tr, tc = int(parts[1]), int(parts[2])
-                    except ValueError:
-                        continue
+        while queue:
+            pos = queue.popleft()
+            row, col = pos
 
-                    # If target not visited, this cell has unexplored path
-                    if (tr, tc) not in self.observed_cells:
-                        logger.info(f"Backtrack target: ({row},{col}) has unexplored {axis_name.upper()} → ({tr},{tc})")
-                        return (row, col)
+            # Does this cell have an unvisited open neighbor?
+            for d, (dr, dc) in DIRECTIONS.items():
+                nr, nc = row + dr, col + dc
+                if (0 <= nr < self.size and 0 <= nc < self.size
+                        and self.grid[nr][nc] == 0
+                        and (nr, nc) not in self.observed_cells):
+                    logger.info(f"Backtrack target: ({row},{col}) has unexplored {d} → ({nr},{nc})")
+                    return pos
+
+            # Expand BFS through observed cells
+            for d, (dr, dc) in DIRECTIONS.items():
+                npos = (row + dr, col + dc)
+                if npos not in visited and npos in self.observed_cells:
+                    if (0 <= npos[0] < self.size and 0 <= npos[1] < self.size
+                            and self.grid[npos[0]][npos[1]] == 0):
+                        visited.add(npos)
+                        queue.append(npos)
 
         return None
 
     def get_backtrack_path(self, target: Tuple[int, int]) -> List[str]:
-        """Get directions to backtrack to target."""
-        if target not in self.path_history:
-            logger.warning(f"Target {target} not in path history!")
+        """BFS shortest path from current_pos to target through observed cells."""
+        from collections import deque
+
+        start = self.current_pos
+        if start == target:
             return []
 
-        moves = []
-        target_idx = self.path_history.index(target)
+        # BFS on observed grid
+        queue = deque([(start, [])])
+        visited = {start}
 
-        for i in range(len(self.path_history) - 1, target_idx, -1):
-            curr = self.path_history[i]
-            prev = self.path_history[i - 1]
+        while queue:
+            pos, path = queue.popleft()
+            for d, (dr, dc) in DIRECTIONS.items():
+                npos = (pos[0] + dr, pos[1] + dc)
+                if npos in visited:
+                    continue
+                # Only walk through cells we've already observed
+                if npos not in self.observed_cells:
+                    continue
+                # Must be passable on the grid
+                if not (0 <= npos[0] < self.size and 0 <= npos[1] < self.size
+                        and self.grid[npos[0]][npos[1]] == 0):
+                    continue
+                new_path = path + [d]
+                if npos == target:
+                    return new_path
+                visited.add(npos)
+                queue.append((npos, new_path))
 
-            dr = prev[0] - curr[0]
-            dc = prev[1] - curr[1]
-
-            if dr == -1:
-                moves.append('N')
-            elif dr == 1:
-                moves.append('S')
-            elif dc == -1:
-                moves.append('W')
-            elif dc == 1:
-                moves.append('E')
-
-        return moves
+        logger.warning(f"BFS: no path from {start} to {target}")
+        return []
 
     def record_move(self, new_pos: Tuple[int, int], direction: str = None, backtracking: bool = False):
         """

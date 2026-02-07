@@ -319,14 +319,15 @@ class MazeApp:
             self.root.after(1500, self.pbai_next_maze)
             return
 
-        # Dead end? Backtrack.
+        # Dead end? Backtrack via BFS to nearest cell with unexplored neighbor.
         if self.driver.is_dead_end(obs):
             target = self.driver.get_backtrack_target()
-            if target:
-                self.status.config(text="Backtracking...", fg="#fb923c")
+            if target and target != self.player_pos:
                 moves = self.driver.get_backtrack_path(target)
-                self.do_backtrack(moves, 0)
-                return
+                if moves:
+                    self.status.config(text="Backtracking...", fg="#fb923c")
+                    self.do_backtrack(moves, 0)
+                    return
 
         # Route through EnvironmentCore: perceive → tick → decide
         perception = self.env_core.perceive()  # Calls driver.perceive() → Clock

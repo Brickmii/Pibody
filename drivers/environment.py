@@ -728,6 +728,14 @@ class EnvironmentCore:
                 "properties": perception.properties
             })
         
+        # Ego sustain: perceiving the world maintains minimal ability to act
+        if self.manifold.ego_node:
+            from core.node_constants import K as _K, PSYCHOLOGY_MIN_HEAT
+            # Small sustain: enough to rebuild capacity between actions, not enough to sustain indefinitely
+            ego_sustain = PSYCHOLOGY_MIN_HEAT if perception.heat_value > 0 else PSYCHOLOGY_MIN_HEAT * 0.5
+            self.manifold.ego_node.add_heat(ego_sustain)
+            logger.debug(f"Ego perception sustain: +{ego_sustain:.3f}")
+
         logger.debug(f"Routed perception to Clock: {state_key}")
     
     def _get_clock(self):
@@ -798,13 +806,17 @@ class EnvironmentCore:
         # Get perception if not provided
         if perception is None:
             perception = self.perceive()
-        
-        # Get available actions from driver
-        available_actions = self.get_supported_actions()
+
+        # Get available actions (state-aware if driver supports it)
+        driver = self.get_active_driver()
+        if driver and hasattr(driver, 'get_actions') and hasattr(driver, '_current_hand_state') and driver._current_hand_state:
+            available_actions = driver.get_actions(driver._current_hand_state)
+        else:
+            available_actions = self.get_supported_actions()
         if not available_actions:
             logger.warning("No available actions - returning wait")
             return Action(action_type="wait")
-        
+
         # Get state and context
         state_key = getattr(self, '_current_state_key', perception.properties.get("state_key", "unknown"))
         context = getattr(self, '_current_context', {})
@@ -972,7 +984,16 @@ class EnvironmentCore:
         # Validate through Conscience (builds Ego's confidence)
         # Only validate on actual success/failure, not neutral
         self.manifold.validate_conscience(outcome_concept, confirmed=(success_type == "success"))
-        
+
+        # CONFIDENCE BOOST: Successful actions return 0.618 to Ego
+        # Matches COST_ACTION — successful moves are cost-neutral
+        if success_type == "success" and self.manifold.ego_node:
+            from core.node_constants import COST_ACTION
+            confidence_boost = COST_ACTION  # 0.618
+            self.manifold.ego_node.add_heat_unchecked(confidence_boost)
+            changes["ego"] += confidence_boost
+            logger.debug(f"Ego confidence boost: +{confidence_boost:.3f}")
+
         if success_type == "success":
             # ═══════════════════════════════════════════════════════════════
             # SUCCESS: Ego gets more (pattern worked!)

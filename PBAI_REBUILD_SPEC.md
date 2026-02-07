@@ -486,6 +486,8 @@ Every word-node has:
 | `windows/vision_transformer.py` | 1,002 | **FIX** | ThreeFrameEncoder maps Color/Position/Heat. Update to use Color Cube axes (opponent chroma → Blue/Yellow X, Red/Green Y). SpiralPatchEmbedding, HeatAttention, fire zones, threshold ladder, HeatBackprop — all keep. |
 | `windows/pbai_client.py` | 664 | **FIX** | ScreenCapture, MotorExecutor (matches MotorAction types), PBAIClient WebSocket protocol — all keep. Update `build_world_state` peaks to emit cube-native coordinates. |
 | `windows/manifold_test.py` | 278 | **KEEP** | WebSocket diagnostic client. Tests Robinson spec creation, measurement, verification, confidence threshold, timed input. Geometry-independent. No changes. |
+| `vision/vision_step.py` | 591 | **FIX** | VisualFeature, VisionStep, VisionStepEngine — Pi-side pure numpy vision pipeline. Threshold ladder, Robinson constraints, kappa accumulation, existence gating — all correct. Fix: `to_node_data()` creates `position=f"v_{x}_{y}"` string positions → angular coordinates. `integrate_vision_step()` node creation uses string positions → angular. Everything else survives. |
+| `vision/visual_cortex.py` | 448 | **FIX** | Orchestrator: scanner → vision_step → manifold. Structure detection (44/45 entropy), clock sync, kappa budget, callbacks. Fix: `_integrate_to_manifold()` passes through to `integrate_vision_step()` which has the grid position issue. Wrapper itself is clean. |
 
 ### REPLACED (new files)
 
@@ -553,6 +555,11 @@ pibody/
 │   ├── pbai_client.py       — FIXED: world_state peaks use cube coordinates
 │   └── manifold_test.py     — KEPT: Constraint diagnostic (geometry-independent)
 │
+├── vision/                  — Pi-side vision pipeline (1,039+ lines existing)
+│   ├── vision_step.py       — FIXED: to_node_data() angular positions
+│   ├── visual_cortex.py     — FIXED: integration passes through vision_step fix
+│   └── scan_simulator.py    — (not yet reviewed)
+│
 ├── drivers/                 — Environment-specific drivers
 │   └── minecraft/           — Bedrock autonomous play
 │
@@ -600,16 +607,18 @@ pibody/
 | 14 | `test_processing_cycle.py` | REBUILD with expanded math tests | decision_node |
 | 15 | Integration test | Full birth → tick → decide → act | All core + driver |
 
-### Phase 5: Body (Windows Client — 1,944 lines existing)
+### Phase 5: Body (Windows Client — 1,944 lines + Pi Vision — 1,039+ lines)
 
 | Step | File | Lines | Action | Notes |
 |------|------|-------|--------|-------|
-| 16 | `windows/vision_transformer.py` | 1,002 | **FIX** | ThreeFrameEncoder Color/Position/Heat → map to Color Cube axes (X=Blue/Yellow, Y=Red/Green, Z=τ). SpiralPatchEmbedding, HeatAttention, fire zones, threshold ladder — all correct, keep. HeatBackprop learning — keep. |
-| 17 | `windows/pbai_client.py` | 664 | **FIX** | ScreenCapture — keep. MotorExecutor — keep (matches MotorAction types exactly). PBAIClient WebSocket protocol — keep. Update `build_world_state` output to use cube-native coordinates in peaks. |
-| 18 | `windows/manifold_test.py` | 278 | **KEEP** | Diagnostic client. Tests Robinson spec, measurement, verification, confidence threshold over WebSocket. Geometry-independent. No changes needed. |
+| 16 | `vision/vision_step.py` | 591 | **FIX** | `to_node_data()` and `integrate_vision_step()` — string positions → angular coordinates. VisualFeature, VisionStep, VisionStepEngine, threshold ladder, kappa — all keep. |
+| 17 | `vision/visual_cortex.py` | 448 | **FIX** | Passes through vision_step fix. Structure detection, clock sync, callbacks — all keep. |
+| 18 | `windows/vision_transformer.py` | 1,002 | **FIX** | ThreeFrameEncoder Color/Position/Heat → map to Color Cube axes (X=Blue/Yellow, Y=Red/Green, Z=τ). SpiralPatchEmbedding, HeatAttention, fire zones, threshold ladder — all correct, keep. HeatBackprop learning — keep. |
+| 19 | `windows/pbai_client.py` | 664 | **FIX** | ScreenCapture — keep. MotorExecutor — keep (matches MotorAction types exactly). PBAIClient WebSocket protocol — keep. Update `build_world_state` output to use cube-native coordinates in peaks. |
+| 20 | `windows/manifold_test.py` | 278 | **KEEP** | Diagnostic client. Tests Robinson spec, measurement, verification, confidence threshold over WebSocket. Geometry-independent. No changes needed. |
 
 ### Phase 6: World
 
 | Step | File | Action | Depends On |
 |------|------|--------|------------|
-| 19 | `drivers/minecraft/` | CREATE Bedrock driver | driver_node, windows layer |
+| 21 | `drivers/minecraft/` | CREATE Bedrock driver | driver_node, windows layer |

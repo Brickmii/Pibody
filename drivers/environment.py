@@ -828,8 +828,14 @@ class EnvironmentCore:
         exploration_rate = self.manifold.get_exploration_rate() if self.manifold else 0.3
         
         if random.random() < exploration_rate:
-            # Explore: random action
-            chosen = random.choice(available_actions)
+            # Explore: weighted random if driver provides weights, else uniform
+            driver = self.get_active_driver()
+            if hasattr(driver, 'get_action_weights'):
+                weights_map = driver.get_action_weights(available_actions)
+                weights = [weights_map.get(a, 1.0) for a in available_actions]
+                chosen = random.choices(available_actions, weights=weights, k=1)[0]
+            else:
+                chosen = random.choice(available_actions)
             logger.info(f"Explore: {chosen} (rate={exploration_rate:.2f})")
         else:
             # Exploit: Use learned action scores from driver

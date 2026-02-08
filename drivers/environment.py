@@ -485,6 +485,27 @@ class EnvironmentCore:
         """Connect a manifold to this environment core."""
         self.manifold = manifold
         logger.info("Manifold connected to EnvironmentCore")
+
+    def connect_visual_cortex(self, visual_cortex) -> None:
+        """Connect a VisualCortex for vision integration."""
+        self.visual_cortex = visual_cortex
+        logger.info("Visual cortex connected to EnvironmentCore")
+
+    def step_with_vision(self, image=None):
+        """Process one vision frame through the visual cortex.
+
+        Args:
+            image: Optional image array (H, W, 3) RGB
+
+        Returns:
+            VisionStep result, or None if no visual cortex
+        """
+        vc = getattr(self, 'visual_cortex', None)
+        if not vc:
+            return None
+        if image is not None:
+            return vc.process_image(image)
+        return vc.process_screen()
     
     # ───────────────────────────────────────────────────────────────────────────
     # DRIVER MANAGEMENT

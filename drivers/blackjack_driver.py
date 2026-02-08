@@ -445,8 +445,12 @@ class BlackjackDriver(Driver):
             'dealer_upcard': state.dealer_upcard,
         }
 
-    def get_actions(self, state: HandState) -> List[str]:
+    def get_actions(self, state: HandState = None) -> List[str]:
         """Get available actions for current state."""
+        if state is None:
+            state = self._current_hand_state
+        if state is None:
+            return ["hit", "stand"]
         actions = ["hit", "stand"]
         if state.can_double:
             actions.append("double")

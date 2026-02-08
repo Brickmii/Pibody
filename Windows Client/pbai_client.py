@@ -389,7 +389,7 @@ class PBAIClient:
         logger.info(f"Connecting to {uri}...")
         
         try:
-            self._ws = await websockets.connect(uri, ping_interval=20, ping_timeout=10)
+            self._ws = await websockets.connect(uri, ping_interval=30, ping_timeout=30)
             
             await self._ws.send(json.dumps({
                 "type": "hello",
@@ -552,41 +552,58 @@ class PBAIClient:
                 if abs(heat) > 0.5:
                     logger.info(f"Heat feedback: {heat:.2f}, loss: {loss:.4f}")
     
+    def _capture_and_transform(self):
+        """Synchronous capture + GPU inference (runs in thread executor).
+
+        Offloaded from the async loop so the event loop stays responsive
+        to WebSocket pings and incoming messages while the GPU works.
+        """
+        image = self.screen.capture()
+        if image is None:
+            return None
+
+        img_tensor = torch.from_numpy(image).float().to(self.device)
+        if img_tensor.max() > 1:
+            img_tensor = img_tensor / 255.0
+        img_tensor = img_tensor.permute(2, 0, 1).unsqueeze(0)
+
+        if img_tensor.shape[-1] != self.resolution:
+            img_tensor = torch.nn.functional.interpolate(
+                img_tensor,
+                size=(self.resolution, self.resolution),
+                mode='bilinear',
+                align_corners=False
+            )
+
+        with torch.no_grad():
+            output = self.model(img_tensor, self._focus_hint)
+
+        world_state = self.build_world_state(self.model, img_tensor, top_k=10)
+        return world_state
+
     async def _continuous_capture_loop(self):
         """Background loop: capture + transform + send at configured FPS.
 
         Sends unsolicited world_state frames so the Pi always has fresh
         vision data in its buffer without explicit request_world round-trips.
+        GPU inference runs in a thread executor to avoid blocking the event
+        loop (which would cause WebSocket ping timeouts).
         """
         self._streaming = True
         interval = 1.0 / self._stream_fps
+        loop = asyncio.get_event_loop()
         logger.info(f"Starting continuous capture at {self._stream_fps} FPS (interval={interval:.3f}s)")
 
         while self._streaming and self._running and self._ws:
             try:
-                image = self.screen.capture()
-                if image is None:
+                # Run heavy GPU work in thread so event loop handles pings
+                world_state = await loop.run_in_executor(
+                    None, self._capture_and_transform
+                )
+
+                if world_state is None:
                     await asyncio.sleep(interval)
                     continue
-
-                # Convert to tensor (same pipeline as _handle_world_request)
-                img_tensor = torch.from_numpy(image).float().to(self.device)
-                if img_tensor.max() > 1:
-                    img_tensor = img_tensor / 255.0
-                img_tensor = img_tensor.permute(2, 0, 1).unsqueeze(0)
-
-                if img_tensor.shape[-1] != self.resolution:
-                    img_tensor = torch.nn.functional.interpolate(
-                        img_tensor,
-                        size=(self.resolution, self.resolution),
-                        mode='bilinear',
-                        align_corners=False
-                    )
-
-                with torch.no_grad():
-                    output = self.model(img_tensor, self._focus_hint)
-
-                world_state = self.build_world_state(self.model, img_tensor, top_k=10)
 
                 await self._ws.send(json.dumps({
                     "type": "world_state",

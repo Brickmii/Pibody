@@ -269,21 +269,41 @@ class MinecraftPort(Port):
 
 # Action → key/mouse mapping for Minecraft Bedrock
 MC_ACTION_MAP = {
-    "move_forward":   {"motor": MotorType.KEY_HOLD, "key": "w"},
-    "move_backward":  {"motor": MotorType.KEY_HOLD, "key": "s"},
-    "strafe_left":    {"motor": MotorType.KEY_HOLD, "key": "a"},
-    "strafe_right":   {"motor": MotorType.KEY_HOLD, "key": "d"},
+    "move_forward":   {"motor": MotorType.KEY_HOLD, "key": "w", "duration": 1.0},
+    "move_backward":  {"motor": MotorType.KEY_HOLD, "key": "s", "duration": 0.8},
+    "strafe_left":    {"motor": MotorType.KEY_HOLD, "key": "a", "duration": 0.6},
+    "strafe_right":   {"motor": MotorType.KEY_HOLD, "key": "d", "duration": 0.6},
     "jump":           {"motor": MotorType.KEY_PRESS, "key": "space"},
-    "sneak":          {"motor": MotorType.KEY_HOLD, "key": "shift"},
-    "sprint":         {"motor": MotorType.KEY_HOLD, "key": "ctrl"},
+    "sneak":          {"motor": MotorType.KEY_HOLD, "key": "shift", "duration": 0.5},
+    "sprint":         {"motor": MotorType.KEY_HOLD, "key": "ctrl", "duration": 1.5},
     "attack":         {"motor": MotorType.MOUSE_CLICK, "button": "left"},
     "use":            {"motor": MotorType.MOUSE_CLICK, "button": "right"},
-    "look_up":        {"motor": MotorType.LOOK, "direction": (0.0, -15.0)},
-    "look_down":      {"motor": MotorType.LOOK, "direction": (0.0, 15.0)},
-    "look_left":      {"motor": MotorType.LOOK, "direction": (-15.0, 0.0)},
-    "look_right":     {"motor": MotorType.LOOK, "direction": (15.0, 0.0)},
+    "look_up":        {"motor": MotorType.LOOK, "direction": (0.0, -30.0)},
+    "look_down":      {"motor": MotorType.LOOK, "direction": (0.0, 30.0)},
+    "look_left":      {"motor": MotorType.LOOK, "direction": (-40.0, 0.0)},
+    "look_right":     {"motor": MotorType.LOOK, "direction": (40.0, 0.0)},
     "open_inventory": {"motor": MotorType.KEY_PRESS, "key": "e"},
     "wait":           {"motor": MotorType.WAIT, "duration": 0.5},
+}
+
+# Exploration weights — higher = more likely to be chosen during exploration.
+# Favors deliberate movement over disruptive/stationary actions.
+MC_ACTION_WEIGHTS = {
+    "move_forward":   5.0,
+    "move_backward":  2.0,
+    "strafe_left":    2.0,
+    "strafe_right":   2.0,
+    "jump":           3.0,
+    "sneak":          1.0,
+    "sprint":         3.0,
+    "attack":         1.0,
+    "use":            1.0,
+    "look_up":        3.0,
+    "look_down":      3.0,
+    "look_left":      3.5,
+    "look_right":     3.5,
+    "open_inventory": 0.3,
+    "wait":           0.5,
 }
 
 
@@ -371,6 +391,16 @@ class MinecraftDriver(Driver):
                 description=f"Minecraft: {action_name}"
             )
             self.driver_node.register_motor(action_name, motor)
+
+    def get_action_weights(self, actions: list = None) -> Dict[str, float]:
+        """Return exploration weights for actions (higher = more likely).
+
+        Used by EnvironmentCore.decide() for weighted random exploration
+        instead of uniform random, producing more deliberate movement.
+        """
+        if actions is None:
+            actions = self.SUPPORTED_ACTIONS
+        return {a: MC_ACTION_WEIGHTS.get(a, 1.0) for a in actions}
 
     # ═══════════════════════════════════════════════════════════════════════════
     # GAME KNOWLEDGE (minecraft-data)

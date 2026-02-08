@@ -552,16 +552,12 @@ class PBAIClient:
                 if abs(heat) > 0.5:
                     logger.info(f"Heat feedback: {heat:.2f}, loss: {loss:.4f}")
     
-    def _capture_and_transform(self):
-        """Synchronous capture + GPU inference (runs in thread executor).
+    def _transform_image(self, image):
+        """Synchronous GPU inference (runs in thread executor).
 
-        Offloaded from the async loop so the event loop stays responsive
-        to WebSocket pings and incoming messages while the GPU works.
+        Only the heavy GPU work is offloaded — screen capture stays in
+        the main thread since it uses thread-local Windows GDI resources.
         """
-        image = self.screen.capture()
-        if image is None:
-            return None
-
         img_tensor = torch.from_numpy(image).float().to(self.device)
         if img_tensor.max() > 1:
             img_tensor = img_tensor / 255.0
@@ -586,8 +582,8 @@ class PBAIClient:
 
         Sends unsolicited world_state frames so the Pi always has fresh
         vision data in its buffer without explicit request_world round-trips.
-        GPU inference runs in a thread executor to avoid blocking the event
-        loop (which would cause WebSocket ping timeouts).
+        Screen capture runs in the main thread (needs Windows GDI context),
+        GPU inference runs in a thread executor to keep pings responsive.
         """
         self._streaming = True
         interval = 1.0 / self._stream_fps
@@ -596,14 +592,16 @@ class PBAIClient:
 
         while self._streaming and self._running and self._ws:
             try:
-                # Run heavy GPU work in thread so event loop handles pings
-                world_state = await loop.run_in_executor(
-                    None, self._capture_and_transform
-                )
-
-                if world_state is None:
+                # Capture in main thread (Windows GDI is thread-local)
+                image = self.screen.capture()
+                if image is None:
                     await asyncio.sleep(interval)
                     continue
+
+                # Offload heavy GPU inference to thread executor
+                world_state = await loop.run_in_executor(
+                    None, self._transform_image, image
+                )
 
                 await self._ws.send(json.dumps({
                     "type": "world_state",

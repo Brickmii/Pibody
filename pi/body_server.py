@@ -639,7 +639,7 @@ class BodyServer:
     
     async def _async_run(self):
         """Async server loop."""
-        async with serve(self._handle_client, "0.0.0.0", self.port):
+        async with serve(self._handle_client, "0.0.0.0", self.port, ping_interval=60, ping_timeout=120):
             logger.info(f"✓ Body server on ws://0.0.0.0:{self.port}")
             while self._running:
                 await asyncio.sleep(1)

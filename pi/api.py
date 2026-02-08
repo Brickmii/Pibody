@@ -210,7 +210,7 @@ class APIHandler(BaseHTTPRequestHandler):
                 self._send_error("No body connected", 503)
                 return
             try:
-                world = self.daemon.body_server.request_world(timeout=10.0)
+                world = self.daemon.body_server.request_world(timeout=60.0)
                 if world:
                     self._send_json({"status": "ok", "world": world})
                 else:

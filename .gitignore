@@ -3,6 +3,7 @@
 __pycache__/
 *.pyc
 decisions/
+growth/*.json
 drivers/blackjack/
 drivers/maze/
 drivers/minecraft/frame.json

@@ -269,6 +269,7 @@ class MinecraftPort(Port):
 
 # Action → key/mouse mapping for Minecraft Bedrock
 MC_ACTION_MAP = {
+    # Single-key actions
     "move_forward":   {"motor": MotorType.KEY_HOLD, "key": "w", "duration": 1.0},
     "move_backward":  {"motor": MotorType.KEY_HOLD, "key": "s", "duration": 0.8},
     "strafe_left":    {"motor": MotorType.KEY_HOLD, "key": "a", "duration": 0.6},
@@ -284,26 +285,37 @@ MC_ACTION_MAP = {
     "look_right":     {"motor": MotorType.LOOK, "direction": (40.0, 0.0)},
     "open_inventory": {"motor": MotorType.KEY_PRESS, "key": "e"},
     "wait":           {"motor": MotorType.WAIT, "duration": 0.5},
+    # Combo actions — multiple keys held simultaneously
+    "sprint_forward":  {"combo": ["ctrl", "w"], "duration": 1.5},
+    "jump_forward":    {"combo": ["space", "w"], "duration": 0.8},
+    "sprint_jump":     {"combo": ["ctrl", "w", "space"], "duration": 1.0},
+    "strafe_left_fwd": {"combo": ["a", "w"], "duration": 0.8},
+    "strafe_right_fwd":{"combo": ["d", "w"], "duration": 0.8},
 }
 
 # Exploration weights — higher = more likely to be chosen during exploration.
 # Favors deliberate movement over disruptive/stationary actions.
 MC_ACTION_WEIGHTS = {
-    "move_forward":   5.0,
-    "move_backward":  2.0,
-    "strafe_left":    2.0,
-    "strafe_right":   2.0,
-    "jump":           3.0,
-    "sneak":          1.0,
-    "sprint":         3.0,
-    "attack":         1.0,
-    "use":            1.0,
-    "look_up":        3.0,
-    "look_down":      3.0,
-    "look_left":      3.5,
-    "look_right":     3.5,
-    "open_inventory": 0.3,
-    "wait":           0.5,
+    "move_forward":    5.0,
+    "move_backward":   2.0,
+    "strafe_left":     2.0,
+    "strafe_right":    2.0,
+    "jump":            3.0,
+    "sneak":           1.0,
+    "sprint":          1.5,
+    "attack":          1.0,
+    "use":             1.0,
+    "look_up":         3.0,
+    "look_down":       3.0,
+    "look_left":       3.5,
+    "look_right":      3.5,
+    "open_inventory":  0.3,
+    "wait":            0.5,
+    "sprint_forward":  4.0,
+    "jump_forward":    3.5,
+    "sprint_jump":     3.0,
+    "strafe_left_fwd": 2.0,
+    "strafe_right_fwd":2.0,
 }
 
 
@@ -379,17 +391,28 @@ class MinecraftDriver(Driver):
             return
 
         for action_name, mapping in MC_ACTION_MAP.items():
-            motor_type = mapping["motor"]
-            motor = MotorAction(
-                motor_type=motor_type,
-                key=mapping.get("key"),
-                button=mapping.get("button"),
-                direction=mapping.get("direction"),
-                duration=mapping.get("duration"),
-                heat_cost=1.0 if motor_type != MotorType.WAIT else 0.1,
-                name=action_name,
-                description=f"Minecraft: {action_name}"
-            )
+            if "combo" in mapping:
+                # Combo actions register as KEY_HOLD (primary key = first in combo)
+                motor = MotorAction(
+                    motor_type=MotorType.KEY_HOLD,
+                    key=mapping["combo"][0],
+                    duration=mapping.get("duration"),
+                    heat_cost=1.0,
+                    name=action_name,
+                    description=f"Minecraft combo: {'+'.join(mapping['combo'])}"
+                )
+            else:
+                motor_type = mapping["motor"]
+                motor = MotorAction(
+                    motor_type=motor_type,
+                    key=mapping.get("key"),
+                    button=mapping.get("button"),
+                    direction=mapping.get("direction"),
+                    duration=mapping.get("duration"),
+                    heat_cost=1.0 if motor_type != MotorType.WAIT else 0.1,
+                    name=action_name,
+                    description=f"Minecraft: {action_name}"
+                )
             self.driver_node.register_motor(action_name, motor)
 
     def get_action_weights(self, actions: list = None) -> Dict[str, float]:
@@ -665,16 +688,32 @@ class MinecraftDriver(Driver):
             )
 
         # Build command for Windows Client
-        command = {
-            "action": action_type,
-            "motor_type": mapping["motor"].value,
-            "key": mapping.get("key"),
-            "button": mapping.get("button"),
-            "direction": mapping.get("direction"),
-            "duration": mapping.get("duration", 0.2),
-            "target": action.target,
-            "parameters": action.parameters,
-        }
+        if "combo" in mapping:
+            # Combo action: hold multiple keys simultaneously via sequence
+            keys = mapping["combo"]
+            duration = mapping.get("duration", 0.8)
+            seq = []
+            for k in keys:
+                seq.append({"motor_type": "key_hold", "key": k})
+            seq.append({"motor_type": "wait", "duration": duration})
+            for k in reversed(keys):
+                seq.append({"motor_type": "key_release", "key": k})
+            command = {
+                "action": action_type,
+                "motor_type": "sequence",
+                "sequence": seq,
+            }
+        else:
+            command = {
+                "action": action_type,
+                "motor_type": mapping["motor"].value,
+                "key": mapping.get("key"),
+                "button": mapping.get("button"),
+                "direction": mapping.get("direction"),
+                "duration": mapping.get("duration", 0.2),
+                "target": action.target,
+                "parameters": action.parameters,
+            }
 
         # Send via body server (real WebSocket to PC) or fall back to port
         sent = False
@@ -999,6 +1038,18 @@ if __name__ == "__main__":
 
     result3 = driver2.act(Action(action_type="invalid_action"))
     check(not result3.success, "Invalid action failed")
+
+    # Combo actions
+    result4 = driver2.act(Action(action_type="sprint_forward"))
+    check(result4.success, "sprint_forward combo succeeded")
+    result5 = driver2.act(Action(action_type="jump_forward"))
+    check(result5.success, "jump_forward combo succeeded")
+    result6 = driver2.act(Action(action_type="sprint_jump"))
+    check(result6.success, "sprint_jump combo succeeded")
+
+    # Verify combo count in SUPPORTED_ACTIONS
+    combos = [a for a in driver.SUPPORTED_ACTIONS if "combo" in MC_ACTION_MAP.get(a, {})]
+    check(len(combos) == 5, f"5 combo actions defined ({len(combos)})")
 
     # ── Entity positions ──
     print("\n6. Entity Positions")

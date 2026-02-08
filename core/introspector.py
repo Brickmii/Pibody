@@ -24,11 +24,12 @@ Architecture:
 
 import math
 import logging
-from typing import Dict, List, Optional, Any
+from abc import ABC, abstractmethod
+from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 
 from .nodes import Node
-from .hypersphere import SpherePosition, angular_distance, place_node_near
+from .hypersphere import SpherePosition, angular_distance, place_node_near, relationship_strength
 from .color_cube import CubePosition, evaluate_righteousness as cube_evaluate_R
 from .node_constants import (
     K, PHI, INV_PHI,
@@ -38,6 +39,127 @@ from .node_constants import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BOOLEAN NAVIGATION — Composable targeting on the hypersphere
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class Target(ABC):
+    """Abstract base for navigational boolean targets.
+
+    Each Target scores a candidate node [0, 1].
+    Compose with And/Or/Not to build complex navigation queries.
+    """
+
+    @abstractmethod
+    def score(self, node: Node) -> float:
+        """Score a candidate node. Returns float in [0, 1]."""
+        ...
+
+
+class NodeTarget(Target):
+    """Angular proximity to an anchor node. 1.0=same position, 0.0=antipodal."""
+
+    def __init__(self, anchor: Node):
+        self._anchor_sp = SpherePosition(theta=anchor.theta, phi=anchor.phi)
+
+    def score(self, node: Node) -> float:
+        node_sp = SpherePosition(theta=node.theta, phi=node.phi)
+        return relationship_strength(self._anchor_sp, node_sp)
+
+
+class HeatTarget(Target):
+    """Heat filter with smooth falloff.
+
+    above=True: high heat scores high (hot filter).
+    above=False: low heat scores high (cold filter).
+    """
+
+    def __init__(self, threshold: float, above: bool = True):
+        self._threshold = max(threshold, 0.001)
+        self._above = above
+
+    def score(self, node: Node) -> float:
+        if self._above:
+            return min(node.heat / self._threshold, 1.0)
+        else:
+            return min(self._threshold / max(node.heat, 0.001), 1.0)
+
+
+class AxisTarget(Target):
+    """Nodes reachable via a source node's learned axes.
+
+    Checks if the candidate is a target of any axis in source.frame.axes.
+    Score = axis.strength (1 - 1/(1+traversal_count)) if found, else 0.
+    """
+
+    def __init__(self, source: Node):
+        # Pre-build lookup: target_id → max strength
+        self._reachable: Dict[str, float] = {}
+        for axis in source.frame.axes.values():
+            existing = self._reachable.get(axis.target_id, 0.0)
+            self._reachable[axis.target_id] = max(existing, axis.strength)
+
+    def score(self, node: Node) -> float:
+        return self._reachable.get(node.id, 0.0)
+
+
+class NotTarget(Target):
+    """Boolean NOT — inverts inner score. Navigate AWAY from inner."""
+
+    def __init__(self, inner: Target):
+        self._inner = inner
+
+    def score(self, node: Node) -> float:
+        return 1.0 - self._inner.score(node)
+
+
+class AndTarget(Target):
+    """Boolean AND — fuzzy intersection (min). Must score well on both."""
+
+    def __init__(self, a: Target, b: Target):
+        self._a = a
+        self._b = b
+
+    def score(self, node: Node) -> float:
+        return min(self._a.score(node), self._b.score(node))
+
+
+class OrTarget(Target):
+    """Boolean OR — fuzzy union (max). Score well on either."""
+
+    def __init__(self, a: Target, b: Target):
+        self._a = a
+        self._b = b
+
+    def score(self, node: Node) -> float:
+        return max(self._a.score(node), self._b.score(node))
+
+
+def resolve(target: Target, manifold, k: int = 10) -> List[Tuple[Node, float]]:
+    """Score all eligible manifold nodes against a target, return top k.
+
+    Skips psychology nodes, bootstraps, Self (inf heat), and non-ACTUAL.
+    O(N) where N ≈ 500-600 nodes — sub-millisecond on Pi.
+    """
+    scored = []
+    for node in manifold.nodes.values():
+        if node.concept in ('identity', 'ego', 'conscience'):
+            continue
+        if node.concept.startswith('bootstrap'):
+            continue
+        if node.heat == float('inf'):
+            continue
+        if node.existence != EXISTENCE_ACTUAL:
+            continue
+        s = target.score(node)
+        if s > 0.0:
+            scored.append((node, s))
+
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return scored[:k]
 
 
 @dataclass
@@ -397,21 +519,22 @@ class Introspector:
 
     def suggest(self, perception_props: Dict) -> Optional[List[str]]:
         """
-        Main entry point: explore heat patterns and suggest actions.
+        Main entry point: boolean navigation on the hypersphere.
 
-        Called from daemon before decide(). Finds what's hot (active),
-        looks for cold neighbors (unused but nearby), and matches
-        cold neighbor concepts to available actions.
+        Composes navigational targets to find relevant cold concepts:
+            near_hot = OR(NodeTarget(h) for h in hot_nodes)
+            cold     = HeatTarget(avg_heat, above=False)
+            target   = AND(near_hot, cold)
 
-        The key insight: if "zombie" is hot and "sword" is a cold neighbor,
-        the Introspector suggests "attack" because the manifold topology
-        connects combat concepts near threat concepts.
+        Enriched with AxisTarget: if hot node "zombie" has a learned axis
+        to "sword", sword gets included even if not angularly close.
+        The manifold's learned connections become navigation paths.
 
         Args:
             perception_props: Current perception properties dict
 
         Returns:
-            List of suggested action names (ordered by relevance), or None
+            List of suggested concept names (ordered by score), or None
         """
         if not self.should_think():
             return None
@@ -420,32 +543,55 @@ class Introspector:
         if not hot_nodes:
             return None
 
-        # Collect cold neighbors across all hot nodes
-        # Track (concept, distance_to_hot) for ranking
-        cold_suggestions = []
-        seen_concepts = set()
+        # Current state domain prefix for cross-domain filtering
+        state_key = perception_props.get("state_key", "")
+        domain_prefix = state_key.split('_')[0] if '_' in state_key else ""
 
-        for hot_node in hot_nodes:
-            cold_neighbors = self.find_cold_neighbors(hot_node, 3)
-            for cold_node in cold_neighbors:
-                if cold_node.concept not in seen_concepts:
-                    seen_concepts.add(cold_node.concept)
-                    cold_suggestions.append(cold_node.concept)
+        # Boolean: near ANY hot node
+        near_hot = NodeTarget(hot_nodes[0])
+        for h in hot_nodes[1:]:
+            near_hot = OrTarget(near_hot, NodeTarget(h))
 
-        if not cold_suggestions:
+        # AND cold (below average heat)
+        cold = HeatTarget(self.manifold.average_heat(), above=False)
+        target = AndTarget(near_hot, cold)
+
+        # Enrich: also include nodes reachable via hot nodes' axes
+        axis_sources = [h for h in hot_nodes if h.frame.axes]
+        if axis_sources:
+            axis_reach = AxisTarget(axis_sources[0])
+            for s in axis_sources[1:]:
+                axis_reach = OrTarget(axis_reach, AxisTarget(s))
+            # Cold nodes reachable by axes OR by angular proximity
+            target = OrTarget(target, AndTarget(axis_reach, cold))
+
+        results = resolve(target, self.manifold, k=15)
+        if not results:
             return None
+
+        # Post-filter: exclude state-key concepts from other domains
+        # State keys have underscores AND digits (e.g. tc_neutral_s20v6, ow_unknown_h20_e0p0)
+        # Action names (move_forward, sprint_jump) have underscores but no digits
+        if domain_prefix:
+            results = [(n, s) for n, s in results
+                       if not ('_' in n.concept and any(c.isdigit() for c in n.concept))
+                       or n.concept.startswith(domain_prefix)]
+            if not results:
+                return None
 
         # Pay evaluation cost from Ego
         if self.manifold.ego_node:
             self.manifold.ego_node.spend_heat(COST_EVALUATE, minimum=PSYCHOLOGY_MIN_HEAT)
 
+        concepts = [node.concept for node, score in results]
+
         # Record to STM
         self._record_stm("introspect_suggest", [
-            SimulationResult(option=c, heat_magnitude=0.0) for c in cold_suggestions[:5]
+            SimulationResult(option=c, heat_magnitude=0.0) for c in concepts[:5]
         ])
 
-        logger.debug(f"Introspector found {len(cold_suggestions)} cold neighbors near hot nodes")
-        return cold_suggestions
+        logger.debug(f"Introspector boolean nav: {len(results)} results from {len(hot_nodes)} hot nodes")
+        return concepts
 
     def get_weight_boosts(self, suggestions: List[str], available_actions: List[str]) -> Dict[str, float]:
         """

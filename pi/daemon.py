@@ -377,7 +377,10 @@ class PBAIDaemon:
         # Start body server if enabled
         if self.enable_body:
             self._start_body_server()
-        
+
+        # Register Minecraft driver (uses body server stream for vision)
+        self._register_minecraft_driver()
+
         self.state = DaemonState.RUNNING
         self.stats.started_at = datetime.now()
         logger.info("═══ PBAI DAEMON RUNNING ═══")
@@ -568,15 +571,12 @@ class PBAIDaemon:
             logger.warning(f"Environment {chosen} not registered")
             return
         
-        # Simple engagement: perceive → act
+        # Engagement: perceive → decide → act
         heat_before = self.manifold.total_heat()
-        
+
         try:
             perception = self.env_core.perceive()
-            
-            # Decide action (simple for now - just observe)
-            # Real implementation would use manifold inference
-            action = Action(action_type="observe")
+            action = self.env_core.decide(perception)
             result = self.env_core.act(action)
             
             heat_after = self.manifold.total_heat()
@@ -623,6 +623,18 @@ class PBAIDaemon:
             logger.warning("Body server module not available")
         except Exception as e:
             logger.error(f"Body server failed to start: {e}")
+
+    def _register_minecraft_driver(self):
+        """Register MinecraftDriver with body server stream wired in."""
+        try:
+            from drivers.minecraft import create_minecraft_driver
+            mc_driver = create_minecraft_driver(
+                manifold=self.manifold,
+                body_server=self.body_server
+            )
+            self.register_driver(mc_driver, "Minecraft Bedrock")
+        except Exception as e:
+            logger.error(f"Failed to register Minecraft driver: {e}")
     
     # ═══════════════════════════════════════════════════════════════════════════
     # PUBLIC INTERFACE (for API and direct control)

@@ -313,7 +313,8 @@ class MinecraftDriver(Driver):
     HEAT_SCALE = 2.0
 
     def __init__(self, port: Port = None, config: Dict[str, Any] = None,
-                 manifold=None, mc_version: str = "1.19.50"):
+                 manifold=None, mc_version: str = "1.19.50",
+                 body_server=None):
         # Game state tracking
         self._game_state: Dict[str, Any] = {}
         self._seen_biomes: set = set()
@@ -328,6 +329,9 @@ class MinecraftDriver(Driver):
         # Player state on hypersphere
         self._player_theta: float = math.pi / 2  # Equator (sea level)
         self._player_phi: float = 0.0             # Facing east
+
+        # Body server reference for streaming vision
+        self._body_server = body_server
 
         # Load game knowledge (minecraft-data from SpockBotMC)
         self._mc_data = None
@@ -448,10 +452,14 @@ class MinecraftDriver(Driver):
         Reads game state from port (fed by vision_transformer output),
         maps to hypersphere coordinates, and returns normalized Perception.
         """
-        # Get latest game state from port
+        # Get latest game state: port message first, then stream buffer
         msg = self.port.receive() if self.port else None
         if msg and msg.payload:
             self._game_state = msg.payload
+        elif self._body_server:
+            streamed = self._body_server.get_latest_world()
+            if streamed:
+                self._game_state = streamed
 
         gs = self._game_state
 
@@ -638,8 +646,11 @@ class MinecraftDriver(Driver):
             "parameters": action.parameters,
         }
 
-        # Send via port
-        if self.port:
+        # Send via body server (real WebSocket to PC) or fall back to port
+        sent = False
+        if self._body_server:
+            sent = self._body_server.send_action(command)
+        elif self.port:
             msg = PortMessage(
                 msg_type="action",
                 payload=command,
@@ -647,8 +658,6 @@ class MinecraftDriver(Driver):
                 sequence=self.port.next_sequence() if hasattr(self.port, 'next_sequence') else 0
             )
             sent = self.port.send(msg)
-        else:
-            sent = False
 
         # Determine heat from action type
         heat = self._action_heat(action_type)
@@ -825,19 +834,22 @@ class MinecraftDriver(Driver):
 # FACTORY
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def create_minecraft_driver(manifold=None, config: Dict[str, Any] = None) -> MinecraftDriver:
+def create_minecraft_driver(manifold=None, config: Dict[str, Any] = None,
+                            body_server=None) -> MinecraftDriver:
     """
     Create a MinecraftDriver instance.
 
     Args:
         manifold: PBAI manifold (optional, can connect later)
         config: Driver configuration
+        body_server: BodyServer for streaming vision (optional)
 
     Returns:
         Configured MinecraftDriver
     """
     port = MinecraftPort(config=config)
-    driver = MinecraftDriver(port=port, config=config, manifold=manifold)
+    driver = MinecraftDriver(port=port, config=config, manifold=manifold,
+                             body_server=body_server)
     driver.register_default_plans()
     return driver
 

@@ -291,6 +291,57 @@ MC_ACTION_MAP = {
     "sprint_jump":     {"combo": ["ctrl", "w", "space"], "duration": 1.0},
     "strafe_left_fwd": {"combo": ["a", "w"], "duration": 0.8},
     "strafe_right_fwd":{"combo": ["d", "w"], "duration": 0.8},
+    # Sequence actions — look-move combos (look where you're going)
+    "explore_left": {"sequence": [
+        {"motor_type": "look", "direction": (-30, 0)},
+        {"motor_type": "wait", "duration": 0.15},
+        {"motor_type": "key_hold", "key": "a"},
+        {"motor_type": "key_hold", "key": "w"},
+        {"motor_type": "wait", "duration": 0.8},
+        {"motor_type": "key_release", "key": "w"},
+        {"motor_type": "key_release", "key": "a"},
+    ]},
+    "explore_right": {"sequence": [
+        {"motor_type": "look", "direction": (30, 0)},
+        {"motor_type": "wait", "duration": 0.15},
+        {"motor_type": "key_hold", "key": "d"},
+        {"motor_type": "key_hold", "key": "w"},
+        {"motor_type": "wait", "duration": 0.8},
+        {"motor_type": "key_release", "key": "w"},
+        {"motor_type": "key_release", "key": "d"},
+    ]},
+    "scout_ahead": {"sequence": [
+        {"motor_type": "look", "direction": (0, -15)},
+        {"motor_type": "wait", "duration": 0.1},
+        {"motor_type": "key_hold", "key": "ctrl"},
+        {"motor_type": "key_hold", "key": "w"},
+        {"motor_type": "wait", "duration": 1.2},
+        {"motor_type": "key_release", "key": "w"},
+        {"motor_type": "key_release", "key": "ctrl"},
+    ]},
+    "watch_step": {"sequence": [
+        {"motor_type": "look", "direction": (0, 20)},
+        {"motor_type": "wait", "duration": 0.1},
+        {"motor_type": "key_hold", "key": "w"},
+        {"motor_type": "wait", "duration": 0.6},
+        {"motor_type": "key_release", "key": "w"},
+    ]},
+    # Mining: look down + hold left click to break block below/ahead
+    "mine_block": {"sequence": [
+        {"motor_type": "look", "direction": (0, 40)},
+        {"motor_type": "wait", "duration": 0.1},
+        {"motor_type": "mouse_hold", "button": "left", "duration": 3.0},
+    ]},
+    # Mine forward: look straight ahead + hold attack to break block in front
+    "mine_forward": {"sequence": [
+        {"motor_type": "look", "direction": (0, 0)},
+        {"motor_type": "wait", "duration": 0.1},
+        {"motor_type": "mouse_hold", "button": "left", "duration": 3.0},
+    ]},
+    # Close inventory / escape UI — press Escape to close any open UI
+    "close_ui": {"motor": MotorType.KEY_PRESS, "key": "escape"},
+    # Swim up: hold space + w to surface when underwater
+    "swim_up": {"combo": ["space", "w"], "duration": 1.5},
 }
 
 # Exploration weights — higher = more likely to be chosen during exploration.
@@ -298,25 +349,44 @@ MC_ACTION_MAP = {
 MC_ACTION_WEIGHTS = {
     "move_forward":    5.0,
     "move_backward":   2.0,
-    "strafe_left":     2.0,
-    "strafe_right":    2.0,
+    "strafe_left":     0.5,
+    "strafe_right":    0.5,
     "jump":            3.0,
     "sneak":           1.0,
     "sprint":          1.5,
-    "attack":          1.0,
-    "use":             1.0,
+    "attack":          3.0,
+    "use":             2.5,
     "look_up":         3.0,
     "look_down":       3.0,
     "look_left":       3.5,
     "look_right":      3.5,
-    "open_inventory":  0.3,
+    "open_inventory":  0.1,
     "wait":            0.5,
     "sprint_forward":  4.0,
     "jump_forward":    3.5,
     "sprint_jump":     3.0,
-    "strafe_left_fwd": 2.0,
-    "strafe_right_fwd":2.0,
+    "strafe_left_fwd": 1.0,
+    "strafe_right_fwd":1.0,
+    "explore_left":    4.0,
+    "explore_right":   4.0,
+    "scout_ahead":     3.5,
+    "watch_step":      2.0,
+    "mine_block":      3.5,
+    "mine_forward":    3.0,
+    "close_ui":        0.0,    # Only used when UI is open (forced)
+    "swim_up":         0.0,    # Only used when drowning (boosted dynamically)
 }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PERCEPTION-DRIVEN TARGETING: Vision peaks → camera movement
+# ═══════════════════════════════════════════════════════════════════════════════
+
+MC_SCREEN_CENTER = 32           # Vision grid is 64x64
+MC_LOOK_SENSITIVITY = 1.5      # Pixels → mouse delta multiplier
+MC_TARGET_HEAT_THRESHOLD = 0.3  # Min peak heat to target
+MC_TARGET_DEAD_ZONE = 3        # Cells from center to skip targeting
+MAX_LOOK_DELTA = 50            # Clamp mouse movement
 
 
 class MinecraftDriver(Driver):
@@ -365,6 +435,17 @@ class MinecraftDriver(Driver):
         # Body server reference for streaming vision
         self._body_server = body_server
 
+        # Targeting state (Layer 2: perception-driven camera)
+        self._current_target: Optional[Dict[str, Any]] = None
+
+        # UI state tracking — when inventory/chest/crafting UI is open,
+        # movement actions don't work. Must close UI first.
+        self._ui_open: bool = False
+
+        # Drowning detection — tracks health trend + position_y
+        self._last_health: float = 20.0
+        self._underwater_ticks: int = 0
+
         # Load game knowledge (minecraft-data from SpockBotMC)
         self._mc_data = None
         if HAS_MC_DATA:
@@ -391,7 +472,10 @@ class MinecraftDriver(Driver):
             return
 
         for action_name, mapping in MC_ACTION_MAP.items():
-            if "combo" in mapping:
+            if "sequence" in mapping:
+                # Sequence actions have no single motor — skip registration
+                continue
+            elif "combo" in mapping:
                 # Combo actions register as KEY_HOLD (primary key = first in combo)
                 motor = MotorAction(
                     motor_type=MotorType.KEY_HOLD,
@@ -415,15 +499,49 @@ class MinecraftDriver(Driver):
                 )
             self.driver_node.register_motor(action_name, motor)
 
+    def get_actions(self, state: dict = None) -> List[str]:
+        """Return valid actions for current state.
+
+        Filters actions based on UI state and danger:
+        - UI open: only close_ui is valid
+        - UI closed: close_ui is excluded, open_inventory available
+        """
+        if self._ui_open:
+            return ["close_ui"]
+
+        # Normal play: exclude close_ui (only valid when UI is open)
+        return [a for a in self.SUPPORTED_ACTIONS if a != "close_ui"]
+
     def get_action_weights(self, actions: list = None) -> Dict[str, float]:
         """Return exploration weights for actions (higher = more likely).
 
         Used by EnvironmentCore.decide() for weighted random exploration
         instead of uniform random, producing more deliberate movement.
+
+        State-aware:
+        - When drowning: swim_up and jump get massive boost
+        - When target exists: look_at_target gets high weight
         """
         if actions is None:
-            actions = self.SUPPORTED_ACTIONS
-        return {a: MC_ACTION_WEIGHTS.get(a, 1.0) for a in actions}
+            actions = self.get_actions()
+        weights = {a: MC_ACTION_WEIGHTS.get(a, 1.0) for a in actions}
+
+        # DROWNING: massively boost swim_up and jump
+        if self._underwater_ticks >= 2:
+            weights["swim_up"] = 15.0
+            weights["jump"] = 10.0
+            weights["jump_forward"] = 8.0
+            # Suppress actions that keep you underwater
+            weights["sneak"] = 0.0
+            weights["mine_block"] = 0.0
+            weights["wait"] = 0.0
+            logger.info(f"DROWNING! Boosting swim_up/jump (underwater {self._underwater_ticks} ticks)")
+
+        # If targeting found a valid peak, add look_at_target with high weight
+        if self._current_target and "look_at_target" in MC_ACTION_MAP:
+            weights["look_at_target"] = 6.0
+
+        return weights
 
     # ═══════════════════════════════════════════════════════════════════════════
     # GAME KNOWLEDGE (minecraft-data)
@@ -532,6 +650,20 @@ class MinecraftDriver(Driver):
         # Cube projection
         cube_x, cube_y, cube_tau = sphere_to_cube(self._player_theta, self._player_phi)
 
+        # ── Drowning detection ──
+        # MC sea level is ~62. If player is below sea level AND health is dropping,
+        # they're likely drowning. Also detect via oxygen/air if available.
+        air = player.get("air", player.get("oxygen", -1))
+        if air >= 0 and air < 150:
+            # Direct air level detection (normal max is 300)
+            self._underwater_ticks += 1
+        elif py < MC_Y_SEA - 1 and health < self._last_health:
+            # Below sea level + taking damage = probably drowning
+            self._underwater_ticks += 1
+        else:
+            self._underwater_ticks = max(0, self._underwater_ticks - 1)
+        self._last_health = health
+
         # ── Entities (enriched with game knowledge) ──
         entities = []
         entity_data = gs.get("entities", [])
@@ -595,6 +727,10 @@ class MinecraftDriver(Driver):
             properties["game_knowledge"] = True
             properties["hostile_count"] = hostile_count
 
+        # Danger states
+        properties["is_drowning"] = self._underwater_ticks >= 2
+        properties["ui_open"] = self._ui_open
+
         # ── Heat: novelty/discovery ──
         novelty_heat = self._calculate_novelty_heat(gs)
 
@@ -608,6 +744,15 @@ class MinecraftDriver(Driver):
             raw=gs
         )
 
+        # Targeting: extract vision peaks and store for action selection
+        targets = self._extract_targets()
+        if targets:
+            properties["has_target"] = True
+            properties["target_heat"] = targets[0]["heat"]
+        else:
+            properties["has_target"] = False
+            properties["target_heat"] = 0.0
+
         # Feed to DriverNode for learning
         self.feed_perception(perception)
 
@@ -615,6 +760,90 @@ class MinecraftDriver(Driver):
         self._last_position = (px, py, pz)
 
         return perception
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # TARGETING: Vision peaks → camera movement
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def _extract_targets(self) -> List[Dict[str, Any]]:
+        """
+        Extract targeting candidates from vision peaks.
+
+        Reads peaks from game state, filters by heat threshold,
+        computes screen-space offsets from center.
+
+        Returns:
+            List of target dicts sorted by heat descending
+        """
+        peaks = self._game_state.get("peaks", [])
+        targets = []
+
+        for peak in peaks:
+            heat = peak.get("heat", 0.0)
+            if heat < MC_TARGET_HEAT_THRESHOLD:
+                continue
+
+            px = peak.get("x", MC_SCREEN_CENTER)
+            py = peak.get("y", MC_SCREEN_CENTER)
+            dx = px - MC_SCREEN_CENTER
+            dy = py - MC_SCREEN_CENTER
+
+            # Get angular coords if available
+            theta = peak.get("theta", self._player_theta)
+            phi = peak.get("phi", self._player_phi)
+            cube_x, cube_y, cube_tau = sphere_to_cube(theta, phi)
+
+            targets.append({
+                "heat": heat,
+                "dx": dx,
+                "dy": dy,
+                "theta": theta,
+                "phi": phi,
+                "cube_x": round(cube_x, 4),
+                "cube_y": round(cube_y, 4),
+                "cube_tau": round(cube_tau, 4),
+            })
+
+        targets.sort(key=lambda t: t["heat"], reverse=True)
+        return targets
+
+    def _get_target_action(self) -> Optional[str]:
+        """
+        Build a look_at_target action from the best vision peak.
+
+        Returns:
+            "look_at_target" if a valid target exists, None otherwise
+        """
+        targets = self._extract_targets()
+        if not targets:
+            self._current_target = None
+            return None
+
+        best = targets[0]
+
+        # Skip if already centered (within dead zone)
+        if abs(best["dx"]) < MC_TARGET_DEAD_ZONE and abs(best["dy"]) < MC_TARGET_DEAD_ZONE:
+            self._current_target = None
+            return None
+
+        # Compute mouse delta, clamped
+        mouse_dx = max(-MAX_LOOK_DELTA, min(MAX_LOOK_DELTA,
+                       best["dx"] * MC_LOOK_SENSITIVITY))
+        mouse_dy = max(-MAX_LOOK_DELTA, min(MAX_LOOK_DELTA,
+                       best["dy"] * MC_LOOK_SENSITIVITY))
+
+        # Dynamically register look_at_target in MC_ACTION_MAP
+        MC_ACTION_MAP["look_at_target"] = {
+            "motor": MotorType.LOOK,
+            "direction": (mouse_dx, mouse_dy),
+        }
+
+        self._current_target = best
+        return "look_at_target"
+
+    def get_targeting_context(self) -> Optional[Dict[str, Any]]:
+        """Return current target info for Introspector to read."""
+        return self._current_target
 
     def _build_state_key(self, gs: Dict[str, Any]) -> str:
         """Build a concise state key from game state."""
@@ -678,6 +907,13 @@ class MinecraftDriver(Driver):
         and sends through the port to the Windows Client.
         """
         action_type = action.action_type
+
+        # Track UI state: open_inventory opens UI, close_ui/escape closes it
+        if action_type == "open_inventory":
+            self._ui_open = True
+        elif action_type == "close_ui":
+            self._ui_open = False
+
         mapping = MC_ACTION_MAP.get(action_type)
 
         if not mapping:
@@ -688,7 +924,14 @@ class MinecraftDriver(Driver):
             )
 
         # Build command for Windows Client
-        if "combo" in mapping:
+        if "sequence" in mapping:
+            # Sequence action: multi-step look+move combo
+            command = {
+                "action": action_type,
+                "motor_type": "sequence",
+                "sequence": mapping["sequence"],
+            }
+        elif "combo" in mapping:
             # Combo action: hold multiple keys simultaneously via sequence
             keys = mapping["combo"]
             duration = mapping.get("duration", 0.8)
@@ -761,6 +1004,11 @@ class MinecraftDriver(Driver):
             "look_right": K * 0.1,
             "open_inventory": K * 0.2,
             "wait": K * 0.05,
+            "look_at_target": K * 0.15,
+            "mine_block": K * 1.0,
+            "mine_forward": K * 1.0,
+            "close_ui": K * 0.1,
+            "swim_up": K * 0.5,
         }
         return self.scale_heat(heat_map.get(action_type, K * 0.1))
 
@@ -1049,7 +1297,7 @@ if __name__ == "__main__":
 
     # Verify combo count in SUPPORTED_ACTIONS
     combos = [a for a in driver.SUPPORTED_ACTIONS if "combo" in MC_ACTION_MAP.get(a, {})]
-    check(len(combos) == 5, f"5 combo actions defined ({len(combos)})")
+    check(len(combos) == 6, f"6 combo actions defined ({len(combos)})")
 
     # ── Entity positions ──
     print("\n6. Entity Positions")
@@ -1126,6 +1374,90 @@ if __name__ == "__main__":
         check(p.properties.get("hostile_count", -1) >= 0, f"hostile_count in properties = {p.properties.get('hostile_count')}")
     else:
         print("  SKIP: minecraft-data not installed")
+
+    # ── Sequence Actions (Layer 1) ──
+    print("\n10. Sequence Actions (Look-Move Combos)")
+
+    sequences = [a for a in driver.SUPPORTED_ACTIONS if "sequence" in MC_ACTION_MAP.get(a, {})]
+    check(len(sequences) == 6, f"6 sequence actions defined ({len(sequences)})")
+    check("explore_left" in driver.SUPPORTED_ACTIONS, "explore_left in SUPPORTED_ACTIONS")
+    check("scout_ahead" in driver.SUPPORTED_ACTIONS, "scout_ahead in SUPPORTED_ACTIONS")
+    check("watch_step" in driver.SUPPORTED_ACTIONS, "watch_step in SUPPORTED_ACTIONS")
+
+    # Execute sequence actions
+    for seq_name in ["explore_left", "explore_right", "scout_ahead", "watch_step"]:
+        r = driver2.act(Action(action_type=seq_name))
+        check(r.success, f"{seq_name} sequence succeeded")
+
+    # Verify sequence structure
+    explore_map = MC_ACTION_MAP["explore_left"]
+    check("sequence" in explore_map, "explore_left has 'sequence' key")
+    check(len(explore_map["sequence"]) == 7, f"explore_left has 7 steps ({len(explore_map['sequence'])})")
+    check(explore_map["sequence"][0]["motor_type"] == "look", "explore_left starts with look")
+
+    # Weights exist for sequence actions
+    w = driver.get_action_weights()
+    check("explore_left" in w, "explore_left has weight")
+    check("scout_ahead" in w, "scout_ahead has weight")
+    check(w.get("scout_ahead", 0) == 3.5, f"scout_ahead weight = 3.5 ({w.get('scout_ahead')})")
+
+    # Total action count: 17 single + 5 combo + 6 sequence = 28
+    total_actions = len(MC_ACTION_MAP)
+    check(total_actions == 28, f"Total actions = 28 ({total_actions})")
+
+    # ── Targeting (Layer 2) ──
+    print("\n11. Perception-Driven Targeting")
+
+    # No peaks → no target
+    driver3 = MinecraftDriver(port=MinecraftPort())
+    driver3.port.connect()
+    no_peak_state = dict(test_state)
+    no_peak_state["peaks"] = []
+    driver3.port.feed_game_state(no_peak_state)
+    driver3.perceive()
+    check(driver3._get_target_action() is None, "No peaks → no target action")
+    check(driver3.get_targeting_context() is None, "No peaks → no targeting context")
+
+    # Peaks with heat → targeting
+    peak_state = dict(test_state)
+    peak_state["peaks"] = [
+        {"x": 48, "y": 20, "heat": 0.8, "theta": 1.2, "phi": 0.5},
+        {"x": 33, "y": 33, "heat": 0.1},  # Below threshold
+    ]
+    driver3.port.feed_game_state(peak_state)
+    driver3.perceive()
+
+    targets = driver3._extract_targets()
+    check(len(targets) == 1, f"1 target above threshold ({len(targets)})")
+    check(targets[0]["heat"] == 0.8, f"Target heat = 0.8 ({targets[0]['heat']})")
+    check(targets[0]["dx"] == 16, f"Target dx = 16 ({targets[0]['dx']})")
+
+    target_action = driver3._get_target_action()
+    check(target_action == "look_at_target", f"Target action = look_at_target ({target_action})")
+    check(driver3.get_targeting_context() is not None, "Targeting context exists")
+    check("look_at_target" in MC_ACTION_MAP, "look_at_target registered in MC_ACTION_MAP")
+
+    # look_at_target has correct direction
+    lat_map = MC_ACTION_MAP.get("look_at_target", {})
+    check("direction" in lat_map, "look_at_target has direction")
+    lat_dir = lat_map.get("direction", (0, 0))
+    check(abs(lat_dir[0] - 24.0) < 0.1, f"look_at_target dx = 24.0 ({lat_dir[0]})")
+
+    # get_action_weights includes look_at_target when target exists
+    w_target = driver3.get_action_weights()
+    check("look_at_target" in w_target, "look_at_target in action weights")
+    check(w_target["look_at_target"] == 6.0, f"look_at_target weight = 6.0 ({w_target.get('look_at_target')})")
+
+    # Dead zone: peak at center → no target
+    center_state = dict(test_state)
+    center_state["peaks"] = [{"x": 33, "y": 31, "heat": 0.9}]
+    driver3.port.feed_game_state(center_state)
+    driver3.perceive()
+    check(driver3._get_target_action() is None, "Dead zone peak → no target action")
+
+    # Perception includes targeting properties
+    check("has_target" in perception.properties, "has_target in perception properties")
+    check("target_heat" in perception.properties, "target_heat in perception properties")
 
     print(f"\n{'='*40}")
     if errors == 0:

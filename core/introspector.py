@@ -102,11 +102,15 @@ class Introspector:
 
     def should_think(self) -> bool:
         """
-        Gate introspection on both Ego AND Conscience.
+        Gate introspection on Ego energy + Conscience existence.
 
         Ego must have energy to think (above min heat + eval cost).
         Conscience must be actual (connected, conscious) to validate.
-        Both must agree before spending energy on simulation.
+
+        NOTE: In mature manifolds, Conscience heat stays near PSYCHOLOGY_MIN_HEAT
+        because the clock tick drains it through axis traversal. We only check
+        Conscience existence (ACTUAL = not dormant), not heat level. The
+        Introspector pays from Ego, not Conscience.
         """
         ego = self.manifold.ego_node
         conscience = self.manifold.conscience_node
@@ -119,10 +123,6 @@ class Introspector:
 
         # Ego must have energy to afford evaluation
         if ego.heat < COST_EVALUATE + PSYCHOLOGY_MIN_HEAT:
-            return False
-
-        # Conscience must also have evaluation energy
-        if conscience.heat < COST_EVALUATE + PSYCHOLOGY_MIN_HEAT:
             return False
 
         return True
@@ -335,3 +335,157 @@ class Introspector:
             "stm_capacity": self._stm_capacity,
             "stm_pattern": self.get_stm_pattern(),
         }
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # HEAT-PATTERN EXPLORER — Watches hot nodes, suggests cold neighbors
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def find_hot_nodes(self, n: int = 5) -> List[Node]:
+        """
+        Find the hottest nodes on the manifold (what's active right now).
+
+        Skips psychology nodes (identity/ego/conscience), bootstraps, and Self.
+        Only considers ACTUAL nodes (alive, connected).
+
+        Args:
+            n: Number of hot nodes to return
+
+        Returns:
+            Top N nodes sorted by heat descending
+        """
+        candidates = []
+        for node in self.manifold.nodes.values():
+            if node.concept in ('identity', 'ego', 'conscience'):
+                continue
+            if node.concept.startswith('bootstrap'):
+                continue
+            if node.heat == float('inf'):
+                continue
+            if node.existence != EXISTENCE_ACTUAL:
+                continue
+            candidates.append(node)
+
+        candidates.sort(key=lambda n: n.heat, reverse=True)
+        return candidates[:n]
+
+    def find_cold_neighbors(self, hot_node: Node, k: int = 5) -> List[Node]:
+        """
+        Find cold neighbors of a hot node — nearby but underused connections.
+
+        These are concepts that are topologically close on the hypersphere
+        to something active, but aren't being used. The Introspector
+        suggests these as potentially relevant actions or concepts.
+
+        Args:
+            hot_node: The active node to search near
+            k: Max neighbors to return
+
+        Returns:
+            List of cold neighbor Nodes (heat below average)
+        """
+        # Get more candidates than needed, then filter for coldness
+        neighbors = self.manifold.k_nearest(hot_node, k * 2)
+        avg_heat = self.manifold.average_heat()
+
+        cold = []
+        for node, dist in neighbors:
+            if node.heat < avg_heat:
+                cold.append(node)
+            if len(cold) >= k:
+                break
+        return cold
+
+    def suggest(self, perception_props: Dict) -> Optional[List[str]]:
+        """
+        Main entry point: explore heat patterns and suggest actions.
+
+        Called from daemon before decide(). Finds what's hot (active),
+        looks for cold neighbors (unused but nearby), and matches
+        cold neighbor concepts to available actions.
+
+        The key insight: if "zombie" is hot and "sword" is a cold neighbor,
+        the Introspector suggests "attack" because the manifold topology
+        connects combat concepts near threat concepts.
+
+        Args:
+            perception_props: Current perception properties dict
+
+        Returns:
+            List of suggested action names (ordered by relevance), or None
+        """
+        if not self.should_think():
+            return None
+
+        hot_nodes = self.find_hot_nodes(5)
+        if not hot_nodes:
+            return None
+
+        # Collect cold neighbors across all hot nodes
+        # Track (concept, distance_to_hot) for ranking
+        cold_suggestions = []
+        seen_concepts = set()
+
+        for hot_node in hot_nodes:
+            cold_neighbors = self.find_cold_neighbors(hot_node, 3)
+            for cold_node in cold_neighbors:
+                if cold_node.concept not in seen_concepts:
+                    seen_concepts.add(cold_node.concept)
+                    cold_suggestions.append(cold_node.concept)
+
+        if not cold_suggestions:
+            return None
+
+        # Pay evaluation cost from Ego
+        if self.manifold.ego_node:
+            self.manifold.ego_node.spend_heat(COST_EVALUATE, minimum=PSYCHOLOGY_MIN_HEAT)
+
+        # Record to STM
+        self._record_stm("introspect_suggest", [
+            SimulationResult(option=c, heat_magnitude=0.0) for c in cold_suggestions[:5]
+        ])
+
+        logger.debug(f"Introspector found {len(cold_suggestions)} cold neighbors near hot nodes")
+        return cold_suggestions
+
+    def get_weight_boosts(self, suggestions: List[str], available_actions: List[str]) -> Dict[str, float]:
+        """
+        Convert Introspector suggestions to action weight boosts.
+
+        Matches cold neighbor concepts against available action names:
+        - Direct match: cold concept == action name → boost 4.0
+        - Partial match: cold concept is substring of action name → boost 2.5
+        - Axis match: cold node has axis pointing to node whose concept
+          matches an action → boost 2.0
+
+        Args:
+            suggestions: Cold neighbor concepts from suggest()
+            available_actions: Actions the driver currently supports
+
+        Returns:
+            Dict of {action_name: boost_multiplier}
+        """
+        boosts = {}
+        action_set = set(available_actions)
+
+        for concept in suggestions:
+            # Direct match: concept name IS an action
+            if concept in action_set:
+                boosts[concept] = max(boosts.get(concept, 1.0), 4.0)
+                continue
+
+            # Partial match: concept appears in an action name
+            for action in available_actions:
+                if concept in action or action in concept:
+                    boosts[action] = max(boosts.get(action, 1.0), 2.5)
+
+            # Axis match: concept node has axes to nodes whose concepts match actions
+            concept_node = self.manifold.get_node_by_concept(concept)
+            if concept_node:
+                for axis_name, axis in concept_node.frame.axes.items():
+                    target_node = self.manifold.get_node(axis.target_id)
+                    if target_node and target_node.concept in action_set:
+                        boosts[target_node.concept] = max(
+                            boosts.get(target_node.concept, 1.0), 2.0
+                        )
+
+        return boosts

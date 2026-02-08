@@ -737,6 +737,33 @@ class Manifold:
 
         return base_distance
     
+    def k_nearest(self, node: Node, k: int = 5, exclude_psychology: bool = True) -> list:
+        """
+        Find k nearest nodes by angular distance on the hypersphere.
+
+        Args:
+            node: Reference node
+            k: Number of neighbors to return
+            exclude_psychology: Skip identity/ego/conscience nodes
+
+        Returns:
+            List of (Node, float) tuples sorted by distance ascending
+        """
+        node_sp = SpherePosition(theta=node.theta, phi=node.phi, radius=node.radius)
+        distances = []
+        for candidate in self.nodes.values():
+            if candidate.id == node.id:
+                continue
+            if exclude_psychology and candidate.concept in ('identity', 'ego', 'conscience'):
+                continue
+            if candidate.concept.startswith('bootstrap'):
+                continue
+            cand_sp = SpherePosition(theta=candidate.theta, phi=candidate.phi, radius=candidate.radius)
+            dist = angular_distance(node_sp, cand_sp)
+            distances.append((candidate, dist))
+        distances.sort(key=lambda x: x[1])
+        return distances[:k]
+
     # ═══════════════════════════════════════════════════════════════════════════
     # PSYCHOLOGY - Identity / Conscience / Ego
     # ═══════════════════════════════════════════════════════════════════════════

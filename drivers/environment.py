@@ -463,7 +463,12 @@ class EnvironmentCore:
         self.action_history: List[tuple] = []  # (Action, ActionResult)
         self.max_history = 100
         self.loop_count = 0
-        
+
+        # Action queue (Introspector plans)
+        self._action_queue: List[str] = []
+        # Weight boosts from Introspector suggestions
+        self._weight_boosts: Dict[str, float] = {}
+
         # Birth
         self._birth()
     
@@ -668,6 +673,18 @@ class EnvironmentCore:
         if driver:
             return driver.SUPPORTED_ACTIONS
         return []
+
+    def enqueue_plan(self, plan: List[str]):
+        """Queue a sequence of actions (from Introspector)."""
+        self._action_queue = list(plan)
+
+    def clear_plan(self):
+        """Clear queued action plan."""
+        self._action_queue.clear()
+
+    def has_plan(self) -> bool:
+        """Check if there's a queued action plan."""
+        return len(self._action_queue) > 0
     
     # ───────────────────────────────────────────────────────────────────────────
     # MANIFOLD INTEGRATION (Routes to proper nodes)
@@ -792,46 +809,68 @@ class EnvironmentCore:
     def decide(self, perception: Perception = None) -> Action:
         """
         Route decision OUTPUT through DecisionNode.
-        
+
         Uses learned action scores from GameHandler when available.
-        
+        Drains action queue first if Introspector has queued a plan.
+
         Args:
             perception: Current perception (if None, calls perceive())
-            
+
         Returns:
             Action selected based on learned outcomes
         """
         import random
-        
+
         # Get perception if not provided
         if perception is None:
             perception = self.perceive()
 
         # Get available actions (state-aware if driver supports it)
         driver = self.get_active_driver()
-        if driver and hasattr(driver, 'get_actions') and hasattr(driver, '_current_hand_state') and driver._current_hand_state:
-            available_actions = driver.get_actions(driver._current_hand_state)
+        if driver and hasattr(driver, 'get_actions'):
+            available_actions = driver.get_actions(getattr(driver, '_current_hand_state', None))
         else:
             available_actions = self.get_supported_actions()
         if not available_actions:
             logger.warning("No available actions - returning wait")
             return Action(action_type="wait")
 
+        # Drain action queue first (Introspector plans)
+        if self._action_queue:
+            next_action = self._action_queue.pop(0)
+            # Validate: action must still be available (or be a dynamic action like look_at_target)
+            valid_set = set(available_actions)
+            # Also accept dynamic targeting actions
+            if driver and hasattr(driver, '_current_target') and driver._current_target:
+                valid_set.add("look_at_target")
+            if next_action in valid_set:
+                logger.info(f"Plan queue: {next_action} ({len(self._action_queue)} remaining)")
+                return Action(action_type=next_action, target=next_action)
+            else:
+                logger.warning(f"Queued action {next_action} no longer valid — clearing plan")
+                self._action_queue.clear()
+
         # Get state and context
         state_key = getattr(self, '_current_state_key', perception.properties.get("state_key", "unknown"))
         context = getattr(self, '_current_context', {})
-        
+
         # Route to DecisionNode (OUTPUT)
         decision_node = self._get_decision_node()
-        
+
         # Get exploration rate (decays as we learn more)
         exploration_rate = self.manifold.get_exploration_rate() if self.manifold else 0.3
-        
+
         if random.random() < exploration_rate:
             # Explore: weighted random if driver provides weights, else uniform
             driver = self.get_active_driver()
             if hasattr(driver, 'get_action_weights'):
                 weights_map = driver.get_action_weights(available_actions)
+                # Apply Introspector weight boosts if available
+                if self._weight_boosts:
+                    for action in available_actions:
+                        if action in self._weight_boosts:
+                            weights_map[action] = weights_map.get(action, 1.0) * self._weight_boosts[action]
+                    self._weight_boosts = {}  # Clear after use
                 weights = [weights_map.get(a, 1.0) for a in available_actions]
                 chosen = random.choices(available_actions, weights=weights, k=1)[0]
             else:

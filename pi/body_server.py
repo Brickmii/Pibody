@@ -50,6 +50,7 @@ DRIVER INTERFACE:
 """
 
 import asyncio
+import collections
 import json
 import logging
 import time
@@ -141,6 +142,10 @@ class BodyServer:
         self.last_world_state: Optional[dict] = None
         self.world_requests: int = 0
         self.last_world_t_K: int = 0  # t_K of last world state
+
+        # Persistent vision buffer (fed by continuous stream from PC)
+        self._world_buffer: collections.deque = collections.deque(maxlen=10)
+        self._world_buffer_lock: threading.Lock = threading.Lock()
     
     @property
     def has_body(self) -> bool:
@@ -273,6 +278,17 @@ class BodyServer:
         finally:
             body.pending_vision = None
     
+    def get_latest_world(self) -> Optional[dict]:
+        """Get most recent world state from buffer (non-blocking).
+
+        Returns None if no frames have been received yet.
+        Used by drivers that want continuous vision without blocking.
+        """
+        with self._world_buffer_lock:
+            if self._world_buffer:
+                return self._world_buffer[-1]
+        return None
+
     def send_action(self, action: dict, timeout: float = 5.0) -> bool:
         """
         Send action to PC body.
@@ -401,9 +417,16 @@ class BodyServer:
             return None  # No response needed
         
         elif msg_type == "world_state":
-            # Response to our world request
+            data = msg.get("data", {})
+
+            # Always buffer incoming world state (streamed or requested)
+            if data and not msg.get("error"):
+                with self._world_buffer_lock:
+                    self._world_buffer.append(data)
+                self.last_world_state = data
+
+            # If there's a pending request, resolve it too
             if body.pending_vision and not body.pending_vision.done():
-                data = msg.get("data", {})
                 if msg.get("error"):
                     body.pending_vision.set_result(None)
                 else:
@@ -658,6 +681,8 @@ class BodyServer:
     
     def get_status(self) -> dict:
         """Get server status (Planck-Grounded)."""
+        with self._world_buffer_lock:
+            buffer_len = len(self._world_buffer)
         return {
             "running": self._running,
             "port": self.port,
@@ -667,6 +692,7 @@ class BodyServer:
             "world_requests": self.world_requests,
             "has_last_world_state": self.last_world_state is not None,
             "last_world_t_K": self.last_world_t_K,
+            "world_buffer_depth": buffer_len,
         }
 
 

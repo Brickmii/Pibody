@@ -205,14 +205,21 @@ class APIHandler(BaseHTTPRequestHandler):
                 self._send_error(str(e))
         
         elif path == '/request_world':
-            # Request world state from connected PC body
+            # Try buffer first (instant, no round-trip to PC)
+            if self.daemon.body_server:
+                latest = self.daemon.body_server.get_latest_world()
+                if latest:
+                    self._send_json({"status": "ok", "world": latest, "source": "buffer"})
+                    return
+
+            # Fall back to explicit request
             if not self.daemon.body_server or not self.daemon.body_server.has_body:
                 self._send_error("No body connected", 503)
                 return
             try:
                 world = self.daemon.body_server.request_world(timeout=60.0)
                 if world:
-                    self._send_json({"status": "ok", "world": world})
+                    self._send_json({"status": "ok", "world": world, "source": "request"})
                 else:
                     self._send_error("World request timed out or failed", 504)
             except Exception as e:

@@ -284,13 +284,16 @@ class PBAIClient:
                  motor_enabled: bool = True,
                  learn: bool = True,
                  kill_key: str = "F12",
-                 checkpoint: Optional[str] = None):
-        
+                 checkpoint: Optional[str] = None,
+                 stream_fps: float = 2.0):
+
         self.host = host
         self.port = port
         self.resolution = resolution
         self.learn = learn
         self.kill_key = kill_key.lower()
+        self._stream_fps = stream_fps
+        self._streaming = False
         
         # Device
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -549,6 +552,58 @@ class PBAIClient:
                 if abs(heat) > 0.5:
                     logger.info(f"Heat feedback: {heat:.2f}, loss: {loss:.4f}")
     
+    async def _continuous_capture_loop(self):
+        """Background loop: capture + transform + send at configured FPS.
+
+        Sends unsolicited world_state frames so the Pi always has fresh
+        vision data in its buffer without explicit request_world round-trips.
+        """
+        self._streaming = True
+        interval = 1.0 / self._stream_fps
+        logger.info(f"Starting continuous capture at {self._stream_fps} FPS (interval={interval:.3f}s)")
+
+        while self._streaming and self._running and self._ws:
+            try:
+                image = self.screen.capture()
+                if image is None:
+                    await asyncio.sleep(interval)
+                    continue
+
+                # Convert to tensor (same pipeline as _handle_world_request)
+                img_tensor = torch.from_numpy(image).float().to(self.device)
+                if img_tensor.max() > 1:
+                    img_tensor = img_tensor / 255.0
+                img_tensor = img_tensor.permute(2, 0, 1).unsqueeze(0)
+
+                if img_tensor.shape[-1] != self.resolution:
+                    img_tensor = torch.nn.functional.interpolate(
+                        img_tensor,
+                        size=(self.resolution, self.resolution),
+                        mode='bilinear',
+                        align_corners=False
+                    )
+
+                with torch.no_grad():
+                    output = self.model(img_tensor, self._focus_hint)
+
+                world_state = self.build_world_state(self.model, img_tensor, top_k=10)
+
+                await self._ws.send(json.dumps({
+                    "type": "world_state",
+                    "data": world_state,
+                    "stream": True
+                }))
+
+            except websockets.ConnectionClosed:
+                break
+            except Exception as e:
+                logger.error(f"Stream capture error: {e}")
+
+            await asyncio.sleep(interval)
+
+        self._streaming = False
+        logger.info("Continuous capture stopped")
+
     def _save_checkpoint(self, path: str):
         """Save model checkpoint."""
         state = {
@@ -566,10 +621,15 @@ class PBAIClient:
         """Main loop."""
         if not await self.connect():
             return
-        
+
         self._running = True
         logger.info(f"Running (learning={'ON' if self.learn else 'OFF'})")
-        
+
+        # Start continuous capture in background (if enabled)
+        stream_task = None
+        if self._stream_fps > 0:
+            stream_task = asyncio.create_task(self._continuous_capture_loop())
+
         try:
             while self._running and self.connected:
                 try:
@@ -584,6 +644,9 @@ class PBAIClient:
         except Exception as e:
             logger.error(f"Error: {e}")
         finally:
+            self._streaming = False
+            if stream_task:
+                stream_task.cancel()
             await self.disconnect()
     
     def stop(self):
@@ -607,6 +670,8 @@ async def main():
     parser.add_argument("--no-learn", action="store_true")
     parser.add_argument("--kill-key", default="F12")
     parser.add_argument("--checkpoint", default=None)
+    parser.add_argument("--stream-fps", type=float, default=2.0,
+                        help="Continuous vision stream rate (frames/sec, 0=disabled)")
     args = parser.parse_args()
     
     # Check requirements
@@ -636,6 +701,7 @@ async def main():
     print(f"Pi: {args.host}:{args.port}")
     print(f"Resolution: {args.resolution}x{args.resolution}")
     print(f"Learning: {'OFF' if args.no_learn else 'ON'}")
+    print(f"Stream: {args.stream_fps} FPS" if args.stream_fps > 0 else "Stream: OFF")
     print(f"Kill key: {args.kill_key}")
     print()
     print(f"K = {K:.6f}, φ = {PHI:.6f}")
@@ -649,7 +715,8 @@ async def main():
         motor_enabled=not args.simulate,
         learn=not args.no_learn,
         kill_key=args.kill_key,
-        checkpoint=args.checkpoint
+        checkpoint=args.checkpoint,
+        stream_fps=args.stream_fps
     )
     
     import signal

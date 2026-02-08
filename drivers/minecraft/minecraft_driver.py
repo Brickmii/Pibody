@@ -61,7 +61,28 @@ from drivers.environment import (
     Perception, Action, ActionResult, NullPort
 )
 
+# Game knowledge (SpockBotMC/python-minecraft-data wrapping PrismarineJS)
+try:
+    import minecraft_data as _minecraft_data
+    HAS_MC_DATA = True
+except ImportError:
+    HAS_MC_DATA = False
+
 logger = logging.getLogger(__name__)
+
+# Bedrock entity data lacks type/category — hardcode hostile mob names
+_HOSTILE_MOBS = frozenset({
+    "blaze", "cave_spider", "creeper", "drowned", "elder_guardian",
+    "enderman", "endermite", "evoker", "ghast", "guardian", "hoglin",
+    "husk", "magma_cube", "phantom", "piglin_brute", "pillager",
+    "ravager", "shulker", "silverfish", "skeleton", "slime", "spider",
+    "stray", "vex", "vindicator", "warden", "witch", "wither",
+    "wither_skeleton", "zoglin", "zombie", "zombie_villager",
+})
+_NEUTRAL_MOBS = frozenset({
+    "bee", "dolphin", "enderman", "goat", "iron_golem", "llama",
+    "piglin", "polar_bear", "spider", "wolf", "zombified_piglin",
+})
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -292,7 +313,7 @@ class MinecraftDriver(Driver):
     HEAT_SCALE = 2.0
 
     def __init__(self, port: Port = None, config: Dict[str, Any] = None,
-                 manifold=None):
+                 manifold=None, mc_version: str = "1.19.50"):
         # Game state tracking
         self._game_state: Dict[str, Any] = {}
         self._seen_biomes: set = set()
@@ -307,6 +328,17 @@ class MinecraftDriver(Driver):
         # Player state on hypersphere
         self._player_theta: float = math.pi / 2  # Equator (sea level)
         self._player_phi: float = 0.0             # Facing east
+
+        # Load game knowledge (minecraft-data from SpockBotMC)
+        self._mc_data = None
+        if HAS_MC_DATA:
+            try:
+                self._mc_data = _minecraft_data(mc_version, "bedrock")
+                logger.info(f"Loaded minecraft-data: {len(self._mc_data.blocks_list)} blocks, "
+                           f"{len(self._mc_data.items_list)} items, "
+                           f"{len(self._mc_data.entities_list)} entities")
+            except Exception as e:
+                logger.warning(f"Failed to load minecraft-data: {e}")
 
         # Initialize with MinecraftPort if none provided
         if port is None:
@@ -335,6 +367,53 @@ class MinecraftDriver(Driver):
                 description=f"Minecraft: {action_name}"
             )
             self.driver_node.register_motor(action_name, motor)
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # GAME KNOWLEDGE (minecraft-data)
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def get_block_info(self, name: str) -> Optional[dict]:
+        """Look up block by name (e.g. 'dirt', 'stone', 'oak_log')."""
+        if not self._mc_data:
+            return None
+        return self._mc_data.blocks_name.get(name)
+
+    def get_item_info(self, name: str) -> Optional[dict]:
+        """Look up item by name."""
+        if not self._mc_data:
+            return None
+        return self._mc_data.items_name.get(name)
+
+    def get_entity_info(self, name: str) -> Optional[dict]:
+        """Look up entity type by name (e.g. 'zombie', 'cow')."""
+        if not self._mc_data:
+            return None
+        return self._mc_data.entities_name.get(name)
+
+    def get_recipes_for(self, item_name: str) -> list:
+        """Get crafting recipes that produce this item."""
+        if not self._mc_data or not hasattr(self._mc_data, 'recipes'):
+            return []
+        item = self._mc_data.items_name.get(item_name)
+        if not item:
+            return []
+        return self._mc_data.recipes.get(str(item["id"]), [])
+
+    def classify_entity_threat(self, entity_name: str) -> str:
+        """Classify entity as hostile/neutral/passive using game data."""
+        name = entity_name.lower()
+        if name in _HOSTILE_MOBS:
+            return "hostile"
+        if name in _NEUTRAL_MOBS:
+            return "neutral"
+        # If we have mc_data, check if it's a known entity at all
+        if self._mc_data and self._mc_data.entities_name.get(name):
+            return "passive"
+        return "unknown"
+
+    @property
+    def has_game_knowledge(self) -> bool:
+        return self._mc_data is not None
 
     # ═══════════════════════════════════════════════════════════════════════════
     # DRIVER LIFECYCLE
@@ -392,13 +471,19 @@ class MinecraftDriver(Driver):
         # Cube projection
         cube_x, cube_y, cube_tau = sphere_to_cube(self._player_theta, self._player_phi)
 
-        # ── Entities ──
+        # ── Entities (enriched with game knowledge) ──
         entities = []
         entity_data = gs.get("entities", [])
+        hostile_count = 0
         for ent in entity_data:
             ent_type = ent.get("type", "unknown")
             entities.append(ent_type)
             self._seen_entities.add(ent_type)
+            # Classify threat using game knowledge
+            threat = self.classify_entity_threat(ent_type)
+            ent["_threat"] = threat
+            if threat == "hostile":
+                hostile_count += 1
 
         # ── Locations ──
         locations = []
@@ -444,6 +529,11 @@ class MinecraftDriver(Driver):
             properties["has_weapon"] = inventory.get("has_weapon", False)
             properties["has_food"] = inventory.get("has_food", False)
 
+        # Game knowledge metadata
+        if self._mc_data:
+            properties["game_knowledge"] = True
+            properties["hostile_count"] = hostile_count
+
         # ── Heat: novelty/discovery ──
         novelty_heat = self._calculate_novelty_heat(gs)
 
@@ -472,9 +562,10 @@ class MinecraftDriver(Driver):
         biome = gs.get("biome", "unknown")[:10]
         dim = gs.get("dimension", "ow")[:3]
 
-        # Nearby entities summary
+        # Nearby entities summary (use enriched _threat if available, fallback to hostile flag)
         entities = gs.get("entities", [])
-        hostile_count = sum(1 for e in entities if e.get("hostile", False))
+        hostile_count = sum(1 for e in entities
+                           if e.get("_threat") == "hostile" or e.get("hostile", False))
         passive_count = len(entities) - hostile_count
 
         return f"{dim}_{biome}_h{health}_e{hostile_count}p{passive_count}"
@@ -721,7 +812,12 @@ class MinecraftDriver(Driver):
             "structures_found": len(self._seen_structures),
             "player_theta": round(self._player_theta, 4),
             "player_phi": round(self._player_phi, 4),
+            "game_knowledge": self._mc_data is not None,
         })
+        if self._mc_data:
+            info["known_blocks"] = len(self._mc_data.blocks_list)
+            info["known_items"] = len(self._mc_data.items_list)
+            info["known_entities"] = len(self._mc_data.entities_list)
         return info
 
 
@@ -891,6 +987,52 @@ if __name__ == "__main__":
     check(info["id"] == "minecraft", f"Info id = {info['id']}")
     check(info["biomes_discovered"] >= 1, f"Biomes discovered = {info['biomes_discovered']}")
     check("player_theta" in info, "Player theta in info")
+
+    # ── Game Knowledge ──
+    print("\n9. Game Knowledge (minecraft-data)")
+
+    if HAS_MC_DATA:
+        gk = MinecraftDriver()
+        check(gk.has_game_knowledge, "Game knowledge loaded")
+
+        # Block lookup
+        dirt = gk.get_block_info("dirt")
+        check(dirt is not None, f"Block 'dirt' found: {dirt.get('displayName', 'N/A')}")
+        stone = gk.get_block_info("stone")
+        check(stone is not None, f"Block 'stone' found: {stone.get('displayName', 'N/A')}")
+        check(gk.get_block_info("not_a_block") is None, "Unknown block returns None")
+
+        # Item lookup
+        diamond = gk.get_item_info("diamond")
+        check(diamond is not None, f"Item 'diamond' found: {diamond.get('displayName', 'N/A')}")
+        check(gk.get_item_info("not_an_item") is None, "Unknown item returns None")
+
+        # Entity lookup
+        zombie = gk.get_entity_info("zombie")
+        check(zombie is not None, f"Entity 'zombie' found: {zombie.get('displayName', 'N/A')}")
+
+        # Threat classification
+        check(gk.classify_entity_threat("zombie") == "hostile", "Zombie is hostile")
+        check(gk.classify_entity_threat("creeper") == "hostile", "Creeper is hostile")
+        check(gk.classify_entity_threat("cow") == "passive", "Cow is passive")
+        check(gk.classify_entity_threat("wolf") == "neutral", "Wolf is neutral")
+        check(gk.classify_entity_threat("xyzzy") == "unknown", "Unknown entity = unknown")
+
+        # Info includes game knowledge
+        gk_info = gk.get_info()
+        check(gk_info["game_knowledge"] is True, "Info reports game_knowledge=True")
+        check(gk_info["known_blocks"] > 700, f"Known blocks = {gk_info['known_blocks']}")
+        check(gk_info["known_items"] > 1000, f"Known items = {gk_info['known_items']}")
+
+        # Perceive with game knowledge enrichment
+        gk2 = MinecraftDriver(port=MinecraftPort())
+        gk2.port.connect()
+        gk2.port.feed_game_state(test_state)
+        p = gk2.perceive()
+        check(p.properties.get("game_knowledge") is True, "Perception has game_knowledge=True")
+        check(p.properties.get("hostile_count", -1) >= 0, f"hostile_count in properties = {p.properties.get('hostile_count')}")
+    else:
+        print("  SKIP: minecraft-data not installed")
 
     print(f"\n{'='*40}")
     if errors == 0:

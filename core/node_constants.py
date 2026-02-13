@@ -182,6 +182,9 @@ MAX_ENTROPIC_PROBABILITY = THRESHOLD_DENOMINATOR / THRESHOLD_NUMERATOR  # 44/45 
 # The structural constraint - the gap where structure lives
 STRUCTURAL_CONSTRAINT = 1 / THRESHOLD_NUMERATOR  # 1/45 ≈ 0.0222
 
+# Maximum order tokens per node — at the 45th axis, a child must be born
+MAX_ORDER_TOKENS = THRESHOLD_DENOMINATOR  # 44
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # COLOR CUBE — Axis-to-Color Mapping (Base Righteous + Ordered Frame)
 # ═══════════════════════════════════════════════════════════════════════════════

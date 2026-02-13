@@ -686,7 +686,10 @@ class DriverNode:
             
             # Connect driver to task
             if self.node:
-                self.node.add_axis(state_key[:20], task_node.id)
+                if self.manifold:
+                    self.manifold.add_axis_safe(self.node, state_key[:20], task_node.id)
+                else:
+                    self.node.add_axis(state_key[:20], task_node.id)
         
         logger.debug(f"Driver {self.name} saw: {state_key}")
         return state_key
@@ -703,7 +706,7 @@ class DriverNode:
         # Add as axis on driver node
         if self.node and self.manifold:
             # Motors are potential actions - store as axis
-            self.node.add_axis(f"motor_{name}", self.node.id, polarity=1)
+            self.manifold.add_axis_safe(self.node, f"motor_{name}", self.node.id, polarity=1)
         
         logger.debug(f"Registered motor: {name}")
     

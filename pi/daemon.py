@@ -583,42 +583,8 @@ class PBAIDaemon:
         try:
             perception = self.env_core.perceive()
 
-            # Introspector: heat-pattern exploration
-            if self.introspector and not self.env_core.has_plan():
-                try:
-                    can_think = self.introspector.should_think()
-                    if not can_think:
-                        ego_h = self.manifold.ego_node.heat if self.manifold.ego_node else 0
-                        con_h = self.manifold.conscience_node.heat if self.manifold.conscience_node else 0
-                        logger.debug(f"Introspector gate: ego={ego_h:.3f} con={con_h:.3f} (need >{COST_ACTION:.3f})")
-                    if can_think:
-                        # Get targeting context from driver
-                        driver = self.env_core.get_active_driver()
-                        target_ctx = None
-                        if hasattr(driver, 'get_targeting_context'):
-                            target_ctx = driver.get_targeting_context()
-
-                        # Ask Introspector to explore heat patterns
-                        suggestions = self.introspector.suggest(perception.properties)
-
-                        if suggestions:
-                            # Build weight boosts from suggestions
-                            available = self.env_core.get_supported_actions()
-                            boosts = self.introspector.get_weight_boosts(suggestions, available)
-                            self.env_core._weight_boosts = boosts
-                            logger.info(f"Introspector suggests: {suggestions[:3]} (boosted {len(boosts)} actions)")
-
-                            # If targeting, interleave look_at_target with best suggestion
-                            if target_ctx and hasattr(driver, '_get_target_action'):
-                                look_action = driver._get_target_action()
-                                if look_action and suggestions:
-                                    plan = [look_action, suggestions[0]]
-                                    if len(suggestions) > 1:
-                                        plan.extend([look_action, suggestions[1]])
-                                    self.env_core.enqueue_plan(plan)
-                                    logger.info(f"Introspector plan ({len(plan)} steps): {plan}")
-                except Exception as e:
-                    logger.warning(f"Introspector cycle error: {e}")
+            # Introspection through environment (handles targeting, planning, domain scoping)
+            suggestions = self.env_core.introspect(self.introspector, perception)
 
             action = self.env_core.decide(perception)
             result = self.env_core.act(action)

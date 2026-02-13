@@ -314,13 +314,19 @@ class ChoiceNode:
         # Update pattern strength (state → choice mapping)
         pattern_axis = self.node.get_axis(choice.state_key)
         if pattern_axis is None:
-            pattern_axis = self.node.add_axis(choice.state_key, f"{self.name}_{choice.state_key}")
-        
+            if self.manifold:
+                pattern_axis = self.manifold.add_axis_safe(self.node, choice.state_key, f"{self.name}_{choice.state_key}")
+            else:
+                pattern_axis = self.node.add_axis(choice.state_key, f"{self.name}_{choice.state_key}")
+
         # Track which choices work in this state
         choice_key = f"{choice.state_key}_{choice.selected}"
         choice_axis = self.node.get_axis(choice_key)
         if choice_axis is None:
-            choice_axis = self.node.add_axis(choice_key, f"{self.name}_{choice_key}")
+            if self.manifold:
+                choice_axis = self.manifold.add_axis_safe(self.node, choice_key, f"{self.name}_{choice_key}")
+            else:
+                choice_axis = self.node.add_axis(choice_key, f"{self.name}_{choice_key}")
             choice_axis.make_proper()
         
         # Record outcome in state_action Order
@@ -817,9 +823,14 @@ class DecisionNode(ChoiceNode):
                     if opt in str(driver_decision):
                         return self.commit_decision(opt).selected
         
-        # 5. Default: Random exploration
+        # 5. Default: Weighted exploration (driver weights via context, else uniform)
         import random
-        selected = random.choice(options) if len(options) > 1 else options[0]
+        action_weights = context.get("action_weights") if context else None
+        if action_weights and len(options) > 1:
+            weights = [action_weights.get(a, 1.0) for a in options]
+            selected = random.choices(options, weights=weights, k=1)[0]
+        else:
+            selected = random.choice(options) if len(options) > 1 else options[0]
         logger.info(f"RANDOM decision: {selected} (no pattern found, confidence={confidence:.3f})")
         return self.commit_decision(selected).selected
     

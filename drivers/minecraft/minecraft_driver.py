@@ -31,6 +31,7 @@ SUPPORTED ACTIONS:
     Movement: move_forward, move_backward, strafe_left, strafe_right, jump, sneak, sprint
     Combat:   attack, use
     Camera:   look_up, look_down, look_left, look_right
+    Cardinal: turn_north, turn_south, turn_east, turn_west, turn_up, turn_down
     Other:    wait, open_inventory
 
 CLOCK SYNC:
@@ -279,10 +280,10 @@ MC_ACTION_MAP = {
     "sprint":         {"motor": MotorType.KEY_HOLD, "key": "ctrl", "duration": 1.5},
     "attack":         {"motor": MotorType.MOUSE_CLICK, "button": "left"},
     "use":            {"motor": MotorType.MOUSE_CLICK, "button": "right"},
-    "look_up":        {"motor": MotorType.LOOK, "direction": (0.0, -30.0)},
-    "look_down":      {"motor": MotorType.LOOK, "direction": (0.0, 30.0)},
-    "look_left":      {"motor": MotorType.LOOK, "direction": (-40.0, 0.0)},
-    "look_right":     {"motor": MotorType.LOOK, "direction": (40.0, 0.0)},
+    "look_up":        {"motor": MotorType.LOOK, "direction": (0.0, -210.0)},
+    "look_down":      {"motor": MotorType.LOOK, "direction": (0.0, 210.0)},
+    "look_left":      {"motor": MotorType.LOOK, "direction": (-280.0, 0.0)},
+    "look_right":     {"motor": MotorType.LOOK, "direction": (280.0, 0.0)},
     "open_inventory": {"motor": MotorType.KEY_PRESS, "key": "e"},
     "wait":           {"motor": MotorType.WAIT, "duration": 0.5},
     # Combo actions — multiple keys held simultaneously
@@ -293,7 +294,7 @@ MC_ACTION_MAP = {
     "strafe_right_fwd":{"combo": ["d", "w"], "duration": 0.8},
     # Sequence actions — look-move combos (look where you're going)
     "explore_left": {"sequence": [
-        {"motor_type": "look", "direction": (-30, 0)},
+        {"motor_type": "look", "direction": (-210, 0)},
         {"motor_type": "wait", "duration": 0.15},
         {"motor_type": "key_hold", "key": "a"},
         {"motor_type": "key_hold", "key": "w"},
@@ -302,7 +303,7 @@ MC_ACTION_MAP = {
         {"motor_type": "key_release", "key": "a"},
     ]},
     "explore_right": {"sequence": [
-        {"motor_type": "look", "direction": (30, 0)},
+        {"motor_type": "look", "direction": (210, 0)},
         {"motor_type": "wait", "duration": 0.15},
         {"motor_type": "key_hold", "key": "d"},
         {"motor_type": "key_hold", "key": "w"},
@@ -311,7 +312,7 @@ MC_ACTION_MAP = {
         {"motor_type": "key_release", "key": "d"},
     ]},
     "scout_ahead": {"sequence": [
-        {"motor_type": "look", "direction": (0, -15)},
+        {"motor_type": "look", "direction": (0, -105)},
         {"motor_type": "wait", "duration": 0.1},
         {"motor_type": "key_hold", "key": "ctrl"},
         {"motor_type": "key_hold", "key": "w"},
@@ -320,7 +321,7 @@ MC_ACTION_MAP = {
         {"motor_type": "key_release", "key": "ctrl"},
     ]},
     "watch_step": {"sequence": [
-        {"motor_type": "look", "direction": (0, 20)},
+        {"motor_type": "look", "direction": (0, 140)},
         {"motor_type": "wait", "duration": 0.1},
         {"motor_type": "key_hold", "key": "w"},
         {"motor_type": "wait", "duration": 0.6},
@@ -328,7 +329,7 @@ MC_ACTION_MAP = {
     ]},
     # Mining: look down + hold left click to break block below/ahead
     "mine_block": {"sequence": [
-        {"motor_type": "look", "direction": (0, 40)},
+        {"motor_type": "look", "direction": (0, 280)},
         {"motor_type": "wait", "duration": 0.1},
         {"motor_type": "mouse_hold", "button": "left", "duration": 3.0},
     ]},
@@ -338,6 +339,13 @@ MC_ACTION_MAP = {
         {"motor_type": "wait", "duration": 0.1},
         {"motor_type": "mouse_hold", "button": "left", "duration": 3.0},
     ]},
+    # Cardinal turning — yaw-aware, delta computed at act() time
+    "turn_north":  {"motor": MotorType.LOOK, "cardinal": True},
+    "turn_south":  {"motor": MotorType.LOOK, "cardinal": True},
+    "turn_east":   {"motor": MotorType.LOOK, "cardinal": True},
+    "turn_west":   {"motor": MotorType.LOOK, "cardinal": True},
+    "turn_up":     {"motor": MotorType.LOOK, "cardinal": True},
+    "turn_down":   {"motor": MotorType.LOOK, "cardinal": True},
     # Close inventory / escape UI — press Escape to close any open UI
     "close_ui": {"motor": MotorType.KEY_PRESS, "key": "escape"},
     # Swim up: hold space + w to surface when underwater
@@ -373,6 +381,12 @@ MC_ACTION_WEIGHTS = {
     "watch_step":      2.0,
     "mine_block":      3.5,
     "mine_forward":    3.0,
+    "turn_north":      2.0,
+    "turn_south":      1.5,
+    "turn_east":       2.0,
+    "turn_west":       2.0,
+    "turn_up":         1.5,
+    "turn_down":       1.5,
     "close_ui":        0.0,    # Only used when UI is open (forced)
     "swim_up":         0.0,    # Only used when drowning (boosted dynamically)
 }
@@ -382,11 +396,40 @@ MC_ACTION_WEIGHTS = {
 # PERCEPTION-DRIVEN TARGETING: Vision peaks → camera movement
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# CARDINAL TURNING: Yaw-aware direction actions (NSEWUD)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Cardinal yaw targets (Minecraft convention: clockwise from south)
+MC_CARDINAL_YAW = {
+    "turn_north": 180.0,
+    "turn_south": 0.0,
+    "turn_east":  270.0,
+    "turn_west":  90.0,
+}
+
+# Vertical pitch targets
+MC_CARDINAL_PITCH = {
+    "turn_up":   -45.0,   # Look toward sky
+    "turn_down":  45.0,   # Look toward ground
+}
+
+# Conversion: degrees of rotation → pixel delta for pydirectinput
+# Baseline: 40px ≈ 40° at default MC sensitivity. Tunable.
+MC_PIXELS_PER_DEGREE = 7.0
+
+# Max single-frame turn (pixels). Allows up to ~160° turns.
+MC_MAX_TURN_DELTA = 1260
+
+# Dead zone: if already within this many degrees, skip the turn
+MC_TURN_DEAD_ZONE = 5.0
+
+
 MC_SCREEN_CENTER = 32           # Vision grid is 64x64
-MC_LOOK_SENSITIVITY = 1.5      # Pixels → mouse delta multiplier
+MC_LOOK_SENSITIVITY = 10.0     # Pixels → mouse delta multiplier
 MC_TARGET_HEAT_THRESHOLD = 0.3  # Min peak heat to target
 MC_TARGET_DEAD_ZONE = 3        # Cells from center to skip targeting
-MAX_LOOK_DELTA = 50            # Clamp mouse movement
+MAX_LOOK_DELTA = 350           # Clamp mouse movement
 
 
 class MinecraftDriver(Driver):
@@ -431,6 +474,10 @@ class MinecraftDriver(Driver):
         # Player state on hypersphere
         self._player_theta: float = math.pi / 2  # Equator (sea level)
         self._player_phi: float = 0.0             # Facing east
+
+        # Raw MC yaw/pitch for cardinal turning
+        self._player_yaw: float = 0.0    # Raw MC yaw (0-360)
+        self._player_pitch: float = 0.0  # Raw MC pitch (-90 to 90)
 
         # Body server reference for streaming vision
         self._body_server = body_server
@@ -643,6 +690,10 @@ class MinecraftDriver(Driver):
         health = player.get("health", 20.0)
         hunger = player.get("hunger", 20.0)
 
+        # Store raw yaw/pitch for cardinal turning
+        self._player_yaw = yaw % 360.0
+        self._player_pitch = player.get("pitch", 0.0)
+
         # Map player to hypersphere
         self._player_theta = mc_altitude_to_theta(py)
         self._player_phi = mc_yaw_to_phi(yaw)
@@ -845,6 +896,88 @@ class MinecraftDriver(Driver):
         """Return current target info for Introspector to read."""
         return self._current_target
 
+    def _compute_cardinal_direction(self, action_type: str) -> Tuple[float, float]:
+        """Compute pixel delta to face a cardinal direction.
+
+        Returns (dx, dy) in pixels for pydirectinput.moveRel().
+        Finds shortest rotation path (never turns more than 180°).
+        """
+        if action_type in MC_CARDINAL_YAW:
+            target_yaw = MC_CARDINAL_YAW[action_type]
+            # Shortest rotation: delta in [-180, 180]
+            delta_deg = (target_yaw - self._player_yaw + 180) % 360 - 180
+            # MC yaw is clockwise, mouse right is positive → same sign
+            dx = delta_deg * MC_PIXELS_PER_DEGREE
+            dx = max(-MC_MAX_TURN_DELTA, min(MC_MAX_TURN_DELTA, dx))
+            return (dx, 0.0)
+
+        elif action_type in MC_CARDINAL_PITCH:
+            target_pitch = MC_CARDINAL_PITCH[action_type]
+            delta_deg = target_pitch - self._player_pitch
+            # MC pitch: positive = down, mouse dy positive = down → same sign
+            dy = delta_deg * MC_PIXELS_PER_DEGREE
+            dy = max(-MC_MAX_TURN_DELTA, min(MC_MAX_TURN_DELTA, dy))
+            return (0.0, dy)
+
+        return (0.0, 0.0)
+
+    def get_domain_context(self, perception) -> Dict[str, Any]:
+        """Minecraft-scoped context for introspection."""
+        # Domain prefix for this dimension
+        dim = self._game_state.get("dimension", "ow")[:3]
+
+        # Domain-scoped hot nodes: only concepts from this domain
+        domain_nodes = []
+        if self.manifold:
+            for node in self.manifold.nodes.values():
+                if node.concept in ('identity', 'ego', 'conscience'):
+                    continue
+                if node.concept.startswith('bootstrap'):
+                    continue
+                if node.heat == float('inf') or node.existence != 'actual':
+                    continue
+                # Include: domain state keys OR action names (no digits = action)
+                is_domain_state = node.concept.startswith(dim + '_')
+                is_action = '_' in node.concept and not any(c.isdigit() for c in node.concept)
+                is_general = '_' not in node.concept  # abstract concepts
+                if is_domain_state or is_action or is_general:
+                    domain_nodes.append(node)
+            domain_nodes.sort(key=lambda n: n.heat, reverse=True)
+
+        # Targeting
+        targets = self._extract_targets()
+        target_action = self._get_target_action() if targets else None
+
+        # Available plans from driver state
+        reactive_plans = self._get_reactive_plans(perception)
+
+        return {
+            "domain_prefix": dim,
+            "hot_nodes": domain_nodes[:10],
+            "targets": targets,
+            "target_action": target_action,
+            "reactive_plans": reactive_plans,
+            "action_durations": {a: MC_ACTION_MAP[a].get("duration", 0.2) for a in MC_ACTION_MAP if "duration" in MC_ACTION_MAP[a]},
+        }
+
+    def _get_reactive_plans(self, perception) -> List[List[str]]:
+        """State-driven plans — driver decides when to trigger."""
+        plans = []
+        props = perception.properties if perception else {}
+        health = props.get("health", 20)
+        hostile_count = props.get("hostile_count", 0)
+
+        # Flee: low health + hostiles
+        if health < 8 and hostile_count > 0:
+            plans.append(["sprint_forward", "sprint_jump", "sprint_forward"])
+
+        # Eat: low hunger (when we can detect food in inventory)
+        hunger = props.get("hunger", 20)
+        if hunger < 12:
+            plans.append(["use"])  # Eating with food selected
+
+        return plans
+
     def _build_state_key(self, gs: Dict[str, Any]) -> str:
         """Build a concise state key from game state."""
         player = gs.get("player", {})
@@ -923,8 +1056,23 @@ class MinecraftDriver(Driver):
                 heat_value=0.0
             )
 
+        # Cardinal turning: compute direction dynamically from current yaw/pitch
+        if mapping.get("cardinal"):
+            direction = self._compute_cardinal_direction(action_type)
+            # Skip if already facing target (within dead zone)
+            if abs(direction[0]) < MC_TURN_DEAD_ZONE and abs(direction[1]) < MC_TURN_DEAD_ZONE:
+                return ActionResult(
+                    success=True,
+                    outcome=f"Already facing {action_type.replace('turn_', '')}",
+                    heat_value=self.scale_heat(K * 0.05),
+                )
+            command = {
+                "action": action_type,
+                "motor_type": "look",
+                "direction": direction,
+            }
         # Build command for Windows Client
-        if "sequence" in mapping:
+        elif "sequence" in mapping:
             # Sequence action: multi-step look+move combo
             command = {
                 "action": action_type,
@@ -1007,6 +1155,12 @@ class MinecraftDriver(Driver):
             "look_at_target": K * 0.15,
             "mine_block": K * 1.0,
             "mine_forward": K * 1.0,
+            "turn_north": K * 0.15,
+            "turn_south": K * 0.15,
+            "turn_east": K * 0.15,
+            "turn_west": K * 0.15,
+            "turn_up": K * 0.15,
+            "turn_down": K * 0.15,
             "close_ui": K * 0.1,
             "swim_up": K * 0.5,
         }
@@ -1401,9 +1555,9 @@ if __name__ == "__main__":
     check("scout_ahead" in w, "scout_ahead has weight")
     check(w.get("scout_ahead", 0) == 3.5, f"scout_ahead weight = 3.5 ({w.get('scout_ahead')})")
 
-    # Total action count: 17 single + 5 combo + 6 sequence = 28
+    # Total action count: 17 single + 6 cardinal + 5 combo + 6 sequence = 34
     total_actions = len(MC_ACTION_MAP)
-    check(total_actions == 28, f"Total actions = 28 ({total_actions})")
+    check(total_actions == 34, f"Total actions = 34 ({total_actions})")
 
     # ── Targeting (Layer 2) ──
     print("\n11. Perception-Driven Targeting")
@@ -1441,7 +1595,7 @@ if __name__ == "__main__":
     lat_map = MC_ACTION_MAP.get("look_at_target", {})
     check("direction" in lat_map, "look_at_target has direction")
     lat_dir = lat_map.get("direction", (0, 0))
-    check(abs(lat_dir[0] - 24.0) < 0.1, f"look_at_target dx = 24.0 ({lat_dir[0]})")
+    check(abs(lat_dir[0] - 160.0) < 0.1, f"look_at_target dx = 160.0 ({lat_dir[0]})")
 
     # get_action_weights includes look_at_target when target exists
     w_target = driver3.get_action_weights()
@@ -1458,6 +1612,62 @@ if __name__ == "__main__":
     # Perception includes targeting properties
     check("has_target" in perception.properties, "has_target in perception properties")
     check("target_heat" in perception.properties, "target_heat in perception properties")
+
+    # ── Cardinal Turning (NSEWUD) ──
+    print("\n12. Cardinal Turning (NSEWUD)")
+
+    driver4 = MinecraftDriver(port=MinecraftPort())
+    driver4.port.connect()
+    driver4._player_yaw = 0.0  # Facing south
+    driver4._player_pitch = 0.0  # Looking ahead
+
+    # turn_north: south(0) → north(180) = ±180° (ambiguous), clamped to ±1260
+    dx, dy = driver4._compute_cardinal_direction("turn_north")
+    check(abs(dx) == MC_MAX_TURN_DELTA, f"South→North |dx|=1260 (clamped, {dx:.1f})")
+    check(abs(dy) < 0.01, f"South→North dy≈0 ({dy:.1f})")
+
+    # turn_east: south(0) → east(270) = shortest is -90° → -630px
+    dx, dy = driver4._compute_cardinal_direction("turn_east")
+    check(abs(dx - (-630.0)) < 1.0, f"South→East dx≈-630 ({dx:.1f})")
+
+    # turn_west: south(0) → west(90) = +90° → +630px
+    dx, dy = driver4._compute_cardinal_direction("turn_west")
+    check(abs(dx - 630.0) < 1.0, f"South→West dx≈630 ({dx:.1f})")
+
+    # Already facing south → turn_south is dead zone
+    dx, dy = driver4._compute_cardinal_direction("turn_south")
+    check(abs(dx) < 1.0, f"South→South dx≈0 ({dx:.1f})")
+
+    # Pitch: turn_up from pitch=0 → pitch=-45 = -315px
+    dx, dy = driver4._compute_cardinal_direction("turn_up")
+    check(abs(dy - (-315.0)) < 1.0, f"Ahead→Up dy≈-315 ({dy:.1f})")
+
+    # Pitch: turn_down from pitch=0 → pitch=45 = +315px
+    dx, dy = driver4._compute_cardinal_direction("turn_down")
+    check(abs(dy - 315.0) < 1.0, f"Ahead→Down dy≈315 ({dy:.1f})")
+
+    # Total action count: 28 + 6 = 34 static (+1 dynamic look_at_target from section 11)
+    # Remove dynamic entry before counting
+    had_lat = "look_at_target" in MC_ACTION_MAP
+    if had_lat:
+        del MC_ACTION_MAP["look_at_target"]
+    total = len(MC_ACTION_MAP)
+    check(total == 34, f"Total static actions = 34 ({total})")
+    if had_lat:
+        MC_ACTION_MAP["look_at_target"] = {"motor": MotorType.LOOK, "direction": (0, 0)}
+
+    # Cardinal actions in SUPPORTED_ACTIONS
+    for d in ["turn_north", "turn_south", "turn_east", "turn_west", "turn_up", "turn_down"]:
+        check(d in driver.SUPPORTED_ACTIONS, f"{d} in SUPPORTED_ACTIONS")
+
+    # Execute cardinal turn
+    result = driver4.act(Action(action_type="turn_north"))
+    check(result.success, "turn_north action succeeded")
+
+    # Dead zone: already facing south → turn_south returns success with low heat
+    result_dz = driver4.act(Action(action_type="turn_south"))
+    check(result_dz.success, "turn_south dead zone returns success")
+    check("Already facing" in result_dz.outcome, f"Dead zone outcome: {result_dz.outcome}")
 
     print(f"\n{'='*40}")
     if errors == 0:

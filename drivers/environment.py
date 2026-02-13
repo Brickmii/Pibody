@@ -181,6 +181,14 @@ class ActionResult:
         }
 
 
+@dataclass
+class ActionSuggestion:
+    """An action with optional duration override from Introspector."""
+    action: str
+    duration: Optional[float] = None  # None = use default
+    score: float = 0.0
+
+
 class Driver(ABC):
     """
     Abstract driver interface.
@@ -411,6 +419,14 @@ class Driver(ABC):
     def supports_action(self, action_type: str) -> bool:
         """Check if driver supports an action type."""
         return action_type in self.SUPPORTED_ACTIONS
+
+    def get_domain_context(self, perception: 'Perception') -> Dict[str, Any]:
+        """Return domain-scoped context for introspection.
+
+        Override in subclasses to provide domain-specific data.
+        Default: empty context (introspector gets nothing).
+        """
+        return {}
     
     def get_info(self) -> dict:
         """Get driver information."""
@@ -508,9 +524,77 @@ class EnvironmentCore:
         return vc.process_screen()
     
     # ───────────────────────────────────────────────────────────────────────────
+    # INTROSPECTION BRIDGE (Environment delegates to driver + introspector)
+    # ───────────────────────────────────────────────────────────────────────────
+
+    def introspect(self, introspector, perception: Perception) -> Optional[List[str]]:
+        """Bridge introspection through the environment.
+
+        Gathers domain context from driver, passes to introspector,
+        handles targeting and plan enqueuing. The daemon calls this
+        instead of talking to introspector/driver directly.
+        """
+        if not introspector:
+            return None
+
+        driver = self.get_active_driver()
+        if not driver:
+            return None
+
+        # 1. TARGETING — independent of introspector, runs every cycle
+        target_action = None
+        if hasattr(driver, '_get_target_action'):
+            target_action = driver._get_target_action()
+            if target_action and not self.has_plan():
+                # Inject target into weight boosts for next decide()
+                self._weight_boosts["look_at_target"] = 6.0
+
+        # 2. DOMAIN CONTEXT — driver provides scoped data
+        domain_ctx = {}
+        if hasattr(driver, 'get_domain_context'):
+            domain_ctx = driver.get_domain_context(perception)
+
+        # 3. REACTIVE PLANS — driver state triggers plans directly
+        reactive_plans = domain_ctx.get("reactive_plans", [])
+        if reactive_plans and not self.has_plan():
+            # First reactive plan wins (flee > eat > etc.)
+            self.enqueue_plan(reactive_plans[0])
+            logger.info(f"Reactive plan: {reactive_plans[0]}")
+            return None  # Reactive plan overrides introspection
+
+        # 4. INTROSPECTOR SANDBOX — scoped by domain context
+        if self.has_plan():
+            return None  # Already have a plan, skip introspection
+
+        if not introspector.should_think():
+            return None
+
+        # Pass domain context to introspector (not raw perception)
+        suggestions = introspector.suggest(domain_ctx)
+
+        if not suggestions:
+            return None
+
+        # 5. WEIGHT BOOSTS from suggestions
+        available = self.get_supported_actions()
+        boosts = introspector.get_weight_boosts(suggestions, available)
+        self._weight_boosts.update(boosts)
+
+        # 6. DELIBERATIVE PLAN — if targeting + suggestions, interleave
+        if target_action and len(suggestions) >= 1:
+            plan = [target_action, suggestions[0]]
+            if len(suggestions) > 1:
+                plan.extend([target_action, suggestions[1]])
+            self.enqueue_plan(plan)
+            logger.info(f"Introspector plan ({len(plan)} steps): {plan}")
+
+        logger.info(f"Introspector suggests: {suggestions[:3]} (boosted {len(boosts)} actions)")
+        return suggestions
+
+    # ───────────────────────────────────────────────────────────────────────────
     # DRIVER MANAGEMENT
     # ───────────────────────────────────────────────────────────────────────────
-    
+
     def register_driver(self, driver: Driver) -> bool:
         """Register a driver with the core."""
         driver_id = driver.DRIVER_ID
@@ -875,6 +959,11 @@ class EnvironmentCore:
         state_key = getattr(self, '_current_state_key', perception.properties.get("state_key", "unknown"))
         context = getattr(self, '_current_context', {})
 
+        # Inject driver action weights into context for DecisionNode fallback
+        driver = self.get_active_driver()
+        if hasattr(driver, 'get_action_weights'):
+            context["action_weights"] = driver.get_action_weights(available_actions)
+
         # Route to DecisionNode (OUTPUT)
         decision_node = self._get_decision_node()
 
@@ -920,13 +1009,19 @@ class EnvironmentCore:
                     )
                     logger.info(f"Exploit (no data): {chosen}")
             else:
-                # No GameHandler - use DecisionNode
-                chosen = decision_node.decide(
-                    state_key=state_key,
-                    options=available_actions,
-                    context=context
-                )
-                logger.info(f"Exploit (DecisionNode): {chosen}")
+                # No GameHandler — weighted sampling with driver weights
+                if hasattr(driver, 'get_action_weights'):
+                    weights_map = driver.get_action_weights(available_actions)
+                    weights = [weights_map.get(a, 1.0) for a in available_actions]
+                    chosen = random.choices(available_actions, weights=weights, k=1)[0]
+                    logger.debug(f"Decision: {chosen} (weighted)")
+                else:
+                    chosen = decision_node.decide(
+                        state_key=state_key,
+                        options=available_actions,
+                        context=context
+                    )
+                logger.info(f"Exploit (weighted): {chosen}")
         
         # Record decision for learning
         decision_node.begin_decision(state_key, available_actions, 

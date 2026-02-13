@@ -311,7 +311,10 @@ class MazeDriver(Driver):
 
             if 0 <= nr < size and 0 <= nc < size and grid[nr][nc] == 0:
                 target_cell = self._get_or_create_cell(nr, nc)
-                current_cell.add_axis(d.lower(), target_cell.id)
+                if self.manifold:
+                    self.manifold.add_axis_safe(current_cell, d.lower(), target_cell.id)
+                else:
+                    current_cell.add_axis(d.lower(), target_cell.id)
 
                 is_visited = (nr, nc) in self.observed_cells
                 obs['directions'][d] = {

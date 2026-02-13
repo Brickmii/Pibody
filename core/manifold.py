@@ -77,6 +77,8 @@ from .node_constants import (
     FIRE_HEAT, FIRE_TO_MOTION, BODY_TEMPERATURE, SCAFFOLD_HEAT,
     # Entropy structure recognition
     MAX_ENTROPIC_PROBABILITY, entropy_exceeds_random_limit, get_structure_signal,
+    # Emergence threshold
+    MAX_ORDER_TOKENS,
     # Paths
     get_growth_path
 )
@@ -765,6 +767,85 @@ class Manifold:
         return distances[:k]
 
     # ═══════════════════════════════════════════════════════════════════════════
+    # AXIS OVERFLOW — 44/45 Emergence Threshold
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def add_axis_safe(self, node: Node, direction: str, target_id: str, polarity: int = 1) -> Axis:
+        """Add axis with 44-limit enforcement. Creates child on overflow.
+
+        Strengthening an existing axis is always OK (not a new token).
+        Under limit: normal add. At limit: 45th axis triggers emergence —
+        birth child node, give it the overflow axis.
+
+        Args:
+            node: The node to add the axis to
+            direction: Axis direction/label
+            target_id: Target node ID
+            polarity: Axis polarity (+1 or -1)
+
+        Returns:
+            The created or strengthened Axis
+        """
+        # Strengthening existing axis is always OK (not a new token)
+        if direction in node.frame.axes:
+            existing = node.frame.axes[direction]
+            existing.strengthen()
+            return existing
+
+        # Under limit: normal add
+        if len(node.frame.axes) < MAX_ORDER_TOKENS:
+            return node.add_axis(direction, target_id, polarity)
+
+        # AT LIMIT: 45th axis → emergence — birth child, give it the overflow
+        child = self._create_overflow_child(node)
+        return child.add_axis(direction, target_id, polarity)
+
+    def _create_overflow_child(self, parent: Node) -> Node:
+        """Birth a child node to carry overflow from a full parent.
+
+        Parent keeps all 44 axes untouched. Child is placed near parent
+        on the hypersphere. Relationship is positional (angular proximity)
+        and by naming convention ({parent}_c{N}).
+        """
+        # Count existing children by concept naming convention
+        prefix = f"{parent.concept}_c"
+        child_count = sum(1 for c in self.nodes_by_concept if c.startswith(prefix))
+
+        child_concept = f"{parent.concept}_c{child_count}"
+
+        # Place child near parent on the hypersphere
+        parent_sp = SpherePosition(theta=parent.theta, phi=parent.phi)
+        existing = [SpherePosition(theta=n.theta, phi=n.phi) for n in self.nodes.values()]
+        child_sp = place_node_near(parent_sp, existing)
+
+        child = Node(
+            concept=child_concept,
+            theta=child_sp.theta,
+            phi=child_sp.phi,
+            radius=parent.radius,
+            heat=K,
+            polarity=parent.polarity,
+            existence=parent.existence,
+            righteousness=parent.righteousness,
+        )
+        self.add_node(child)
+
+        logger.debug(f"Overflow child born: {child_concept} from {parent.concept} "
+                      f"({len(parent.frame.axes)} axes full)")
+        return child
+
+    def get_overflow_children(self, node: Node) -> list:
+        """Get all overflow children of a node by naming convention."""
+        prefix = f"{node.concept}_c"
+        children = []
+        for concept, nid in self.nodes_by_concept.items():
+            if concept.startswith(prefix):
+                child = self.nodes.get(nid)
+                if child:
+                    children.append(child)
+        return children
+
+    # ═══════════════════════════════════════════════════════════════════════════
     # PSYCHOLOGY - Identity / Conscience / Ego
     # ═══════════════════════════════════════════════════════════════════════════
     #
@@ -1006,11 +1087,11 @@ class Manifold:
                 # Small increments accumulate (bypass threshold)
                 self.identity_node.add_heat_unchecked(heat_delta * 0.1)
         else:
-            # New concept - add axis
-            self.identity_node.add_axis(concept, concept_node.id, polarity=1 if known else -1)
+            # New concept - add axis (with 44-limit enforcement)
+            self.add_axis_safe(self.identity_node, concept, concept_node.id, polarity=1 if known else -1)
             # Learning something new - larger heat change
             self.identity_node.add_heat_unchecked(heat_delta * 0.2)
-    
+
     def update_ego(self, pattern: str, success: bool, heat_delta: float = 0.0):
         """
         Update Ego's learned patterns.
@@ -1059,7 +1140,7 @@ class Manifold:
                 Element(node_id=f"{pattern}_{len(axis.order.elements)}", index=outcome_idx)
             )
         else:
-            axis = self.ego_node.add_axis(pattern, pattern_node.id, polarity=1 if success else -1)
+            axis = self.add_axis_safe(self.ego_node, pattern, pattern_node.id, polarity=1 if success else -1)
             axis.make_proper()
             from .nodes import Element
             axis.order.elements.append(
@@ -1094,9 +1175,10 @@ class Manifold:
         # Get or create axis to this belief
         axis = self.conscience_node.get_axis(belief)
         if not axis:
-            axis = self.conscience_node.add_axis(
-                belief, 
-                belief_node.id, 
+            axis = self.add_axis_safe(
+                self.conscience_node,
+                belief,
+                belief_node.id,
                 polarity=1 if confirmed else -1
             )
             axis.make_proper()

@@ -1,30 +1,26 @@
 """
-PBAI Introspector — Cube-Native Simulation + Short-Term Memory
+PBAI Introspector — Transformer Attention over Manifold Axes
 
-Two-fold thinking:
-    1. SIMULATION: Project options onto hypersphere, read cube coordinates
-    2. SHORT-TERM MEMORY: Recent simulation results for decision context
-
-For each option:
-    1. Project option onto hypersphere surface (angular position)
-    2. Get cube coordinates from projection (x, y, tau)
-    3. Read heat magnitude, quadrant, tau position
-    4. Evaluate Righteousness via Conscience (cos projection)
-    5. Package as enriched context for decision pipeline
-
-No hardcoded color mappings — cube quadrants drive everything.
-No deepcopy per option — lightweight angular projection.
-should_think gates on Conscience too, not just Ego.
+Two blenders mirror each other:
+    PC Blender (vision_transformer.py): Processes visual input → peaks with features
+    Pi Blender (this file): Processes manifold axes → relevance scores for decision
 
 Architecture:
+    Each node's axes are its TOKENS (up to 44 = MAX_ORDER_TOKENS).
+    Level 1: Intra-node weighted pool (axes → 32-dim node embedding)
+    Level 2: Cross-node attention (query attends over all node embeddings)
+    Temperature = K (attention IS heat, same as PC blender)
+
+    No backprop — the manifold's thermal dynamics ARE the learning.
+    Fixed weights initialized from PBAI constants (golden angle, motion thresholds).
+
     Introspector sits between perception and decision.
-    It enriches options with simulated cube-native context
+    It enriches options with transformer-scored relevance context
     before the beta->delta->Gamma->alpha->zeta pipeline runs.
 """
 
 import math
 import logging
-from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 
@@ -36,131 +32,220 @@ from .node_constants import (
     COST_EVALUATE, PSYCHOLOGY_MIN_HEAT,
     CONFIDENCE_EXPLOIT_THRESHOLD,
     EXISTENCE_ACTUAL,
+    MAX_ORDER_TOKENS,
+    THRESHOLD_HEAT, THRESHOLD_POLARITY, THRESHOLD_EXISTENCE,
+    THRESHOLD_RIGHTEOUSNESS, THRESHOLD_ORDER, THRESHOLD_MOVEMENT,
 )
 
 logger = logging.getLogger(__name__)
 
+# Transformer dimensions
+D_TOKEN = 14    # Per-axis token: 6 motion functions of target + axis properties
+D_NODE = 10     # Per-node: its own 6 motion functions in cube coords
+D_EMB = 32      # Embedding dimension — matches PC's feature_head output
+N_HEADS = 2     # Attention heads
+
+# Try to import torch — graceful fallback if unavailable
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    _HAS_TORCH = True
+except ImportError:
+    _HAS_TORCH = False
+    torch = None
+    nn = None
+    F = None
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# BOOLEAN NAVIGATION — Composable targeting on the hypersphere
+# MANIFOLD ATTENTION — HeatAttention pattern from the Pi blender
 # ═══════════════════════════════════════════════════════════════════════════════
 
+if _HAS_TORCH:
+    class ManifoldAttention(nn.Module):
+        """Transformer attention over manifold node embeddings.
 
-class Target(ABC):
-    """Abstract base for navigational boolean targets.
+        Mirrors the PC's HeatAttention — attention weights ARE the heat signal.
+        Uses K as temperature, same as vision_transformer.py.
 
-    Each Target scores a candidate node [0, 1].
-    Compose with And/Or/Not to build complex navigation queries.
-    """
+        Level 1: Project each node's axis-tokens to D_EMB, weighted pool
+        Level 2: Cross-node attention with query from state context
 
-    @abstractmethod
-    def score(self, node: Node) -> float:
-        """Score a candidate node. Returns float in [0, 1]."""
-        ...
+        Total params: ~3,872 (~15 KB) — trivial for Pi 5.
+        """
+
+        def __init__(self, d_token: int = D_TOKEN, d_node: int = D_NODE,
+                     d_emb: int = D_EMB, n_heads: int = N_HEADS):
+            super().__init__()
+            self.d_emb = d_emb
+            self.n_heads = n_heads
+            self.d_head = d_emb // n_heads
+
+            # Level 1: Axis token → embedding
+            self.W_token_proj = nn.Linear(d_token, d_emb, bias=False)
+            # Node's own motion functions → embedding
+            self.W_node_proj = nn.Linear(d_node, d_emb, bias=False)
+
+            # Level 2: Cross-node attention
+            self.W_Q = nn.Linear(d_emb, d_emb, bias=False)
+            self.W_K = nn.Linear(d_emb, d_emb, bias=False)
+            self.W_V = nn.Linear(d_emb, d_emb, bias=False)
+            self.W_out = nn.Linear(d_emb, 1, bias=False)
+
+            # Attention temperature = K (registered buffer, not a parameter)
+            self.register_buffer('attention_temp', torch.tensor(K, dtype=torch.float32))
+
+            # Scale factor for attention
+            self.scale = 1.0 / math.sqrt(self.d_head)
+
+            # Initialize with PBAI constants
+            self._init_weights()
+
+        @torch.no_grad()
+        def _init_weights(self):
+            """Initialize weights from PBAI constants (not random).
+
+            W_token_proj, W_node_proj: golden angle spiral weighted by motion thresholds
+            W_Q, W_K: Givens-rotated identity at golden angle spacing
+            W_V: identity (pass-through initially)
+            W_out: motion function thresholds distributed across D_EMB dims
+            """
+            golden_angle = 2 * math.pi * INV_PHI
+            thresholds = [
+                THRESHOLD_HEAT, THRESHOLD_POLARITY, THRESHOLD_EXISTENCE,
+                THRESHOLD_RIGHTEOUSNESS, THRESHOLD_ORDER, THRESHOLD_MOVEMENT,
+            ]
+
+            # W_token_proj: golden angle spiral weighted by 1/phi^n thresholds
+            w = torch.zeros_like(self.W_token_proj.weight)
+            for i in range(min(self.d_emb, D_TOKEN)):
+                angle = golden_angle * i
+                threshold = thresholds[i % len(thresholds)]
+                for j in range(min(self.d_emb, D_TOKEN)):
+                    w[i, j] = threshold * math.cos(angle * (j + 1))
+            # Scale to reasonable magnitude
+            w = w / (w.norm() + 1e-8) * math.sqrt(self.d_emb)
+            self.W_token_proj.weight.copy_(w[:self.d_emb, :D_TOKEN])
+
+            # W_node_proj: same pattern
+            w_node = torch.zeros_like(self.W_node_proj.weight)
+            for i in range(min(self.d_emb, D_NODE)):
+                angle = golden_angle * i
+                threshold = thresholds[i % len(thresholds)]
+                for j in range(min(self.d_emb, D_NODE)):
+                    w_node[i, j] = threshold * math.cos(angle * (j + 1))
+            w_node = w_node / (w_node.norm() + 1e-8) * math.sqrt(self.d_emb)
+            self.W_node_proj.weight.copy_(w_node[:self.d_emb, :D_NODE])
+
+            # W_Q, W_K: Givens-rotated identity at golden angle spacing
+            for W in [self.W_Q, self.W_K]:
+                w_qk = torch.eye(self.d_emb)
+                for i in range(0, self.d_emb - 1, 2):
+                    angle = golden_angle * (i // 2)
+                    c, s = math.cos(angle), math.sin(angle)
+                    w_qk[i, i] = c
+                    w_qk[i, i + 1] = -s
+                    w_qk[i + 1, i] = s
+                    w_qk[i + 1, i + 1] = c
+                W.weight.copy_(w_qk)
+
+            # W_V: identity (pass-through initially)
+            self.W_V.weight.copy_(torch.eye(self.d_emb))
+
+            # W_out: motion thresholds distributed across D_EMB dims
+            w_out = torch.zeros(1, self.d_emb)
+            for i in range(self.d_emb):
+                w_out[0, i] = thresholds[i % len(thresholds)] / K
+            self.W_out.weight.copy_(w_out)
+
+        def forward(self, node_embeddings: 'torch.Tensor',
+                    query: 'torch.Tensor') -> 'torch.Tensor':
+            """Cross-node attention. Returns (N, 1) relevance scores.
+
+            Args:
+                node_embeddings: (N, D_EMB) — all eligible node embeddings
+                query: (1, D_EMB) — state context query
+
+            Returns:
+                (N, 1) attention-weighted relevance scores
+            """
+            N = node_embeddings.shape[0]
+            if N == 0:
+                return torch.zeros(0, 1)
+
+            # Project Q, K, V
+            Q = self.W_Q(query)    # (1, D_EMB)
+            K_mat = self.W_K(node_embeddings)  # (N, D_EMB)
+            V = self.W_V(node_embeddings)      # (N, D_EMB)
+
+            # Multi-head reshape: (batch, heads, seq, d_head)
+            Q = Q.view(1, self.n_heads, self.d_head).unsqueeze(0)       # (1, 1, heads, d_head)
+            K_mat = K_mat.view(N, self.n_heads, self.d_head).unsqueeze(0)  # (1, N, heads, d_head)
+            V = V.view(N, self.n_heads, self.d_head).unsqueeze(0)          # (1, N, heads, d_head)
+
+            # Transpose for attention: (1, heads, seq, d_head)
+            Q = Q.permute(0, 2, 1, 3)      # (1, heads, 1, d_head)
+            K_mat = K_mat.permute(0, 2, 1, 3)  # (1, heads, N, d_head)
+            V = V.permute(0, 2, 1, 3)          # (1, heads, N, d_head)
+
+            # Attention: softmax(QK^T * scale / K_temp)
+            attn = torch.matmul(Q, K_mat.transpose(-2, -1))  # (1, heads, 1, N)
+            attn = attn * self.scale / self.attention_temp
+            attn = F.softmax(attn, dim=-1)
+
+            # Weighted values
+            out = torch.matmul(attn, V)  # (1, heads, 1, d_head)
+            # But we want per-node scores, not aggregated output
+            # Use attention weights directly as relevance
+            attn_weights = attn.squeeze(0).mean(dim=0).squeeze(0)  # (N,)
+
+            # Also compute per-node output scores via W_out
+            node_scores = self.W_out(node_embeddings)  # (N, 1)
+
+            # Combine: attention weight * output score
+            combined = attn_weights.unsqueeze(1) * torch.sigmoid(node_scores)
+
+            return combined  # (N, 1)
+
+        def pool_axis_tokens(self, token_features: 'torch.Tensor',
+                             weights: 'torch.Tensor') -> 'torch.Tensor':
+            """Weighted pool of axis tokens into single node embedding.
+
+            Args:
+                token_features: (T, D_TOKEN) — up to 44 axis tokens
+                weights: (T,) — traversal counts as weights
+
+            Returns:
+                (1, D_EMB) — single node embedding
+            """
+            if token_features.shape[0] == 0:
+                return torch.zeros(1, self.d_emb)
+
+            projected = self.W_token_proj(token_features)  # (T, D_EMB)
+
+            # Normalize weights
+            w = weights / (weights.sum() + 1e-8)
+            w = w.unsqueeze(1)  # (T, 1)
+
+            pooled = (projected * w).sum(dim=0, keepdim=True)  # (1, D_EMB)
+            return pooled
+
+        def project_node_motion(self, node_features: 'torch.Tensor') -> 'torch.Tensor':
+            """Project node's own motion functions to embedding space.
+
+            Args:
+                node_features: (D_NODE,) — node's 6 motion functions
+
+            Returns:
+                (1, D_EMB)
+            """
+            return self.W_node_proj(node_features.unsqueeze(0))  # (1, D_EMB)
 
 
-class NodeTarget(Target):
-    """Angular proximity to an anchor node. 1.0=same position, 0.0=antipodal."""
-
-    def __init__(self, anchor: Node):
-        self._anchor_sp = SpherePosition(theta=anchor.theta, phi=anchor.phi)
-
-    def score(self, node: Node) -> float:
-        node_sp = SpherePosition(theta=node.theta, phi=node.phi)
-        return relationship_strength(self._anchor_sp, node_sp)
-
-
-class HeatTarget(Target):
-    """Heat filter with smooth falloff.
-
-    above=True: high heat scores high (hot filter).
-    above=False: low heat scores high (cold filter).
-    """
-
-    def __init__(self, threshold: float, above: bool = True):
-        self._threshold = max(threshold, 0.001)
-        self._above = above
-
-    def score(self, node: Node) -> float:
-        if self._above:
-            return min(node.heat / self._threshold, 1.0)
-        else:
-            return min(self._threshold / max(node.heat, 0.001), 1.0)
-
-
-class AxisTarget(Target):
-    """Nodes reachable via a source node's learned axes.
-
-    Checks if the candidate is a target of any axis in source.frame.axes.
-    Score = axis.strength (1 - 1/(1+traversal_count)) if found, else 0.
-    """
-
-    def __init__(self, source: Node):
-        # Pre-build lookup: target_id → max strength
-        self._reachable: Dict[str, float] = {}
-        for axis in source.frame.axes.values():
-            existing = self._reachable.get(axis.target_id, 0.0)
-            self._reachable[axis.target_id] = max(existing, axis.strength)
-
-    def score(self, node: Node) -> float:
-        return self._reachable.get(node.id, 0.0)
-
-
-class NotTarget(Target):
-    """Boolean NOT — inverts inner score. Navigate AWAY from inner."""
-
-    def __init__(self, inner: Target):
-        self._inner = inner
-
-    def score(self, node: Node) -> float:
-        return 1.0 - self._inner.score(node)
-
-
-class AndTarget(Target):
-    """Boolean AND — fuzzy intersection (min). Must score well on both."""
-
-    def __init__(self, a: Target, b: Target):
-        self._a = a
-        self._b = b
-
-    def score(self, node: Node) -> float:
-        return min(self._a.score(node), self._b.score(node))
-
-
-class OrTarget(Target):
-    """Boolean OR — fuzzy union (max). Score well on either."""
-
-    def __init__(self, a: Target, b: Target):
-        self._a = a
-        self._b = b
-
-    def score(self, node: Node) -> float:
-        return max(self._a.score(node), self._b.score(node))
-
-
-def resolve(target: Target, manifold, k: int = 10) -> List[Tuple[Node, float]]:
-    """Score all eligible manifold nodes against a target, return top k.
-
-    Skips psychology nodes, bootstraps, Self (inf heat), and non-ACTUAL.
-    O(N) where N ≈ 500-600 nodes — sub-millisecond on Pi.
-    """
-    scored = []
-    for node in manifold.nodes.values():
-        if node.concept in ('identity', 'ego', 'conscience'):
-            continue
-        if node.concept.startswith('bootstrap'):
-            continue
-        if node.heat == float('inf'):
-            continue
-        if node.existence != EXISTENCE_ACTUAL:
-            continue
-        s = target.score(node)
-        if s > 0.0:
-            scored.append((node, s))
-
-    scored.sort(key=lambda x: x[1], reverse=True)
-    return scored[:k]
-
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIMULATION RESULT (unchanged)
+# ═══════════════════════════════════════════════════════════════════════════════
 
 @dataclass
 class SimulationResult:
@@ -196,19 +281,25 @@ class SimulationResult:
         }
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# INTROSPECTOR
+# ═══════════════════════════════════════════════════════════════════════════════
+
 class Introspector:
     """
-    Cube-native introspection engine.
+    Transformer-based introspection engine.
 
-    Enriches decision options by simulating their cube projections
-    without copying or mutating the manifold.
+    Reads each node's axes as tokens (up to 44 per node), embeds them via
+    ManifoldAttention, then uses cross-node attention to find relevant concepts
+    for the current state context.
+
+    Falls back to heat-sorted domain concepts if PyTorch is unavailable.
 
     Usage:
         introspector = Introspector(manifold)
         if introspector.should_think():
-            results = introspector.simulate(options, state_key)
-            context = introspector.to_context(results)
-            # Pass context to decision pipeline
+            suggestions = introspector.suggest(domain_ctx)
+            boosts = introspector.get_weight_boosts(suggestions, actions)
     """
 
     def __init__(self, manifold):
@@ -217,6 +308,18 @@ class Introspector:
         # Short-term simulation memory — recent results for pattern detection
         self._stm: List[Dict[str, Any]] = []
         self._stm_capacity: int = 12  # Movement constant (12 directions)
+
+        # Transformer (None if torch unavailable)
+        self._transformer = None
+        if _HAS_TORCH:
+            try:
+                self._transformer = ManifoldAttention(D_TOKEN, D_NODE, D_EMB, N_HEADS)
+                self._transformer.eval()  # Inference only, no training
+                logger.info(f"ManifoldAttention initialized: "
+                            f"{sum(p.numel() for p in self._transformer.parameters())} params")
+            except Exception as e:
+                logger.warning(f"ManifoldAttention init failed, using fallback: {e}")
+                self._transformer = None
 
     # ═══════════════════════════════════════════════════════════════════════════
     # GATING — Should we think about this?
@@ -250,7 +353,7 @@ class Introspector:
         return True
 
     # ═══════════════════════════════════════════════════════════════════════════
-    # SIMULATION — Project options through cube
+    # SIMULATION — Project options through cube (unchanged)
     # ═══════════════════════════════════════════════════════════════════════════
 
     def simulate(self, options: List[str], state_key: str = "") -> List[SimulationResult]:
@@ -265,17 +368,9 @@ class Introspector:
         5. Package as SimulationResult
 
         This is LIGHTWEIGHT — no deepcopy, no manifold mutation.
-
-        Args:
-            options: Available choices to simulate
-            state_key: Current state for context
-
-        Returns:
-            List of SimulationResult, one per option
         """
         results = []
 
-        # Get reference point: state node or Identity node
         ref_node = None
         if state_key:
             ref_node = self.manifold.get_node_by_concept(state_key)
@@ -286,50 +381,33 @@ class Introspector:
             result = self._simulate_option(option, i, len(options), ref_node)
             results.append(result)
 
-        # Pay evaluation cost from Ego (thinking costs energy)
         if self.manifold.ego_node:
             self.manifold.ego_node.spend_heat(COST_EVALUATE, minimum=PSYCHOLOGY_MIN_HEAT)
 
-        # Record to STM
         self._record_stm(state_key, results)
-
         return results
 
     def _simulate_option(self, option: str, index: int, total: int,
                          ref_node: Optional[Node]) -> SimulationResult:
-        """
-        Simulate a single option through cube projection.
-
-        If the option already exists as a node, use its position.
-        Otherwise, estimate position using golden-angle distribution
-        around the reference node.
-        """
-        # Check if option already has a manifold node
+        """Simulate a single option through cube projection."""
         option_node = self.manifold.get_node_by_concept(option)
 
         if option_node:
-            # Use existing node's angular position
             theta = option_node.theta
             phi = option_node.phi
         elif ref_node:
-            # Estimate: distribute options around reference via golden angle
             golden_angle = 2 * math.pi * INV_PHI
             theta = ref_node.theta
             phi = (ref_node.phi + index * golden_angle) % (2 * math.pi)
         else:
-            # Fallback: distribute evenly on equator
             theta = math.pi / 2
             phi = (2 * math.pi * index) / max(total, 1)
 
-        # Project to cube coordinates
         cube_x = math.sin(theta) * math.cos(phi)
         cube_y = math.sin(theta) * math.sin(phi)
         cube_tau = math.cos(theta)
-
-        # Derive heat magnitude from cube position
         heat_magnitude = math.sqrt(cube_x ** 2 + cube_y ** 2)
 
-        # Determine quadrant from cube signs
         if cube_x >= 0 and cube_y >= 0:
             quadrant = "Q1"
         elif cube_x < 0 and cube_y >= 0:
@@ -339,9 +417,6 @@ class Introspector:
         else:
             quadrant = "Q4"
 
-        # Evaluate Righteousness via Conscience (cos projection)
-        # R = 1 - cos(angle from reference)
-        # R -> 0 = righteous (aligned with reference)
         righteousness = 1.0
         if ref_node:
             ref_sp = SpherePosition(theta=ref_node.theta, phi=ref_node.phi)
@@ -349,8 +424,6 @@ class Introspector:
             angle = angular_distance(ref_sp, opt_sp)
             righteousness = 1.0 - math.cos(angle)
 
-        # Conscience score: how well does this align with cube frame?
-        # Use cube-space distance from origin (lower = more righteous)
         cube_pos = CubePosition(x=cube_x, y=cube_y, tau=cube_tau)
         conscience_score = 1.0 - min(cube_evaluate_R(cube_pos), 1.0)
 
@@ -365,16 +438,11 @@ class Introspector:
         )
 
     # ═══════════════════════════════════════════════════════════════════════════
-    # CONTEXT — Package results for decision pipeline
+    # CONTEXT — Package results for decision pipeline (unchanged)
     # ═══════════════════════════════════════════════════════════════════════════
 
     def to_context(self, results: List[SimulationResult]) -> Dict[str, Any]:
-        """
-        Package simulation results as decision context.
-
-        Returns dict that can be merged into decision_node context,
-        enriching the beta->delta->Gamma->alpha->zeta pipeline.
-        """
+        """Package simulation results as decision context."""
         context = {
             "introspection_count": len(results),
             "simulated": True,
@@ -387,7 +455,6 @@ class Introspector:
             context[f"{prefix}_R"] = result.righteousness
             context[f"{prefix}_conscience"] = result.conscience_score
 
-        # Summary metrics
         if results:
             best = max(results, key=lambda r: r.conscience_score)
             worst = min(results, key=lambda r: r.conscience_score)
@@ -395,8 +462,6 @@ class Introspector:
             context["sim_best_conscience"] = best.conscience_score
             context["sim_worst_option"] = worst.option
             context["sim_spread"] = best.conscience_score - worst.conscience_score
-
-            # Quadrant distribution
             quadrants = [r.quadrant for r in results]
             context["sim_quadrant_diversity"] = len(set(quadrants))
 
@@ -411,7 +476,7 @@ class Introspector:
         return sorted(results, key=lambda r: r.heat_magnitude, reverse=True)
 
     # ═══════════════════════════════════════════════════════════════════════════
-    # SHORT-TERM MEMORY — Recent simulation results
+    # SHORT-TERM MEMORY (unchanged)
     # ═══════════════════════════════════════════════════════════════════════════
 
     def _record_stm(self, state_key: str, results: List[SimulationResult]) -> None:
@@ -425,19 +490,10 @@ class Introspector:
             self._stm.pop(0)
 
     def get_stm_pattern(self) -> Optional[str]:
-        """
-        Detect patterns in recent simulations.
-
-        Looks for repeated quadrant preferences or consistent
-        conscience scores across recent states.
-
-        Returns:
-            Pattern description string, or None if no pattern
-        """
+        """Detect patterns in recent simulations."""
         if len(self._stm) < 3:
             return None
 
-        # Check if same quadrant dominates recent best options
         recent_quadrants = []
         for entry in self._stm[-3:]:
             results = entry["results"]
@@ -459,23 +515,15 @@ class Introspector:
         }
 
     # ═══════════════════════════════════════════════════════════════════════════
-    # HEAT-PATTERN EXPLORER — Watches hot nodes, suggests cold neighbors
+    # TRANSFORMER FEATURE EXTRACTION — Cube-mapped axis tokens
     # ═══════════════════════════════════════════════════════════════════════════
 
-    def find_hot_nodes(self, n: int = 5) -> List[Node]:
+    def _eligible_nodes(self) -> List[Node]:
+        """Get all nodes eligible for transformer attention.
+
+        Skips psychology nodes, bootstraps, Self (inf heat), and non-ACTUAL.
         """
-        Find the hottest nodes on the manifold (what's active right now).
-
-        Skips psychology nodes (identity/ego/conscience), bootstraps, and Self.
-        Only considers ACTUAL nodes (alive, connected).
-
-        Args:
-            n: Number of hot nodes to return
-
-        Returns:
-            Top N nodes sorted by heat descending
-        """
-        candidates = []
+        eligible = []
         for node in self.manifold.nodes.values():
             if node.concept in ('identity', 'ego', 'conscience'):
                 continue
@@ -485,130 +533,362 @@ class Introspector:
                 continue
             if node.existence != EXISTENCE_ACTUAL:
                 continue
-            candidates.append(node)
+            eligible.append(node)
+        return eligible
 
-        candidates.sort(key=lambda n: n.heat, reverse=True)
-        return candidates[:n]
+    def _extract_axis_tokens(self, node: Node) -> Tuple['torch.Tensor', 'torch.Tensor']:
+        """Extract axis tokens from a node as a (T, D_TOKEN) tensor + weights.
 
-    def find_cold_neighbors(self, hot_node: Node, k: int = 5) -> List[Node]:
+        Each axis is one token. Features are the 6 motion functions of the
+        axis's target node, plus axis-specific properties.
+
+        Token layout (14 dims):
+            0: target.heat_magnitude / sqrt(2)
+            1: (target.cube_x + 1) / 2
+            2: (target.cube_y + 1) / 2
+            3: (target.polarity + 1) / 2
+            4-7: target.existence one-hot (potential/actual/dormant/archived)
+            8: min(target.R, 2) / 2
+            9: log(1 + target.order) / log(1 + max_order)
+            10: (target.cube_tau + 1) / 2
+            11: (axis.polarity + 1) / 2
+            12: log(1 + axis.traversal_count) / log(1 + max_tc)
+            13: 1.0 if axis.is_proper else 0.0
+
+        Returns up to MAX_ORDER_TOKENS tokens. For nodes with >44 axes
+        (loaded from mature manifold), takes top 44 by traversal_count.
         """
-        Find cold neighbors of a hot node — nearby but underused connections.
+        axes = list(node.frame.axes.values())
+        if not axes:
+            return torch.zeros(0, D_TOKEN), torch.zeros(0)
 
-        These are concepts that are topologically close on the hypersphere
-        to something active, but aren't being used. The Introspector
-        suggests these as potentially relevant actions or concepts.
+        # Cap at 44 tokens — take strongest if over limit
+        if len(axes) > MAX_ORDER_TOKENS:
+            axes = sorted(axes, key=lambda a: a.traversal_count, reverse=True)[:MAX_ORDER_TOKENS]
+
+        # Compute max values for normalization
+        max_order = max((n.order for n in self.manifold.nodes.values()), default=1)
+        max_tc = max((a.traversal_count for a in axes), default=1)
+
+        existence_map = {'potential': 0, 'actual': 1, 'dormant': 2, 'archived': 3}
+
+        tokens = []
+        weights = []
+        for axis in axes:
+            target = self.manifold.get_node(axis.target_id)
+            if target is None:
+                # Target not found — use zeros
+                tokens.append(torch.zeros(D_TOKEN))
+                weights.append(float(axis.traversal_count))
+                continue
+
+            # 6 motion functions of the target
+            t_heat_mag = target.heat_magnitude / math.sqrt(2)
+            t_cube_x = (target.cube_x + 1.0) / 2.0
+            t_cube_y = (target.cube_y + 1.0) / 2.0
+            t_polarity = (target.polarity + 1.0) / 2.0
+
+            # Existence one-hot
+            exist_idx = existence_map.get(target.existence, 0)
+            exist_oh = [0.0, 0.0, 0.0, 0.0]
+            exist_oh[exist_idx] = 1.0
+
+            t_R = min(target.righteousness, 2.0) / 2.0
+            t_order = math.log(1 + target.order) / math.log(1 + max(max_order, 1)) if max_order > 0 else 0.0
+            t_tau = (target.cube_tau + 1.0) / 2.0
+
+            # Axis properties
+            a_pol = (axis.polarity + 1.0) / 2.0
+            a_tc = math.log(1 + axis.traversal_count) / math.log(1 + max(max_tc, 1)) if max_tc > 0 else 0.0
+            a_proper = 1.0 if axis.is_proper else 0.0
+
+            token = torch.tensor([
+                t_heat_mag, t_cube_x, t_cube_y, t_polarity,
+                exist_oh[0], exist_oh[1], exist_oh[2], exist_oh[3],
+                t_R, t_order, t_tau,
+                a_pol, a_tc, a_proper,
+            ], dtype=torch.float32)
+
+            tokens.append(token)
+            weights.append(float(axis.traversal_count))
+
+        return torch.stack(tokens), torch.tensor(weights, dtype=torch.float32)
+
+    def _extract_node_motion(self, node: Node) -> 'torch.Tensor':
+        """Extract a node's own 6 motion functions as (D_NODE,) tensor.
+
+        Layout (10 dims):
+            0: heat_magnitude / sqrt(2)
+            1: (cube_x + 1) / 2
+            2: (cube_y + 1) / 2
+            3: (polarity + 1) / 2
+            4-7: existence one-hot
+            8: min(R, 2) / 2
+            9: (cube_tau + 1) / 2
+        """
+        existence_map = {'potential': 0, 'actual': 1, 'dormant': 2, 'archived': 3}
+        exist_idx = existence_map.get(node.existence, 0)
+        exist_oh = [0.0, 0.0, 0.0, 0.0]
+        exist_oh[exist_idx] = 1.0
+
+        return torch.tensor([
+            node.heat_magnitude / math.sqrt(2),
+            (node.cube_x + 1.0) / 2.0,
+            (node.cube_y + 1.0) / 2.0,
+            (node.polarity + 1.0) / 2.0,
+            exist_oh[0], exist_oh[1], exist_oh[2], exist_oh[3],
+            min(node.righteousness, 2.0) / 2.0,
+            (node.cube_tau + 1.0) / 2.0,
+        ], dtype=torch.float32)
+
+    def _pool_node_embedding(self, node: Node) -> 'torch.Tensor':
+        """Get (1, D_EMB) embedding for a node: weighted axis pool + own motion.
+
+        A node's embedding = what it KNOWS (axis pool) + what it IS (motion functions).
+        """
+        # Axis pool
+        token_feats, weights = self._extract_axis_tokens(node)
+        if token_feats.shape[0] > 0:
+            axis_emb = self._transformer.pool_axis_tokens(token_feats, weights)
+        else:
+            axis_emb = torch.zeros(1, D_EMB)
+
+        # Node's own motion functions
+        node_motion = self._extract_node_motion(node)
+        node_emb = self._transformer.project_node_motion(node_motion)
+
+        # Sum: what it KNOWS + what it IS
+        return axis_emb + node_emb
+
+    def _embed_all_nodes(self, nodes: List[Node]) -> 'torch.Tensor':
+        """Embed all eligible nodes into (N, D_EMB) tensor."""
+        if not nodes:
+            return torch.zeros(0, D_EMB)
+
+        embeddings = []
+        for node in nodes:
+            emb = self._pool_node_embedding(node)
+            embeddings.append(emb)
+
+        return torch.cat(embeddings, dim=0)  # (N, D_EMB)
+
+    def _build_query(self, domain_ctx: Dict, node_embeddings: 'torch.Tensor',
+                     nodes: List[Node]) -> 'torch.Tensor':
+        """Build (1, D_EMB) query from state context.
+
+        Query = weighted average of:
+            State node (0.5) + Ego (0.2) + Identity (0.2) + hot domain nodes (0.1)
+
+        When vision targets exist, their 32-dim features are added as focus hint.
+        """
+        query = torch.zeros(1, D_EMB)
+        total_weight = 0.0
+
+        # Helper to get embedding for a specific node by concept
+        def get_emb(concept: str, fallback_node=None) -> Optional['torch.Tensor']:
+            node = self.manifold.get_node_by_concept(concept) if concept else fallback_node
+            if node is None:
+                return None
+            # Check if it's in our eligible list
+            for i, n in enumerate(nodes):
+                if n.id == node.id:
+                    return node_embeddings[i:i+1]
+            # Not in eligible list — compute directly
+            if self._transformer:
+                return self._pool_node_embedding(node)
+            return None
+
+        # State node (weight 0.5)
+        hot_nodes = domain_ctx.get("hot_nodes", [])
+        if hot_nodes:
+            # First hot node is typically the state node
+            state_emb = get_emb(None, hot_nodes[0])
+            if state_emb is not None:
+                query += 0.5 * state_emb
+                total_weight += 0.5
+
+        # Ego (weight 0.2)
+        ego_emb = get_emb(None, self.manifold.ego_node)
+        if ego_emb is not None:
+            query += 0.2 * ego_emb
+            total_weight += 0.2
+
+        # Identity (weight 0.2)
+        id_emb = get_emb(None, self.manifold.identity_node)
+        if id_emb is not None:
+            query += 0.2 * id_emb
+            total_weight += 0.2
+
+        # Hot domain nodes top-3 (weight 0.1 shared)
+        if len(hot_nodes) > 1:
+            hot_embs = []
+            for h in hot_nodes[1:4]:
+                h_emb = get_emb(None, h)
+                if h_emb is not None:
+                    hot_embs.append(h_emb)
+            if hot_embs:
+                hot_avg = torch.stack(hot_embs).mean(dim=0)
+                query += 0.1 * hot_avg
+                total_weight += 0.1
+
+        # Normalize by total weight
+        if total_weight > 0:
+            query = query / total_weight
+
+        # Vision focus hint: inject PC's 32-dim features if available
+        targets = domain_ctx.get("targets", [])
+        if targets and len(targets) > 0:
+            best_target = targets[0]
+            features = best_target.get("features")
+            if features and len(features) == D_EMB:
+                focus = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
+                query = query + 0.1 * focus  # Additive hint (same as HeatAttention)
+
+        return query
+
+    def _righteousness_gate(self, scores: 'torch.Tensor',
+                            nodes: List[Node]) -> 'torch.Tensor':
+        """Gate scores by evaluate_righteousness — suppress misaligned nodes.
+
+        Uses the actual cube measurement, not a learned gate.
+        """
+        gated = scores.clone()
+        for i, node in enumerate(nodes):
+            cube_pos = CubePosition(x=node.cube_x, y=node.cube_y, tau=node.cube_tau)
+            R = cube_evaluate_R(cube_pos)
+            # R=0 → gate=1.0, R≥2 → gate→0
+            gate = 1.0 / (1.0 + R)
+            gated[i] *= gate
+        return gated
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # SUGGEST — Transformer-powered exploration
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def suggest(self, domain_ctx: Dict) -> Optional[List[str]]:
+        """Sandbox exploration within domain-scoped context.
+
+        Uses ManifoldAttention to score all eligible nodes against the current
+        state context, then filters by domain and righteousness.
+
+        Falls back to heat-sorted domain concepts if torch unavailable.
 
         Args:
-            hot_node: The active node to search near
-            k: Max neighbors to return
+            domain_ctx: Domain context from environment, containing:
+                - hot_nodes: List[Node] — driver-scoped hot nodes
+                - domain_prefix: str — domain ID (ow, the, end, tc, etc.)
+                - action_durations: Dict[str, float] — default durations
+                - targets: List[Dict] — vision targets
 
         Returns:
-            List of cold neighbor Nodes (heat below average)
-        """
-        # Get more candidates than needed, then filter for coldness
-        neighbors = self.manifold.k_nearest(hot_node, k * 2)
-        avg_heat = self.manifold.average_heat()
-
-        cold = []
-        for node, dist in neighbors:
-            if node.heat < avg_heat:
-                cold.append(node)
-            if len(cold) >= k:
-                break
-        return cold
-
-    def suggest(self, perception_props: Dict) -> Optional[List[str]]:
-        """
-        Main entry point: boolean navigation on the hypersphere.
-
-        Composes navigational targets to find relevant cold concepts:
-            near_hot = OR(NodeTarget(h) for h in hot_nodes)
-            cold     = HeatTarget(avg_heat, above=False)
-            target   = AND(near_hot, cold)
-
-        Enriched with AxisTarget: if hot node "zombie" has a learned axis
-        to "sword", sword gets included even if not angularly close.
-        The manifold's learned connections become navigation paths.
-
-        Args:
-            perception_props: Current perception properties dict
-
-        Returns:
-            List of suggested concept names (ordered by score), or None
+            List of suggested concept/action names, or None
         """
         if not self.should_think():
             return None
 
-        hot_nodes = self.find_hot_nodes(5)
-        if not hot_nodes:
+        domain_prefix = domain_ctx.get("domain_prefix", "")
+
+        # Fallback path: no transformer
+        if self._transformer is None:
+            return self._suggest_fallback(domain_ctx)
+
+        # Get eligible nodes
+        nodes = self._eligible_nodes()
+        if not nodes:
             return None
 
-        # Current state domain prefix for cross-domain filtering
-        state_key = perception_props.get("state_key", "")
-        domain_prefix = state_key.split('_')[0] if '_' in state_key else ""
-
-        # Boolean: near ANY hot node
-        near_hot = NodeTarget(hot_nodes[0])
-        for h in hot_nodes[1:]:
-            near_hot = OrTarget(near_hot, NodeTarget(h))
-
-        # AND cold (below average heat)
-        cold = HeatTarget(self.manifold.average_heat(), above=False)
-        target = AndTarget(near_hot, cold)
-
-        # Enrich: also include nodes reachable via hot nodes' axes
-        axis_sources = [h for h in hot_nodes if h.frame.axes]
-        if axis_sources:
-            axis_reach = AxisTarget(axis_sources[0])
-            for s in axis_sources[1:]:
-                axis_reach = OrTarget(axis_reach, AxisTarget(s))
-            # Cold nodes reachable by axes OR by angular proximity
-            target = OrTarget(target, AndTarget(axis_reach, cold))
-
-        results = resolve(target, self.manifold, k=15)
-        if not results:
-            return None
-
-        # Post-filter: exclude state-key concepts from other domains
-        # State keys have underscores AND digits (e.g. tc_neutral_s20v6, ow_unknown_h20_e0p0)
-        # Action names (move_forward, sprint_jump) have underscores but no digits
-        if domain_prefix:
-            results = [(n, s) for n, s in results
-                       if not ('_' in n.concept and any(c.isdigit() for c in n.concept))
-                       or n.concept.startswith(domain_prefix)]
-            if not results:
+        with torch.no_grad():
+            # Embed all nodes
+            node_embeddings = self._embed_all_nodes(nodes)
+            if node_embeddings.shape[0] == 0:
                 return None
 
-        # Pay evaluation cost from Ego
+            # Build query from state context
+            query = self._build_query(domain_ctx, node_embeddings, nodes)
+
+            # Forward pass — cross-node attention
+            scores = self._transformer.forward(node_embeddings, query)  # (N, 1)
+
+            # Righteousness gate
+            scores = self._righteousness_gate(scores, nodes)
+
+        # Convert to list of (concept, score)
+        scored = []
+        for i, node in enumerate(nodes):
+            scored.append((node.concept, scores[i].item()))
+
+        # Domain post-filter
+        if domain_prefix:
+            scored = [(c, s) for c, s in scored
+                      if not ('_' in c and any(ch.isdigit() for ch in c))
+                      or c.startswith(domain_prefix)]
+            if not scored:
+                return None
+
+        # Sort by score descending, take top 15
+        scored.sort(key=lambda x: x[1], reverse=True)
+        concepts = [c for c, s in scored[:15]]
+
+        if not concepts:
+            return None
+
+        # Pay evaluation cost
         if self.manifold.ego_node:
             self.manifold.ego_node.spend_heat(COST_EVALUATE, minimum=PSYCHOLOGY_MIN_HEAT)
-
-        concepts = [node.concept for node, score in results]
 
         # Record to STM
         self._record_stm("introspect_suggest", [
             SimulationResult(option=c, heat_magnitude=0.0) for c in concepts[:5]
         ])
 
-        logger.debug(f"Introspector boolean nav: {len(results)} results from {len(hot_nodes)} hot nodes")
+        logger.debug(f"Introspector transformer: {len(concepts)} concepts, "
+                      f"top={concepts[0] if concepts else 'none'}")
         return concepts
+
+    def _suggest_fallback(self, domain_ctx: Dict) -> Optional[List[str]]:
+        """Fallback suggest when torch unavailable — heat-sorted domain concepts."""
+        hot_nodes = domain_ctx.get("hot_nodes", [])
+        if not hot_nodes:
+            nodes = self._eligible_nodes()
+            if not nodes:
+                return None
+            nodes.sort(key=lambda n: n.heat, reverse=True)
+            hot_nodes = nodes[:10]
+
+        domain_prefix = domain_ctx.get("domain_prefix", "")
+        concepts = []
+        for node in hot_nodes:
+            c = node.concept
+            if domain_prefix:
+                if '_' in c and any(ch.isdigit() for ch in c) and not c.startswith(domain_prefix):
+                    continue
+            concepts.append(c)
+
+        if not concepts:
+            return None
+
+        # Pay evaluation cost
+        if self.manifold.ego_node:
+            self.manifold.ego_node.spend_heat(COST_EVALUATE, minimum=PSYCHOLOGY_MIN_HEAT)
+
+        self._record_stm("introspect_fallback", [
+            SimulationResult(option=c, heat_magnitude=0.0) for c in concepts[:5]
+        ])
+
+        return concepts
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # WEIGHT BOOSTS — Convert suggestions to action weights (unchanged)
+    # ═══════════════════════════════════════════════════════════════════════════
 
     def get_weight_boosts(self, suggestions: List[str], available_actions: List[str]) -> Dict[str, float]:
         """
         Convert Introspector suggestions to action weight boosts.
 
-        Matches cold neighbor concepts against available action names:
-        - Direct match: cold concept == action name → boost 4.0
-        - Partial match: cold concept is substring of action name → boost 2.5
-        - Axis match: cold node has axis pointing to node whose concept
-          matches an action → boost 2.0
-
-        Args:
-            suggestions: Cold neighbor concepts from suggest()
-            available_actions: Actions the driver currently supports
-
-        Returns:
-            Dict of {action_name: boost_multiplier}
+        Matches suggested concepts against available action names:
+        - Direct match: concept == action name → boost 4.0
+        - Partial match: concept is substring of action name → boost 2.5
+        - Axis match: concept node has axis to node matching action → boost 2.0
         """
         boosts = {}
         action_set = set(available_actions)

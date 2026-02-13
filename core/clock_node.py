@@ -954,26 +954,49 @@ class Clock:
         
         return heat_spent
     
+    def _collect_tree_axes(self, root_node) -> dict:
+        """Collect all axes from a node and its overflow children (44/45 tree).
+
+        When a node hits 44 axes, new axes overflow to child nodes.
+        This method collects the full tree so creative cycle traverses
+        all axes, not just the root's 44.
+
+        Returns:
+            Dict of {key: Axis} — root axes keyed by direction,
+            child axes keyed by "{child_concept}:{direction}" to avoid collisions.
+        """
+        all_axes = dict(root_node.frame.axes)  # Start with root's axes
+        prefix = f"{root_node.concept}_c"
+        for concept, nid in self.manifold.nodes_by_concept.items():
+            if concept.startswith(prefix):
+                child = self.manifold.nodes.get(nid)
+                if child:
+                    for dir_name, axis in child.frame.axes.items():
+                        key = f"{concept}:{dir_name}"
+                        all_axes[key] = axis
+        return all_axes
+
     def _identity_explore(self) -> float:
         """
         Identity explores the manifold - discovers what exists.
-        
+
         Identity is where righteousness frames live. It explores to:
         - Discover new concepts (add to manifold)
         - Traverse known concepts (strengthen understanding)
-        
+
         When Identity discovers something, it creates a potential node
         that awaits environment confirmation.
         """
         import random
-        
+
         identity = self.manifold.identity_node
-        if not identity.frame.axes:
+        all_axes = self._collect_tree_axes(identity)
+        if not all_axes:
             return 0.0
-        
+
         # Pick random axis to explore
-        axis_name = random.choice(list(identity.frame.axes.keys()))
-        axis = identity.frame.axes[axis_name]
+        axis_name = random.choice(list(all_axes.keys()))
+        axis = all_axes[axis_name]
         
         # Pay traversal cost
         spent = identity.spend_heat(COST_TRAVERSE, minimum=PSYCHOLOGY_MIN_HEAT)
@@ -1000,22 +1023,25 @@ class Clock:
         During consolidation, Ego strengthens paths it's confident about.
         """
         ego = self.manifold.ego_node
-        if not ego.frame.axes:
+        all_axes = self._collect_tree_axes(ego)
+        if not all_axes:
             return 0.0
-        
+
         # Find axis with highest confidence (most validated by Conscience)
         best_axis = None
         best_confidence = 0.0
-        
-        for axis_name, axis in ego.frame.axes.items():
-            confidence = self.manifold.get_confidence(axis_name)
+
+        for axis_name, axis in all_axes.items():
+            # Strip child prefix for confidence lookup
+            lookup = axis_name.split(":")[-1] if ":" in axis_name else axis_name
+            confidence = self.manifold.get_confidence(lookup)
             if confidence > best_confidence:
                 best_confidence = confidence
                 best_axis = axis
-        
+
         if not best_axis:
             # Fallback to most-traversed
-            best_axis = max(ego.frame.axes.values(), key=lambda a: a.traversal_count)
+            best_axis = max(all_axes.values(), key=lambda a: a.traversal_count)
         
         # Pay consolidation cost
         spent = ego.spend_heat(COST_TRAVERSE, minimum=PSYCHOLOGY_MIN_HEAT)
@@ -1055,15 +1081,18 @@ class Clock:
         
         # Pick a concept from Identity to validate
         # Conscience mediates what Identity knows to Ego
-        if identity.frame.axes:
+        identity_axes = self._collect_tree_axes(identity)
+        conscience_axes = self._collect_tree_axes(conscience)
+
+        if identity_axes:
             # Prefer concepts Identity knows about
-            axis_name = random.choice(list(identity.frame.axes.keys()))
-            identity_axis = identity.frame.axes[axis_name]
+            axis_name = random.choice(list(identity_axes.keys()))
+            identity_axis = identity_axes[axis_name]
             target = self.manifold.get_node(identity_axis.target_id)
-        elif conscience.frame.axes:
+        elif conscience_axes:
             # Fallback to concepts Conscience already knows
-            axis_name = random.choice(list(conscience.frame.axes.keys()))
-            conscience_axis = conscience.frame.axes[axis_name]
+            axis_name = random.choice(list(conscience_axes.keys()))
+            conscience_axis = conscience_axes[axis_name]
             target = self.manifold.get_node(conscience_axis.target_id)
         else:
             return 0.0

@@ -226,14 +226,33 @@ class APIHandler(BaseHTTPRequestHandler):
                 self._send_error(str(e))
 
         elif path == '/body/action':
-            # Send raw motor command to connected PC body
-            if not self.daemon.body_server or not self.daemon.body_server.has_body:
-                self._send_error("No body connected", 503)
-                return
+            # Send action to connected PC body.
+            # If action_type is present, route through the driver (computes
+            # cardinal deltas, builds sequences, records heat/learning).
+            # Otherwise send raw motor command directly.
             try:
                 body = self._read_body()
-                success = self.daemon.body_server.send_action(body, timeout=5.0)
-                self._send_json({"status": "ok", "sent": success})
+                driver = self.daemon.env_core.get_active_driver() if self.daemon.env_core else None
+                if 'action_type' in body and driver:
+                    from drivers import Action
+                    action = Action(
+                        action_type=body['action_type'],
+                        target=body.get('target'),
+                        parameters=body.get('parameters', {}),
+                    )
+                    result = driver.act(action)
+                    self._send_json({
+                        "status": "ok",
+                        "success": result.success,
+                        "outcome": result.outcome,
+                        "heat_value": result.heat_value,
+                    })
+                else:
+                    if not self.daemon.body_server or not self.daemon.body_server.has_body:
+                        self._send_error("No body connected", 503)
+                        return
+                    success = self.daemon.body_server.send_action(body, timeout=5.0)
+                    self._send_json({"status": "ok", "sent": success})
             except Exception as e:
                 self._send_error(str(e))
 

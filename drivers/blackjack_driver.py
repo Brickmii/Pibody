@@ -228,7 +228,7 @@ class BlackjackDriver(Driver):
                 self.manifold.add_node(node)
 
                 # Connect task_frame → count_frame
-                self.task_frame.add_axis(concept, node.id)
+                self.manifold.add_axis_safe(self.task_frame, concept, node.id)
                 logger.info(f"Created proper frame: {concept}")
 
             self.count_frames[concept] = node
@@ -395,7 +395,7 @@ class BlackjackDriver(Driver):
         # Connect count_frame → situation via semantic axis
         base_key = self._situation_key(state)
         if count_frame:
-            count_frame.add_axis(base_key, node.id)
+            self.manifold.add_axis_safe(count_frame, base_key, node.id)
 
         logger.debug(f"Created situation: {full_key}")
         return node
@@ -411,7 +411,7 @@ class BlackjackDriver(Driver):
             return axis
 
         decision_id = f"{situation.concept}_{action}"
-        axis = situation.add_axis(action, decision_id)
+        axis = self.manifold.add_axis_safe(situation, action, decision_id)
         axis.make_proper()
 
         logger.debug(f"Created decision axis: {situation.concept} --{action}-->")

@@ -585,12 +585,22 @@ class MinecraftDriver(Driver):
         Filters actions based on UI state and danger:
         - UI open: only close_ui is valid
         - UI closed: close_ui is excluded, open_inventory available
+        - Dynamic actions (craft_item, look_at_target) included when registered
         """
         if self._ui_open:
             return ["close_ui"]
 
         # Normal play: exclude close_ui (only valid when UI is open)
-        return [a for a in self.SUPPORTED_ACTIONS if a != "close_ui"]
+        actions = [a for a in self.SUPPORTED_ACTIONS if a != "close_ui"]
+        # Include dynamic actions currently registered in MC_ACTION_MAP
+        for dyn in ("craft_item", "look_at_target"):
+            if dyn in MC_ACTION_MAP and dyn not in actions:
+                actions.append(dyn)
+        return actions
+
+    def supports_action(self, action_type: str) -> bool:
+        """Check if action is supported, including dynamic actions."""
+        return action_type in self.SUPPORTED_ACTIONS or action_type in MC_ACTION_MAP
 
     def get_action_weights(self, actions: list = None) -> Dict[str, float]:
         """Return exploration weights for actions (higher = more likely).

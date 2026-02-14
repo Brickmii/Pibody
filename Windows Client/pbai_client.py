@@ -741,7 +741,7 @@ async def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="PBAI CUDA Vision Client")
-    parser.add_argument("--host", default="pibody.local")
+    parser.add_argument("--host", default="192.168.5.42")
     parser.add_argument("--port", type=int, default=8421)
     parser.add_argument("--resolution", type=int, default=512  )
     parser.add_argument("--simulate", action="store_true")

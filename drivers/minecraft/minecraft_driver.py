@@ -375,8 +375,8 @@ MC_ACTION_WEIGHTS = {
     "sprint":          1.5,
     "attack":          3.0,
     "use":             2.5,
-    "look_up":         3.0,
-    "look_down":       3.0,
+    "look_up":         3.5,
+    "look_down":       1.5,
     "look_left":       3.5,
     "look_right":      3.5,
     "open_inventory":  0.1,
@@ -389,15 +389,15 @@ MC_ACTION_WEIGHTS = {
     "explore_left":    4.0,
     "explore_right":   4.0,
     "scout_ahead":     3.5,
-    "watch_step":      2.0,
-    "mine_block":      3.5,
-    "mine_forward":    3.0,
+    "watch_step":      0.5,
+    "mine_block":      0.5,
+    "mine_forward":    0.5,
     "turn_north":      2.0,
     "turn_south":      1.5,
     "turn_east":       2.0,
     "turn_west":       2.0,
-    "turn_up":         1.5,
-    "turn_down":       1.5,
+    "turn_up":         2.0,
+    "turn_down":       0.5,
     "close_ui":        0.0,    # Only used when UI is open (forced)
     "swim_up":         0.0,    # Only used when drowning (boosted dynamically)
     "select_slot_1":   0.1,
@@ -936,6 +936,11 @@ class MinecraftDriver(Driver):
 
             px = peak.get("x", MC_SCREEN_CENTER)
             py = peak.get("y", MC_SCREEN_CENTER)
+
+            # Skip peaks in the bottom HUD region (hotbar/hearts/hunger)
+            # Vision grid is 64x64; bottom ~12 rows are HUD overlay
+            if py > 52:
+                continue
             dx = px - MC_SCREEN_CENTER
             dy = py - MC_SCREEN_CENTER
 

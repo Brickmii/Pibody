@@ -1112,13 +1112,14 @@ class MinecraftDriver(Driver):
         health = props.get("health", 20)
         hostile_count = props.get("hostile_count", 0)
 
-        # Flee: low health + hostiles
-        if health < 8 and hostile_count > 0:
+        # Flee: low health + hostiles (health=0 means unreadable, skip)
+        if 0 < health < 8 and hostile_count > 0:
             plans.append(["sprint_forward", "sprint_jump", "sprint_forward"])
 
         # Eat: low hunger (when we can detect food in inventory)
+        # hunger=0 likely means HUD reader can't read it — treat as unknown
         hunger = props.get("hunger", 20)
-        if hunger < 12:
+        if 0 < hunger < 12:
             plans.append(["use"])  # Eating with food selected
 
         # Crafting: when target nouns match a craftable item

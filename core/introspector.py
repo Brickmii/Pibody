@@ -1005,6 +1005,7 @@ class Introspector:
         # Existence (Perception)
         'bm_see': ['look_left', 'look_right', 'look_up', 'look_down'],
         'bm_view': ['look_left', 'look_right', 'look_up', 'look_down'],
+        'bm_look': ['look_left', 'look_right', 'look_up', 'look_down', 'explore_left', 'explore_right'],
         'bm_visual': ['look_left', 'look_right', 'look_up', 'look_down'],
         'bm_visually': ['explore_left', 'explore_right', 'scout_ahead'],
         'bm_visualize': ['explore_left', 'explore_right', 'scout_ahead', 'watch_step'],
@@ -1020,6 +1021,7 @@ class Introspector:
         # Movement (Navigation)
         'bm_explore': ['move_forward', 'explore_left', 'explore_right', 'sprint_forward'],
         'bm_find': ['move_forward', 'sprint_forward', 'scout_ahead', 'explore_left'],
+        'bm_go': ['move_forward', 'sprint_forward', 'sprint_jump', 'jump_forward'],
         'bm_discover': ['move_forward', 'explore_left', 'explore_right', 'jump_forward'],
     }
 

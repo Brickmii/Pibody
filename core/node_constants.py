@@ -315,10 +315,10 @@ BASE_MOTION_PREFIX = 'bm_'  # Node concept prefix for base motions
 BASE_MOTIONS = {
     1: ['take', 'get'],                                    # Heat (Magnitude)
     2: ['easily', 'quickly', 'better'],                    # Polarity (Differentiation)
-    3: ['see', 'view', 'visual', 'visually', 'visualize'], # Existence (Perception)
+    3: ['see', 'view', 'look', 'visual', 'visually', 'visualize'], # Existence (Perception)
     4: ['analyze', 'understand', 'identify'],              # Righteousness (Evaluation)
     5: ['create', 'build', 'design', 'make'],              # Order (Construction)
-    6: ['explore', 'find', 'discover'],                    # Movement (Navigation)
+    6: ['explore', 'find', 'go', 'discover'],               # Movement (Navigation)
 }
 
 # Flat list of all 20 base motions

@@ -572,8 +572,8 @@ class TestBaseMotionEmbeddings(unittest.TestCase):
         concepts = [n.concept for n in nodes]
         # At least some bm_ concepts should be present
         bm_in_eligible = [c for c in concepts if c.startswith(BASE_MOTION_PREFIX)]
-        self.assertEqual(len(bm_in_eligible), 20,
-                         f"Expected 20 base motions in eligible, got {len(bm_in_eligible)}")
+        self.assertEqual(len(bm_in_eligible), len(ALL_BASE_MOTIONS),
+                         f"Expected {len(ALL_BASE_MOTIONS)} base motions in eligible, got {len(bm_in_eligible)}")
 
     def test_bootstraps_still_excluded(self):
         """Bootstrap nodes should still be excluded from eligible."""
@@ -583,10 +583,10 @@ class TestBaseMotionEmbeddings(unittest.TestCase):
         self.assertEqual(len(bootstrap_in), 0)
 
     def test_get_base_motion_embeddings_shape(self):
-        """_get_base_motion_embeddings should return (20, D_EMB) tensor."""
+        """_get_base_motion_embeddings should return (N, D_EMB) tensor."""
         embs = self.intro._get_base_motion_embeddings()
         self.assertIsNotNone(embs)
-        self.assertEqual(embs.shape, (20, D_EMB))
+        self.assertEqual(embs.shape, (len(ALL_BASE_MOTIONS), D_EMB))
 
     def test_get_base_motion_embeddings_cached(self):
         """Second call should return cached result."""
@@ -597,11 +597,11 @@ class TestBaseMotionEmbeddings(unittest.TestCase):
         self.assertIs(embs1, embs2)
 
     def test_score_against_base_motions_returns_20(self):
-        """score_against_base_motions should return 20 scores."""
+        """score_against_base_motions should return N scores."""
         node = self.m.get_node_by_concept("bm_explore")
         self.assertIsNotNone(node)
         scores = self.intro.score_against_base_motions(node)
-        self.assertEqual(len(scores), 20)
+        self.assertEqual(len(scores), len(ALL_BASE_MOTIONS))
         for concept, score in scores.items():
             self.assertTrue(concept.startswith(BASE_MOTION_PREFIX))
             self.assertGreaterEqual(score, 0.0)

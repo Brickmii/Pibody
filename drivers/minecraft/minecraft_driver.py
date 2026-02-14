@@ -943,10 +943,10 @@ class MinecraftDriver(Driver):
                     continue
                 if node.heat == float('inf') or node.existence != 'actual':
                     continue
-                # Include: domain state keys OR action names (no digits = action)
+                # Include: domain state keys OR known MC actions OR abstract concepts
                 is_domain_state = node.concept.startswith(dim + '_')
-                is_action = '_' in node.concept and not any(c.isdigit() for c in node.concept)
-                is_general = '_' not in node.concept  # abstract concepts
+                is_action = node.concept in MC_ACTION_MAP
+                is_general = '_' not in node.concept  # abstract concepts (no underscores)
                 if is_domain_state or is_action or is_general:
                     domain_nodes.append(node)
             domain_nodes.sort(key=lambda n: n.heat, reverse=True)

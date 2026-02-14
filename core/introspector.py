@@ -917,11 +917,23 @@ class Introspector:
         for i, node in enumerate(nodes):
             scored.append((node.concept, scores[i].item()))
 
-        # Domain post-filter
+        # Domain post-filter — exclude foreign domain concepts
         if domain_prefix:
-            scored = [(c, s) for c, s in scored
-                      if not ('_' in c and any(ch.isdigit() for ch in c))
-                      or c.startswith(domain_prefix)]
+            _KNOWN_PREFIXES = ("ow_", "the_", "end_", "tc_", "bj_")
+            def _is_own_domain(c):
+                # Concepts starting with our prefix are always OK
+                if c.startswith(domain_prefix):
+                    return True
+                # Concepts starting with a DIFFERENT known prefix are foreign
+                for pfx in _KNOWN_PREFIXES:
+                    if c.startswith(pfx) and not pfx.startswith(domain_prefix):
+                        return False
+                # State keys with digits from unknown prefix are foreign
+                if '_' in c and any(ch.isdigit() for ch in c):
+                    return False
+                # Everything else (actions, abstract concepts) is OK
+                return True
+            scored = [(c, s) for c, s in scored if _is_own_domain(c)]
             if not scored:
                 return None
 

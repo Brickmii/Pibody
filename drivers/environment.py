@@ -245,10 +245,20 @@ class MotionBus:
 
         logger.debug(f"MotionBus activate: {concept}={strength:.2f} (src={source})")
 
+    # Words to exclude from noun extraction
+    STOP_WORDS = frozenset({
+        'a', 'an', 'the', 'to', 'from', 'in', 'on', 'at', 'by', 'for',
+        'with', 'of', 'and', 'or', 'but', 'is', 'are', 'was', 'go',
+        'some', 'please', 'now', 'then', 'here', 'there', 'it', 'its',
+        'i', 'me', 'my', 'up', 'down', 'left', 'right', 'around', 'out',
+        'over', 'can', 'you', 'your', 'this', 'that', 'not', 'all', 'more',
+    })
+
     def activate_from_text(self, text: str, base_strength: float = 0.7) -> List[str]:
         """Word-boundary match verbs in text → activate.
 
         Returns list of activated verb concepts (e.g. ['bm_explore', 'bm_find']).
+        Also extracts noun hints for driver targeting.
         """
         activated = []
         text_lower = text.lower()
@@ -257,7 +267,23 @@ class MotionBus:
                 concept = f"{self._prefix}{verb}"
                 self.activate(concept, base_strength, "chat")
                 activated.append(concept)
+        # Extract nouns
+        self._extract_nouns(text_lower)
         return activated
+
+    def _extract_nouns(self, text: str):
+        """Extract remaining words as noun/target hints after verb extraction."""
+        words = re.findall(r'[a-z_]+', text)
+        verb_set = set(self._verbs)
+        self._target_hints = [
+            w for w in words
+            if w not in self.STOP_WORDS and w not in verb_set and len(w) >= 3
+        ]
+
+    @property
+    def target_hints(self) -> List[str]:
+        """Return extracted noun hints from last chat text."""
+        return getattr(self, '_target_hints', [])
 
     def activate_from_perception(self, props: Dict[str, Any]) -> None:
         """Vision/state context → verb activation.
@@ -713,6 +739,11 @@ class EnvironmentCore:
             if target_action and not self.has_plan():
                 # Inject target into weight boosts for next decide()
                 self._weight_boosts["look_at_target"] = 6.0
+
+        # 1b. NOUN HINTS — thread from motion bus to driver
+        if self._motion_bus and self._motion_bus.target_hints:
+            if hasattr(driver, '_target_hints'):
+                driver._target_hints = self._motion_bus.target_hints
 
         # 2. DOMAIN CONTEXT — driver provides scoped data
         domain_ctx = {}

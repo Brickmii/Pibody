@@ -102,6 +102,12 @@ if not HAS_KEYBOARD:
 else:
     HAS_PYNPUT = False
 
+try:
+    from hud_reader import HUDReader
+    HAS_HUD_READER = True
+except ImportError:
+    HAS_HUD_READER = False
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)s | %(message)s',
@@ -188,6 +194,12 @@ class MotorExecutor:
     
     def _click(self, button="left"):
         (pydirectinput if self.use_directinput else pyautogui).click(button=button)
+
+    def _moveTo(self, x, y):
+        if self.use_directinput:
+            pydirectinput.moveTo(x, y)
+        else:
+            pyautogui.moveTo(x, y)
     
     def _mouseDown(self, button="left"):
         (pydirectinput if self.use_directinput else pyautogui).mouseDown(button=button)
@@ -229,6 +241,9 @@ class MotorExecutor:
                 self._moveRel(int(d[0]) if d else 0, int(d[1]) if len(d) > 1 else 0)
             
             elif mt == "mouse_click":
+                x, y = action.get("x"), action.get("y")
+                if x is not None and y is not None:
+                    self._moveTo(int(x), int(y))
                 self._click(action.get("button", "left"))
             
             elif mt == "mouse_hold":
@@ -285,7 +300,8 @@ class PBAIClient:
                  learn: bool = True,
                  kill_key: str = "F12",
                  checkpoint: Optional[str] = None,
-                 stream_fps: float = 2.0):
+                 stream_fps: float = 2.0,
+                 gui_scale: int = 2):
 
         self.host = host
         self.port = port
@@ -294,13 +310,25 @@ class PBAIClient:
         self.kill_key = kill_key.lower()
         self._stream_fps = stream_fps
         self._streaming = False
-        
+        self._gui_scale = gui_scale
+
         # Device
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        
+
         # Components
         self.screen = ScreenCapture()
         self.motor = MotorExecutor(enabled=motor_enabled)
+
+        # HUD reader — extract health/hunger/hotbar from raw screenshots
+        self.hud_reader = None
+        if HAS_HUD_READER and HAS_MSS:
+            try:
+                mon = self.screen.sct.monitors[1] if self.screen.sct else None
+                if mon:
+                    self.hud_reader = HUDReader(mon['width'], mon['height'], gui_scale)
+                    logger.info(f"HUD reader: {mon['width']}x{mon['height']} scale={gui_scale}")
+            except Exception as e:
+                logger.warning(f"HUD reader init failed: {e}")
         
         # Vision transformer
         self._init_vision(checkpoint)
@@ -500,9 +528,24 @@ class PBAIClient:
         
         # Build world state
         world_state = self.build_world_state(self.model, img_tensor, top_k=10)
-        
+
+        # HUD reading on raw full-resolution image
+        if self.hud_reader is not None:
+            try:
+                hud_data = self.hud_reader.read_hud(image)
+                world_state["player"] = {
+                    "health": hud_data["health"],
+                    "hunger": hud_data["hunger"],
+                }
+                world_state["hotbar"] = {
+                    "selected": hud_data["hotbar_selected"],
+                    "slots": hud_data["hotbar_slots"],
+                }
+            except Exception as e:
+                logger.debug(f"HUD read error: {e}")
+
         logger.info(f"World state: t_K={world_state['t_K']}, kappa={world_state['kappa']:.4f}, peaks={len(world_state['peaks'])}")
-        
+
         # Send
         await self._ws.send(json.dumps({
             "type": "world_state",
@@ -558,6 +601,14 @@ class PBAIClient:
         Only the heavy GPU work is offloaded — screen capture stays in
         the main thread since it uses thread-local Windows GDI resources.
         """
+        # HUD reading on raw full-resolution image (before downscaling)
+        hud_data = None
+        if self.hud_reader is not None:
+            try:
+                hud_data = self.hud_reader.read_hud(image)
+            except Exception as e:
+                logger.debug(f"HUD read error: {e}")
+
         img_tensor = torch.from_numpy(image).float().to(self.device)
         if img_tensor.max() > 1:
             img_tensor = img_tensor / 255.0
@@ -575,6 +626,18 @@ class PBAIClient:
             output = self.model(img_tensor, self._focus_hint)
 
         world_state = self.build_world_state(self.model, img_tensor, top_k=10)
+
+        # Merge HUD data into world state
+        if hud_data:
+            world_state["player"] = {
+                "health": hud_data["health"],
+                "hunger": hud_data["hunger"],
+            }
+            world_state["hotbar"] = {
+                "selected": hud_data["hotbar_selected"],
+                "slots": hud_data["hotbar_slots"],
+            }
+
         return world_state
 
     async def _continuous_capture_loop(self):
@@ -687,6 +750,8 @@ async def main():
     parser.add_argument("--checkpoint", default=None)
     parser.add_argument("--stream-fps", type=float, default=2.0,
                         help="Continuous vision stream rate (frames/sec, 0=disabled)")
+    parser.add_argument("--gui-scale", type=int, default=2,
+                        help="Minecraft GUI scale (default 2)")
     args = parser.parse_args()
     
     # Check requirements
@@ -731,7 +796,8 @@ async def main():
         learn=not args.no_learn,
         kill_key=args.kill_key,
         checkpoint=args.checkpoint,
-        stream_fps=args.stream_fps
+        stream_fps=args.stream_fps,
+        gui_scale=args.gui_scale,
     )
     
     import signal

@@ -32,6 +32,7 @@ SUPPORTED ACTIONS:
     Combat:   attack, use
     Camera:   look_up, look_down, look_left, look_right
     Cardinal: turn_north, turn_south, turn_east, turn_west, turn_up, turn_down
+    Hotbar:   select_slot_1 through select_slot_9
     Other:    wait, open_inventory
 
 CLOCK SYNC:
@@ -350,6 +351,16 @@ MC_ACTION_MAP = {
     "close_ui": {"motor": MotorType.KEY_PRESS, "key": "escape"},
     # Swim up: hold space + w to surface when underwater
     "swim_up": {"combo": ["space", "w"], "duration": 1.5},
+    # Hotbar slot selection (1-9)
+    "select_slot_1": {"motor": MotorType.KEY_PRESS, "key": "1"},
+    "select_slot_2": {"motor": MotorType.KEY_PRESS, "key": "2"},
+    "select_slot_3": {"motor": MotorType.KEY_PRESS, "key": "3"},
+    "select_slot_4": {"motor": MotorType.KEY_PRESS, "key": "4"},
+    "select_slot_5": {"motor": MotorType.KEY_PRESS, "key": "5"},
+    "select_slot_6": {"motor": MotorType.KEY_PRESS, "key": "6"},
+    "select_slot_7": {"motor": MotorType.KEY_PRESS, "key": "7"},
+    "select_slot_8": {"motor": MotorType.KEY_PRESS, "key": "8"},
+    "select_slot_9": {"motor": MotorType.KEY_PRESS, "key": "9"},
 }
 
 # Exploration weights — higher = more likely to be chosen during exploration.
@@ -389,6 +400,15 @@ MC_ACTION_WEIGHTS = {
     "turn_down":       1.5,
     "close_ui":        0.0,    # Only used when UI is open (forced)
     "swim_up":         0.0,    # Only used when drowning (boosted dynamically)
+    "select_slot_1":   0.1,
+    "select_slot_2":   0.1,
+    "select_slot_3":   0.1,
+    "select_slot_4":   0.1,
+    "select_slot_5":   0.1,
+    "select_slot_6":   0.1,
+    "select_slot_7":   0.1,
+    "select_slot_8":   0.1,
+    "select_slot_9":   0.1,
 }
 
 
@@ -504,6 +524,19 @@ class MinecraftDriver(Driver):
             except Exception as e:
                 logger.warning(f"Failed to load minecraft-data: {e}")
 
+        # Screen dimensions + GUI scale for crafting UI interaction
+        self._screen_width = 1920
+        self._screen_height = 1080
+        self._gui_scale = 2
+
+        # Build recipe reverse index (output name → recipes)
+        self._recipe_by_output: Dict[str, list] = {}
+        if self._mc_data:
+            self._build_recipe_index()
+
+        # Target hints from MotionBus noun extraction
+        self._target_hints: List[str] = []
+
         # Initialize with MinecraftPort if none provided
         if port is None:
             port = MinecraftPort(config=config)
@@ -612,14 +645,55 @@ class MinecraftDriver(Driver):
             return None
         return self._mc_data.entities_name.get(name)
 
-    def get_recipes_for(self, item_name: str) -> list:
-        """Get crafting recipes that produce this item."""
+    def _build_recipe_index(self):
+        """Build output_name → [recipe] reverse index.
+
+        minecraft-data recipes are keyed by sequential recipe ID, not item ID.
+        This index lets us look up recipes by what they produce.
+        """
         if not self._mc_data or not hasattr(self._mc_data, 'recipes'):
-            return []
-        item = self._mc_data.items_name.get(item_name)
-        if not item:
-            return []
-        return self._mc_data.recipes.get(str(item["id"]), [])
+            return
+        for recipe_list in self._mc_data.recipes.values():
+            # recipes can be a single dict or list of dicts
+            if isinstance(recipe_list, dict):
+                recipe_list = [recipe_list]
+            for recipe in recipe_list:
+                # Output can be in 'output' list or 'result' dict
+                outputs = recipe.get('output', [])
+                if isinstance(outputs, dict):
+                    outputs = [outputs]
+                result = recipe.get('result', {})
+                if result:
+                    if isinstance(result, dict):
+                        outputs.append(result)
+                    elif isinstance(result, list):
+                        outputs.extend(result)
+                for out in outputs:
+                    name = ''
+                    if isinstance(out, dict):
+                        name = out.get('name', out.get('id', ''))
+                    elif isinstance(out, str):
+                        name = out
+                    if name:
+                        # Strip minecraft: prefix if present
+                        name = name.replace('minecraft:', '')
+                        self._recipe_by_output.setdefault(name, []).append(recipe)
+        logger.info(f"Recipe index: {len(self._recipe_by_output)} craftable items")
+
+    def get_recipes_for(self, item_name: str, craft_type: str = None) -> list:
+        """Get crafting recipes that produce this item.
+
+        Args:
+            item_name: Item name (e.g. 'wooden_pickaxe')
+            craft_type: Optional filter by recipe type (e.g. 'crafting_table')
+
+        Returns:
+            List of recipe dicts
+        """
+        recipes = self._recipe_by_output.get(item_name, [])
+        if craft_type:
+            recipes = [r for r in recipes if r.get('type') == craft_type]
+        return recipes
 
     def classify_entity_threat(self, entity_name: str) -> str:
         """Classify entity as hostile/neutral/passive using game data."""
@@ -772,6 +846,15 @@ class MinecraftDriver(Driver):
             properties["inventory_slots_used"] = inventory.get("slots_used", 0)
             properties["has_weapon"] = inventory.get("has_weapon", False)
             properties["has_food"] = inventory.get("has_food", False)
+
+        # Hotbar state from HUD reader
+        hotbar = gs.get("hotbar", {})
+        if hotbar:
+            properties["hotbar_selected"] = hotbar.get("selected", 1)
+            properties["hotbar_slots"] = hotbar.get("slots", [False] * 9)
+            properties["hotbar_occupied_count"] = sum(
+                1 for s in hotbar.get("slots", []) if s
+            )
 
         # Game knowledge metadata
         if self._mc_data:
@@ -967,6 +1050,42 @@ class MinecraftDriver(Driver):
             "action_durations": {a: MC_ACTION_MAP[a].get("duration", 0.2) for a in MC_ACTION_MAP if "duration" in MC_ACTION_MAP[a]},
         }
 
+    def _build_craft_sequence(self, item_name: str) -> list:
+        """Build motor sequence for Bedrock recipe book crafting.
+
+        Flow: open inventory → click search → type name → click result → craft → close.
+        """
+        sw, sh, gs = self._screen_width, self._screen_height, self._gui_scale
+        cx, cy = sw // 2, sh // 2
+
+        # Bedrock inventory layout (relative to center, scaled by GUI)
+        search_x = cx - 120 * gs // 2
+        search_y = cy - 130 * gs // 2
+        recipe_x = cx - 100 * gs // 2
+        recipe_y = cy - 70 * gs // 2
+        craft_x = cx - 30 * gs // 2
+        craft_y = cy + 80 * gs // 2
+
+        seq = [
+            {"motor_type": "key_press", "key": "e"},
+            {"motor_type": "wait", "duration": 0.6},
+            {"motor_type": "mouse_click", "x": search_x, "y": search_y, "button": "left"},
+            {"motor_type": "wait", "duration": 0.3},
+        ]
+        # Type item name (alpha chars only)
+        for c in item_name:
+            if c.isalpha():
+                seq.append({"motor_type": "key_press", "key": c.lower()})
+        seq.extend([
+            {"motor_type": "wait", "duration": 0.5},
+            {"motor_type": "mouse_click", "x": recipe_x, "y": recipe_y, "button": "left"},
+            {"motor_type": "wait", "duration": 0.3},
+            {"motor_type": "mouse_click", "x": craft_x, "y": craft_y, "button": "left"},
+            {"motor_type": "wait", "duration": 0.3},
+            {"motor_type": "key_press", "key": "escape"},
+        ])
+        return seq
+
     def _get_reactive_plans(self, perception) -> List[List[str]]:
         """State-driven plans — driver decides when to trigger."""
         plans = []
@@ -982,6 +1101,23 @@ class MinecraftDriver(Driver):
         hunger = props.get("hunger", 20)
         if hunger < 12:
             plans.append(["use"])  # Eating with food selected
+
+        # Crafting: when target nouns match a craftable item
+        if self._target_hints and not self._ui_open:
+            for noun in self._target_hints:
+                recipes = self.get_recipes_for(noun)
+                if not recipes:
+                    # Try partial match
+                    for name in self._recipe_by_output:
+                        if noun in name:
+                            recipes = self._recipe_by_output[name]
+                            noun = name
+                            break
+                if recipes:
+                    seq = self._build_craft_sequence(noun)
+                    MC_ACTION_MAP["craft_item"] = {"sequence": seq}
+                    plans.append(["craft_item"])
+                    break  # Only one craft plan at a time
 
         return plans
 
@@ -1051,7 +1187,8 @@ class MinecraftDriver(Driver):
         # Track UI state: open_inventory opens UI, close_ui/escape closes it
         if action_type == "open_inventory":
             self._ui_open = True
-        elif action_type == "close_ui":
+        elif action_type in ("close_ui", "craft_item"):
+            # craft_item sequence ends with escape, so UI closes
             self._ui_open = False
 
         mapping = MC_ACTION_MAP.get(action_type)
@@ -1170,7 +1307,11 @@ class MinecraftDriver(Driver):
             "turn_down": K * 0.15,
             "close_ui": K * 0.1,
             "swim_up": K * 0.5,
+            "craft_item": K * 1.5,
         }
+        # Slot selection: very low heat
+        if action_type.startswith("select_slot_"):
+            return self.scale_heat(K * 0.05)
         return self.scale_heat(heat_map.get(action_type, K * 0.1))
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -1562,9 +1703,9 @@ if __name__ == "__main__":
     check("scout_ahead" in w, "scout_ahead has weight")
     check(w.get("scout_ahead", 0) == 3.5, f"scout_ahead weight = 3.5 ({w.get('scout_ahead')})")
 
-    # Total action count: 17 single + 6 cardinal + 5 combo + 6 sequence = 34
+    # Total action count: 17 single + 9 slot + 6 cardinal + 5 combo + 6 sequence = 43
     total_actions = len(MC_ACTION_MAP)
-    check(total_actions == 34, f"Total actions = 34 ({total_actions})")
+    check(total_actions == 43, f"Total actions = 43 ({total_actions})")
 
     # ── Targeting (Layer 2) ──
     print("\n11. Perception-Driven Targeting")
@@ -1653,15 +1794,21 @@ if __name__ == "__main__":
     dx, dy = driver4._compute_cardinal_direction("turn_down")
     check(abs(dy - 315.0) < 1.0, f"Ahead→Down dy≈315 ({dy:.1f})")
 
-    # Total action count: 28 + 6 = 34 static (+1 dynamic look_at_target from section 11)
-    # Remove dynamic entry before counting
+    # Total action count: 26 single/slot + 6 cardinal + 5 combo + 6 sequence = 43 static
+    # (+1 dynamic look_at_target from section 11, +1 dynamic craft_item)
+    # Remove dynamic entries before counting
     had_lat = "look_at_target" in MC_ACTION_MAP
+    had_craft = "craft_item" in MC_ACTION_MAP
     if had_lat:
         del MC_ACTION_MAP["look_at_target"]
+    if had_craft:
+        del MC_ACTION_MAP["craft_item"]
     total = len(MC_ACTION_MAP)
-    check(total == 34, f"Total static actions = 34 ({total})")
+    check(total == 43, f"Total static actions = 43 ({total})")
     if had_lat:
         MC_ACTION_MAP["look_at_target"] = {"motor": MotorType.LOOK, "direction": (0, 0)}
+    if had_craft:
+        MC_ACTION_MAP["craft_item"] = {"sequence": []}
 
     # Cardinal actions in SUPPORTED_ACTIONS
     for d in ["turn_north", "turn_south", "turn_east", "turn_west", "turn_up", "turn_down"]:
@@ -1675,6 +1822,53 @@ if __name__ == "__main__":
     result_dz = driver4.act(Action(action_type="turn_south"))
     check(result_dz.success, "turn_south dead zone returns success")
     check("Already facing" in result_dz.outcome, f"Dead zone outcome: {result_dz.outcome}")
+
+    # ── Hotbar Slot Actions ──
+    print("\n13. Hotbar Slot Actions")
+
+    # All 9 slots in SUPPORTED_ACTIONS
+    for i in range(1, 10):
+        slot_name = f"select_slot_{i}"
+        check(slot_name in driver.SUPPORTED_ACTIONS, f"{slot_name} in SUPPORTED_ACTIONS")
+
+    # Execute slot selection
+    result_slot = driver2.act(Action(action_type="select_slot_1"))
+    check(result_slot.success, "select_slot_1 succeeded")
+    check(result_slot.heat_value > 0, f"Slot heat > 0 ({result_slot.heat_value:.3f})")
+
+    # Slot weights are low (exploration rarely picks them)
+    w_slots = driver.get_action_weights()
+    check(w_slots.get("select_slot_1", 0) == 0.1, f"select_slot_1 weight = 0.1 ({w_slots.get('select_slot_1')})")
+
+    # ── Hotbar Perception ──
+    print("\n14. Hotbar Perception")
+
+    hotbar_state = dict(test_state)
+    hotbar_state["hotbar"] = {
+        "selected": 3,
+        "slots": [True, True, True, False, False, False, False, False, False],
+    }
+    driver5 = MinecraftDriver(port=MinecraftPort())
+    driver5.port.connect()
+    driver5.port.feed_game_state(hotbar_state)
+    p5 = driver5.perceive()
+    check(p5.properties.get("hotbar_selected") == 3, f"hotbar_selected = 3 ({p5.properties.get('hotbar_selected')})")
+    check(p5.properties.get("hotbar_occupied_count") == 3, f"hotbar_occupied_count = 3 ({p5.properties.get('hotbar_occupied_count')})")
+
+    # ── Recipe Index ──
+    print("\n15. Recipe Index")
+
+    if HAS_MC_DATA:
+        rdriver = MinecraftDriver()
+        check(len(rdriver._recipe_by_output) > 0, f"Recipe index has {len(rdriver._recipe_by_output)} entries")
+
+        # Crafting sequence build
+        seq = rdriver._build_craft_sequence("wooden_pickaxe")
+        check(len(seq) > 5, f"Craft sequence has {len(seq)} steps")
+        check(seq[0]["motor_type"] == "key_press", "Craft starts with key_press (e)")
+        check(seq[-1]["motor_type"] == "key_press", "Craft ends with key_press (escape)")
+    else:
+        print("  SKIP: minecraft-data not installed")
 
     print(f"\n{'='*40}")
     if errors == 0:

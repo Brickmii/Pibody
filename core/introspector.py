@@ -996,8 +996,8 @@ class Introspector:
     # Base motion → action mapping
     BASE_MOTION_ACTION_MAP = {
         # Heat (Magnitude)
-        'bm_take': ['attack', 'use'],
-        'bm_get': ['attack', 'use', 'mine_block', 'mine_forward'],
+        'bm_take': ['attack', 'use', 'select_slot_1', 'select_slot_2'],
+        'bm_get': ['attack', 'use', 'mine_block', 'mine_forward', 'select_slot_1'],
         # Polarity (Differentiation)
         'bm_easily': ['sprint_forward', 'sprint_jump'],
         'bm_quickly': ['sprint_forward', 'sprint_jump', 'jump_forward'],
@@ -1013,10 +1013,10 @@ class Introspector:
         'bm_understand': ['look_left', 'look_right', 'wait'],
         'bm_identify': ['look_left', 'look_right', 'look_up', 'look_down'],
         # Order (Construction)
-        'bm_create': ['mine_block', 'mine_forward', 'use'],
-        'bm_build': ['mine_block', 'mine_forward', 'use'],
+        'bm_create': ['mine_block', 'mine_forward', 'use', 'select_slot_1'],
+        'bm_build': ['mine_block', 'mine_forward', 'use', 'select_slot_1'],
         'bm_design': ['look_left', 'look_right', 'look_up', 'look_down'],
-        'bm_make': ['mine_block', 'mine_forward', 'use', 'attack'],
+        'bm_make': ['mine_block', 'mine_forward', 'use', 'attack', 'select_slot_1'],
         # Movement (Navigation)
         'bm_explore': ['move_forward', 'explore_left', 'explore_right', 'sprint_forward'],
         'bm_find': ['move_forward', 'sprint_forward', 'scout_ahead', 'explore_left'],

@@ -287,8 +287,11 @@ class APIHandler(BaseHTTPRequestHandler):
                         )
                         self.daemon.env_core._integrate_perception(chat_perception)
 
+                bus = self.daemon.env_core._motion_bus if self.daemon.env_core else None
+                nouns = bus.target_hints if bus else []
                 self._send_json({
                     "activated_verbs": activated,
+                    "target_nouns": nouns,
                     "motion_bus": bus_state,
                 })
             except Exception as e:

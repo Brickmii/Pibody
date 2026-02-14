@@ -44,8 +44,8 @@ def cmd_status():
     s = api_get("/status")
     p = api_get("/psychology")
     print(f"State:  {s.get('state', '?')}")
-    print(f"Loops:  {s.get('loop_count', 0)}")
-    print(f"Driver: {s.get('active_driver', 'none')}")
+    print(f"Loops:  {s.get('choices', s.get('loop_count', 0))}")
+    print(f"Driver: {s.get('current_environment', 'none')}")
     print()
     for name in ("identity", "ego", "conscience"):
         node = p.get(name, {})

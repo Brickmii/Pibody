@@ -820,19 +820,21 @@ class HeatBackprop:
 # WORLD STATE BUILDER
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def build_world_state(model: PBAIVisionTransformer, 
+def build_world_state(model: PBAIVisionTransformer,
                       image: torch.Tensor,
                       focus_hint: Optional[torch.Tensor] = None,
-                      top_k: int = 10) -> Dict:
+                      top_k: int = 10,
+                      output: Optional[Dict] = None) -> Dict:
     """
     Process image and build world state dict for Pi.
-    
+
     This is what gets sent over WebSocket to the Pi.
     All values are converted to JSON-serializable Python types.
     """
-    # Forward pass
-    with torch.no_grad():
-        output = model(image, focus_hint)
+    # Forward pass (skip if pre-computed output provided)
+    if output is None:
+        with torch.no_grad():
+            output = model(image, focus_hint)
     
     # Get top-K patches
     top_k_data = model.get_top_k_patches(output, k=top_k)

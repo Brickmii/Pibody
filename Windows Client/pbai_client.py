@@ -28,9 +28,9 @@ Outcome → Heat Backprop → Learn
 ════════════════════════════════════════════════════════════════════════════════
 
 USAGE:
-    python pbai_client.py --host 192.168.5.24
-    python pbai_client.py --host 192.168.5.24 --kill-key F12
-    python pbai_client.py --host 192.168.5.24 --no-learn
+    python pbai_client.py --host pibody.local
+    python pbai_client.py --host pibody.local --kill-key F12
+    python pbai_client.py --host pibody.local --no-learn
 
 REQUIREMENTS:
     pip install torch mss pydirectinput pyautogui websockets numpy keyboard
@@ -527,7 +527,7 @@ class PBAIClient:
             self.learner.store_output(output)
         
         # Build world state
-        world_state = self.build_world_state(self.model, img_tensor, top_k=10)
+        world_state = self.build_world_state(self.model, img_tensor, top_k=10, output=output)
 
         # HUD reading on raw full-resolution image
         if self.hud_reader is not None:
@@ -625,7 +625,7 @@ class PBAIClient:
         with torch.no_grad():
             output = self.model(img_tensor, self._focus_hint)
 
-        world_state = self.build_world_state(self.model, img_tensor, top_k=10)
+        world_state = self.build_world_state(self.model, img_tensor, top_k=10, output=output)
 
         # Merge HUD data into world state
         if hud_data:
@@ -741,9 +741,9 @@ async def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="PBAI CUDA Vision Client")
-    parser.add_argument("--host", default="192.168.5.24")
+    parser.add_argument("--host", default="pibody.local")
     parser.add_argument("--port", type=int, default=8421)
-    parser.add_argument("--resolution", type=int, default=64)
+    parser.add_argument("--resolution", type=int, default=512  )
     parser.add_argument("--simulate", action="store_true")
     parser.add_argument("--no-learn", action="store_true")
     parser.add_argument("--kill-key", default="F12")
@@ -784,7 +784,7 @@ async def main():
     print(f"Stream: {args.stream_fps} FPS" if args.stream_fps > 0 else "Stream: OFF")
     print(f"Kill key: {args.kill_key}")
     print()
-    print(f"K = {K:.6f}, φ = {PHI:.6f}")
+    print(f"K = {K:.6f}, phi = {PHI:.6f}")
     print("=" * 60)
     print()
     

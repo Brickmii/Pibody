@@ -1,0 +1,6 @@
+mss
+pydirectinput
+pyautogui
+websockets
+numpy
+keyboard

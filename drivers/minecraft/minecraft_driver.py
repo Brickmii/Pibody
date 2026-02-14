@@ -1063,7 +1063,8 @@ class MinecraftDriver(Driver):
     def _build_craft_sequence(self, item_name: str) -> list:
         """Build motor sequence for Bedrock recipe book crafting.
 
-        Flow: open inventory → click search → type name → click result → craft → close.
+        Flow: open inventory → click search → clear old text → type name →
+              click result → craft → close.
         """
         sw, sh, gs = self._screen_width, self._screen_height, self._gui_scale
         cx, cy = sw // 2, sh // 2
@@ -1077,22 +1078,30 @@ class MinecraftDriver(Driver):
         craft_y = cy + 80 * gs // 2
 
         seq = [
-            {"motor_type": "key_press", "key": "e"},
-            {"motor_type": "wait", "duration": 0.6},
+            {"motor_type": "key_press", "key": "e"},           # Open inventory
+            {"motor_type": "wait", "duration": 0.8},            # Wait for UI to fully render
             {"motor_type": "mouse_click", "x": search_x, "y": search_y, "button": "left"},
             {"motor_type": "wait", "duration": 0.3},
+            # Clear any existing search text: triple-click to select all, then delete
+            {"motor_type": "mouse_click", "x": search_x, "y": search_y, "button": "left"},
+            {"motor_type": "mouse_click", "x": search_x, "y": search_y, "button": "left"},
+            {"motor_type": "wait", "duration": 0.1},
+            {"motor_type": "key_press", "key": "backspace"},
+            {"motor_type": "wait", "duration": 0.1},
         ]
-        # Type item name (alpha chars only)
-        for c in item_name:
-            if c.isalpha():
-                seq.append({"motor_type": "key_press", "key": c.lower()})
+        # Type item name — use display name with spaces replaced by spaces
+        # Only alpha chars, skip underscores (Bedrock search uses spaces)
+        clean_name = item_name.replace("_", " ")
+        for c in clean_name:
+            if c.isalpha() or c == ' ':
+                seq.append({"motor_type": "key_press", "key": c.lower() if c != ' ' else "space"})
         seq.extend([
-            {"motor_type": "wait", "duration": 0.5},
+            {"motor_type": "wait", "duration": 0.6},           # Wait for search results
             {"motor_type": "mouse_click", "x": recipe_x, "y": recipe_y, "button": "left"},
-            {"motor_type": "wait", "duration": 0.3},
+            {"motor_type": "wait", "duration": 0.4},
             {"motor_type": "mouse_click", "x": craft_x, "y": craft_y, "button": "left"},
-            {"motor_type": "wait", "duration": 0.3},
-            {"motor_type": "key_press", "key": "escape"},
+            {"motor_type": "wait", "duration": 0.4},
+            {"motor_type": "key_press", "key": "escape"},      # Close UI
         ])
         return seq
 
@@ -1127,6 +1136,8 @@ class MinecraftDriver(Driver):
                     seq = self._build_craft_sequence(noun)
                     MC_ACTION_MAP["craft_item"] = {"sequence": seq}
                     plans.append(["craft_item"])
+                    # Clear hints so craft doesn't re-trigger every cycle
+                    self._target_hints = []
                     break  # Only one craft plan at a time
 
         return plans

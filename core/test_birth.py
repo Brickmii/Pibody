@@ -30,6 +30,8 @@ from core.node_constants import (
     BODY_TEMPERATURE, FIRE_HEAT, FIRE_TO_MOTION,
     EMERGENCE_THRESHOLD, MAX_ENTROPIC_PROBABILITY,
     ROBINSON_CONSTRAINTS, PLANCK_TEMPERATURE, SPEED_OF_LIGHT,
+    # Base motions
+    BASE_MOTIONS, ALL_BASE_MOTIONS, BASE_MOTION_PREFIX, MOTION_TO_FIRE, BASE_MOTION_HEAT,
 )
 from core.manifold import Manifold
 from core.decision_node import DecisionNode, Choice
@@ -151,9 +153,49 @@ def test_birth():
 
     print(f"  ok Self's righteous frame: identity, ego, conscience")
 
+    # Base motion tokens (20 verbs across 6 fires)
+    bm_count = 0
+    for verb in ALL_BASE_MOTIONS:
+        concept = f"{BASE_MOTION_PREFIX}{verb}"
+        bm_node = m.get_node_by_concept(concept)
+        assert bm_node is not None, f"Missing base motion node: {concept}"
+        assert bm_node.existence == EXISTENCE_ACTUAL, f"{concept} should be actual"
+        assert bm_node.radius == 1.0, f"{concept} should be on surface"
+        assert bm_node.has_tag("base_motion"), f"{concept} should have 'base_motion' tag"
+
+        # Verify angular proximity to parent bootstrap
+        fire_num = MOTION_TO_FIRE[verb]
+        fire_to_dir = {1: 'N', 2: 'S', 3: 'E', 4: 'W', 5: 'U'}
+        if fire_num <= 5:
+            parent_concept = f"bootstrap_{fire_to_dir[fire_num]}"
+        else:
+            parent_concept = "bootstrap_d"
+        parent_node = m.get_node_by_concept(parent_concept)
+        assert parent_node is not None, f"Missing parent bootstrap: {parent_concept}"
+        dist = angular_distance(
+            SpherePosition(theta=bm_node.theta, phi=bm_node.phi),
+            SpherePosition(theta=parent_node.theta, phi=parent_node.phi)
+        )
+        # Should be within a reasonable distance (golden angle region)
+        assert dist < math.pi / 2, \
+            f"{concept} too far from {parent_concept}: dist={dist:.3f}"
+
+        # Verify heat
+        expected_heat = BASE_MOTION_HEAT[verb]
+        assert abs(bm_node.heat - expected_heat) < 0.01, \
+            f"{concept} heat mismatch: {bm_node.heat:.3f} != {expected_heat:.3f}"
+
+        # Verify connections
+        assert bm_node.has_axis("self"), f"{concept} missing axis to Self"
+
+        bm_count += 1
+
+    assert bm_count == 20, f"Expected 20 base motions, got {bm_count}"
+    print(f"  ok 20 base motion tokens spawned near parent bootstraps")
+
     # Total nodes (Self is stored separately)
     total_nodes = len(m.nodes)
-    assert total_nodes == 9, f"Expected 9 nodes (6 bootstrap + 3 psych), got {total_nodes}"
+    assert total_nodes == 29, f"Expected 29 nodes (6 bootstrap + 20 base motion + 3 psych), got {total_nodes}"
 
     print(f"  ok Total nodes: {total_nodes} + Self")
 
@@ -600,7 +642,7 @@ def run_all_tests():
         print("=" * 60)
         print(" ALL TESTS PASSED ")
         print("=" * 60)
-        print(f"  Birth: Self + 9 nodes (6 bootstrap + 3 psychology)")
+        print(f"  Birth: Self + 29 nodes (6 bootstrap + 20 base motions + 3 psychology)")
         print(f"  Geometry: Hypersphere angular coords (theta/phi)")
         print(f"  Motion functions: All 6 validated")
         print(f"  Psychology: Identity -> Conscience -> Ego")

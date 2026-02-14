@@ -1,0 +1,14 @@
+[Unit]
+Description=PBAI Heat Drip (keeps Ego alive for sustained play)
+After=pbai-daemon.service
+Requires=pbai-daemon.service
+
+[Service]
+Type=simple
+User=pbai
+ExecStart=/bin/bash -c 'while true; do curl -s -X POST http://localhost:8420/inject/heat -H "Content-Type: application/json" -d "{\"target\":\"ego\",\"amount\":5}" > /dev/null; curl -s -X POST http://localhost:8420/inject/heat -H "Content-Type: application/json" -d "{\"target\":\"identity\",\"amount\":3}" > /dev/null; sleep 3; done'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

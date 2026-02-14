@@ -139,7 +139,13 @@ class APIHandler(BaseHTTPRequestHandler):
                 self._send_json(state.to_dict())
             else:
                 self._send_error("Thermal manager not initialized", 503)
-        
+
+        elif path == '/motion_bus':
+            if self.daemon.env_core:
+                self._send_json(self.daemon.env_core.get_motion_bus_state())
+            else:
+                self._send_error("Environment core not initialized", 503)
+
         else:
             self._send_error(f"Unknown endpoint: {path}", 404)
     
@@ -256,6 +262,38 @@ class APIHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._send_error(str(e))
 
+        elif path == '/chat':
+            try:
+                body = self._read_body()
+                text = body.get('text', '')
+                if not text:
+                    self._send_error("Missing 'text' field")
+                    return
+
+                activated = []
+                bus_state = {}
+                if self.daemon.env_core:
+                    activated = self.daemon.env_core.activate_verbs(text)
+                    bus_state = self.daemon.env_core.get_motion_bus_state()
+
+                    # Inject text as perception event so manifold learns chat patterns
+                    if self.daemon.env_core.manifold:
+                        from drivers.environment import Perception
+                        chat_perception = Perception(
+                            entities=[],
+                            events=[f"chat: {text[:100]}"],
+                            properties={"state_key": "chat_input", "chat_text": text[:200]},
+                            heat_value=0.0,
+                        )
+                        self.daemon.env_core._integrate_perception(chat_perception)
+
+                self._send_json({
+                    "activated_verbs": activated,
+                    "motion_bus": bus_state,
+                })
+            except Exception as e:
+                self._send_error(str(e))
+
         elif path == '/choose':
             # Force environment choice
             if self.daemon.chooser:
@@ -263,7 +301,7 @@ class APIHandler(BaseHTTPRequestHandler):
                 self._send_json({"chosen": chosen})
             else:
                 self._send_error("Chooser not initialized", 503)
-        
+
         else:
             self._send_error(f"Unknown endpoint: {path}", 404)
 
@@ -380,6 +418,14 @@ class PBAIClient:
             "parameters": parameters or {}
         })
     
+    def chat(self, text: str) -> dict:
+        """Send chat text to PBAI, activating motion verbs."""
+        return self._post('/chat', {"text": text})
+
+    def get_motion_bus(self) -> dict:
+        """Get motion bus state."""
+        return self._get('/motion_bus')
+
     def choose(self) -> dict:
         """Force environment choice."""
         return self._post('/choose')

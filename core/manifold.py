@@ -75,6 +75,8 @@ from .node_constants import (
     ENTROPY_MAGNITUDE_WEIGHT, ENTROPY_VARIANCE_WEIGHT, ENTROPY_DISORDER_WEIGHT,
     # Planck grounding - Fire scaling and body temperature
     FIRE_HEAT, FIRE_TO_MOTION, BODY_TEMPERATURE, SCAFFOLD_HEAT,
+    # Base motions
+    BASE_MOTIONS, BASE_MOTION_PREFIX, BASE_MOTION_HEAT,
     # Entropy structure recognition
     MAX_ENTROPIC_PROBABILITY, entropy_exceeds_random_limit, get_structure_signal,
     # Emergence threshold
@@ -1494,7 +1496,65 @@ class Manifold:
 
         self.add_node(bootstrap_d)
         logger.info(f"  Fire 6: {bootstrap_d.concept} @ south pole (abstract space root)")
-        
+
+        # ─────────────────────────────────────────────────────────────────────
+        # 2.5. BASE MOTION TOKENS — Cognitive vocabulary spawns from bootstraps
+        # ─────────────────────────────────────────────────────────────────────
+        logger.info("Base motion tokens: spawning cognitive vocabulary from bootstraps...")
+
+        # Build fire→bootstrap lookup from what we just created
+        _bootstrap_map = {}
+        for _dir, _info in fire_positions.items():
+            _bnode = self.get_node_by_concept(f"bootstrap_{_dir}")
+            if _bnode:
+                _bootstrap_map[_info['fire']] = _bnode
+        _bootstrap_map[6] = bootstrap_d
+
+        # Collect existing positions for place_node_near
+        existing_positions = [
+            SpherePosition(theta=n.theta, phi=n.phi) for n in self.nodes.values()
+        ]
+
+        bm_count = 0
+        for fire_num in sorted(BASE_MOTIONS.keys()):
+            parent = _bootstrap_map.get(fire_num)
+            if not parent:
+                continue
+            parent_sp = SpherePosition(theta=parent.theta, phi=parent.phi)
+            verbs = BASE_MOTIONS[fire_num]
+
+            for verb in verbs:
+                concept = f"{BASE_MOTION_PREFIX}{verb}"
+                child_sp = place_node_near(parent_sp, existing_positions)
+
+                child = Node(
+                    concept=concept,
+                    theta=child_sp.theta,
+                    phi=child_sp.phi,
+                    radius=1.0,
+                    heat=BASE_MOTION_HEAT[verb],
+                    polarity=parent.polarity,
+                    existence=EXISTENCE_ACTUAL,
+                    righteousness=1.0,
+                    order=fire_num,
+                )
+                child.tags.add("base_motion")
+                child.frame.origin = concept
+
+                self.add_node(child)
+                existing_positions.append(child_sp)
+
+                # Connect parent bootstrap → base motion
+                parent.add_axis(verb, child.id, polarity=parent.polarity)
+                # Connect base motion → parent bootstrap
+                child.add_axis(f"bootstrap_{FIRE_TO_MOTION[fire_num]}", parent.id, polarity=parent.polarity)
+                # Connect base motion → Self
+                child.add_axis("self", self.self_node.id, polarity=1)
+
+                bm_count += 1
+
+        logger.info(f"  Base motions spawned: {bm_count} tokens across 6 fires")
+
         # ─────────────────────────────────────────────────────────────────────
         # 4. PSYCHOLOGY EMERGES FROM 6TH FIRE (Freudian heat distribution)
         # ─────────────────────────────────────────────────────────────────────

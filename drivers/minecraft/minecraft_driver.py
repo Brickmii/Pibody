@@ -782,6 +782,13 @@ class MinecraftDriver(Driver):
         properties["is_drowning"] = self._underwater_ticks >= 2
         properties["ui_open"] = self._ui_open
 
+        # MotionBus context flags
+        blocks = gs.get("blocks", [])
+        properties["has_resources"] = len(blocks) > 0
+        properties["open_terrain"] = (len(entity_data) <= 1 and
+                                       biome in ("plains", "desert", "savanna",
+                                                  "sunflower_plains", "meadow", "snowy_plains", ""))
+
         # ── Heat: novelty/discovery ──
         novelty_heat = self._calculate_novelty_heat(gs)
 

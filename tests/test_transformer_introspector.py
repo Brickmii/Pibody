@@ -27,6 +27,7 @@ from core.node_constants import (
     K, PHI, INV_PHI, MAX_ORDER_TOKENS,
     COST_EVALUATE, PSYCHOLOGY_MIN_HEAT,
     EXISTENCE_ACTUAL,
+    BASE_MOTION_PREFIX, ALL_BASE_MOTIONS,
 )
 from core.nodes import Node, reset_birth_for_testing
 from core.manifold import Manifold, reset_pbai_manifold
@@ -550,6 +551,108 @@ class TestSTM(unittest.TestCase):
     def test_stm_pattern_needs_data(self):
         """Pattern detection requires >= 3 entries."""
         self.assertIsNone(self.intro.get_stm_pattern())
+
+
+@unittest.skipUnless(HAS_TORCH, "PyTorch not available")
+class TestBaseMotionEmbeddings(unittest.TestCase):
+    """Test base motion token embedding and scoring."""
+
+    def setUp(self):
+        self.m = fresh_manifold()
+        # Pump psychology for should_think
+        if self.m.ego_node:
+            self.m.ego_node.heat = 50.0
+        if self.m.conscience_node:
+            self.m.conscience_node.heat = 5.0
+        self.intro = Introspector(self.m)
+
+    def test_base_motions_in_eligible(self):
+        """Base motion nodes (bm_*) should be included in _eligible_nodes()."""
+        nodes = self.intro._eligible_nodes()
+        concepts = [n.concept for n in nodes]
+        # At least some bm_ concepts should be present
+        bm_in_eligible = [c for c in concepts if c.startswith(BASE_MOTION_PREFIX)]
+        self.assertEqual(len(bm_in_eligible), 20,
+                         f"Expected 20 base motions in eligible, got {len(bm_in_eligible)}")
+
+    def test_bootstraps_still_excluded(self):
+        """Bootstrap nodes should still be excluded from eligible."""
+        nodes = self.intro._eligible_nodes()
+        concepts = [n.concept for n in nodes]
+        bootstrap_in = [c for c in concepts if c.startswith('bootstrap')]
+        self.assertEqual(len(bootstrap_in), 0)
+
+    def test_get_base_motion_embeddings_shape(self):
+        """_get_base_motion_embeddings should return (20, D_EMB) tensor."""
+        embs = self.intro._get_base_motion_embeddings()
+        self.assertIsNotNone(embs)
+        self.assertEqual(embs.shape, (20, D_EMB))
+
+    def test_get_base_motion_embeddings_cached(self):
+        """Second call should return cached result."""
+        embs1 = self.intro._get_base_motion_embeddings()
+        embs2 = self.intro._get_base_motion_embeddings()
+        self.assertTrue(torch.equal(embs1, embs2))
+        # Check it's the same object (cached)
+        self.assertIs(embs1, embs2)
+
+    def test_score_against_base_motions_returns_20(self):
+        """score_against_base_motions should return 20 scores."""
+        node = self.m.get_node_by_concept("bm_explore")
+        self.assertIsNotNone(node)
+        scores = self.intro.score_against_base_motions(node)
+        self.assertEqual(len(scores), 20)
+        for concept, score in scores.items():
+            self.assertTrue(concept.startswith(BASE_MOTION_PREFIX))
+            self.assertGreaterEqual(score, 0.0)
+            self.assertLessEqual(score, 1.0)
+
+    def test_score_against_base_motions_nonzero(self):
+        """Scores should not all be zero."""
+        node = self.m.get_node_by_concept("bm_see")
+        scores = self.intro.score_against_base_motions(node)
+        total = sum(scores.values())
+        self.assertGreater(total, 0.0)
+
+
+class TestBaseMotionWeightBoosts(unittest.TestCase):
+    """Test base motion → action weight boosts."""
+
+    def setUp(self):
+        self.m = populated_manifold()
+        self.intro = Introspector(self.m)
+
+    def test_bm_explore_boosts_move_forward(self):
+        """bm_explore should boost move_forward at 3.0."""
+        suggestions = ["bm_explore"]
+        actions = ["move_forward", "jump", "attack", "look_left"]
+        boosts = self.intro.get_weight_boosts(suggestions, actions)
+        self.assertAlmostEqual(boosts.get("move_forward", 0), 3.0)
+
+    def test_bm_see_boosts_look_actions(self):
+        """bm_see should boost look_left and look_right at 3.0."""
+        suggestions = ["bm_see"]
+        actions = ["move_forward", "look_left", "look_right", "attack"]
+        boosts = self.intro.get_weight_boosts(suggestions, actions)
+        self.assertAlmostEqual(boosts.get("look_left", 0), 3.0)
+        self.assertAlmostEqual(boosts.get("look_right", 0), 3.0)
+
+    def test_bm_mixed_with_regular(self):
+        """Mix of bm_ and regular suggestions should both produce boosts."""
+        suggestions = ["bm_explore", "move_forward"]
+        actions = ["move_forward", "jump", "look_left"]
+        boosts = self.intro.get_weight_boosts(suggestions, actions)
+        # move_forward gets 4.0 (direct) which is > 3.0 (bm), so 4.0 wins
+        self.assertAlmostEqual(boosts.get("move_forward", 0), 4.0)
+
+    def test_bm_unmapped_action(self):
+        """bm_ suggestion shouldn't boost actions not in its map."""
+        suggestions = ["bm_take"]
+        actions = ["move_forward", "jump"]
+        boosts = self.intro.get_weight_boosts(suggestions, actions)
+        # bm_take maps to attack/use, not move_forward/jump
+        self.assertNotIn("move_forward", boosts)
+        self.assertNotIn("jump", boosts)
 
 
 if __name__ == '__main__':

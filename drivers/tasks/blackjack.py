@@ -69,6 +69,10 @@ class Hand:
         self.bet = 0
         self.is_doubled = False
         self.is_finished = False
+        self.last_action = None
+        self.last_situation_key = None
+        self.last_state = None
+        self.outcome_recorded = False
 
     def add_card(self, card):
         self.cards.append(card)
@@ -119,6 +123,7 @@ class BlackjackApp:
         self.game_active = False
 
         self.pbai_on = False
+        self._pbai_deal_scheduled = False  # prevent duplicate deal chains
         self.driver = None
         self.env_core = None
         self.use_llm = use_llm
@@ -250,7 +255,8 @@ class BlackjackApp:
         if self.current_bet > self.balance:
             self.current_bet = max(10, self.balance)
         if self.current_bet > self.balance:
-            messagebox.showerror("Error", "No money!")
+            if not self.pbai_on:
+                messagebox.showerror("Error", "No money!")
             return
 
         self.balance -= self.current_bet
@@ -295,7 +301,7 @@ class BlackjackApp:
             self.reset_game()
             self.update_nodes()
             if self.pbai_on:
-                self.root.after(1500, self.pbai_deal)
+                self._schedule_pbai_deal()
             return
 
         self.message.config(text="Hit, Stand, Double, Split?")
@@ -326,6 +332,9 @@ class BlackjackApp:
         if self.driver and self.last_state:
             self.last_situation_key = self.driver.record_decision(self.last_state, "hit")
             self.last_action = "hit"
+            h.last_action = "hit"
+            h.last_situation_key = self.last_situation_key
+            h.last_state = self.last_state
 
         c = self.deck.deal()
         h.add_card(c)
@@ -339,9 +348,10 @@ class BlackjackApp:
         if h.is_busted():
             h.is_finished = True
             self.message.config(text="Bust!")
-            if self.driver and self.last_situation_key:
-                result = self.driver.record_outcome(self.last_state, "hit", False, h.bet,
-                                                    situation_key=self.last_situation_key)
+            if self.driver and h.last_situation_key:
+                result = self.driver.record_outcome(h.last_state, "hit", False, h.bet,
+                                                    situation_key=h.last_situation_key)
+                h.outcome_recorded = True
                 if self.env_core:
                     self.env_core.feedback(result)
             self.next_hand()
@@ -350,12 +360,16 @@ class BlackjackApp:
         self.update_nodes()
 
     def stand(self):
-        if not self.player_hands:
+        if not self.player_hands or self.current_hand_index >= len(self.player_hands):
             return
+        h = self.player_hands[self.current_hand_index]
         if self.driver and self.last_state:
             self.last_situation_key = self.driver.record_decision(self.last_state, "stand")
             self.last_action = "stand"
-        self.player_hands[self.current_hand_index].is_finished = True
+            h.last_action = "stand"
+            h.last_situation_key = self.last_situation_key
+            h.last_state = self.last_state
+        h.is_finished = True
         self.next_hand()
         self.update_nodes()
 
@@ -374,6 +388,9 @@ class BlackjackApp:
         if self.driver and self.last_state:
             self.last_situation_key = self.driver.record_decision(self.last_state, "double")
             self.last_action = "double"
+            h.last_action = "double"
+            h.last_situation_key = self.last_situation_key
+            h.last_state = self.last_state
 
         c = self.deck.deal()
         h.add_card(c)
@@ -385,9 +402,10 @@ class BlackjackApp:
 
         if h.is_busted():
             self.message.config(text="Bust on double!")
-            if self.driver and self.last_situation_key:
-                result = self.driver.record_outcome(self.last_state, "double", False, h.bet,
-                                                    situation_key=self.last_situation_key)
+            if self.driver and h.last_situation_key:
+                result = self.driver.record_outcome(h.last_state, "double", False, h.bet,
+                                                    situation_key=h.last_situation_key)
+                h.outcome_recorded = True
                 if self.env_core:
                     self.env_core.feedback(result)
 
@@ -478,15 +496,17 @@ class BlackjackApp:
                 results.append(f"H{i + 1}: Push")
                 push = True
 
-            if self.driver and self.last_action and i == 0:
+            if self.driver and h.last_action and not h.outcome_recorded:
                 if push:
-                    result = self.driver.record_push(self.last_state, self.last_action, h.bet,
-                                                     situation_key=self.last_situation_key)
+                    result = self.driver.record_push(h.last_state, h.last_action, h.bet,
+                                                     situation_key=h.last_situation_key)
+                    h.outcome_recorded = True
                     if self.env_core:
                         self.env_core.feedback(result)
                 elif not h.is_busted():
-                    result = self.driver.record_outcome(self.last_state, self.last_action, won, h.bet,
-                                                        situation_key=self.last_situation_key)
+                    result = self.driver.record_outcome(h.last_state, h.last_action, won, h.bet,
+                                                        situation_key=h.last_situation_key)
+                    h.outcome_recorded = True
                     if self.env_core:
                         self.env_core.feedback(result)
 
@@ -498,7 +518,12 @@ class BlackjackApp:
             self.driver.adjust_weights(self.balance, self.starting_balance)
 
         if self.balance <= 0:
-            messagebox.showinfo("Broke", "Out of money!")
+            if self.pbai_on:
+                # Auto-reset in PBAI mode (no modal dialog)
+                logger.info("BROKE — auto-resetting to $1000")
+                self.message.config(text="BROKE — resetting...")
+            else:
+                messagebox.showinfo("Broke", "Out of money!")
             self.balance = 1000
             self.starting_balance = 1000
 
@@ -514,7 +539,7 @@ class BlackjackApp:
 
         # Continue PBAI
         if self.pbai_on:
-            self.root.after(1500, self.pbai_deal)
+            self._schedule_pbai_deal()
 
     def reset_game(self):
         self.game_active = False
@@ -554,7 +579,8 @@ class BlackjackApp:
                 m = " ◄" if i == self.current_hand_index else ""
                 txt.append(f"H{i + 1}{m}: {'  '.join(str(c) for c in h.cards)}")
             self.player_cards.config(text="\n".join(txt))
-            self.player_value.config(text=f"H{self.current_hand_index + 1}: {self.player_hands[self.current_hand_index].get_value()}")
+            idx = min(self.current_hand_index, len(self.player_hands) - 1)
+            self.player_value.config(text=f"H{idx + 1}: {self.player_hands[idx].get_value()}")
 
         self.balance_label.config(text=f"${self.balance}")
 
@@ -605,14 +631,22 @@ class BlackjackApp:
 
     def stop_pbai(self):
         self.pbai_on = False
+        self._pbai_deal_scheduled = False
         self.pbai_btn.config(text="▶ PBAI", bg="#22c55e")
 
+    def _schedule_pbai_deal(self, delay=1500):
+        """Schedule a single pbai_deal callback, preventing duplicates."""
+        if not self._pbai_deal_scheduled:
+            self._pbai_deal_scheduled = True
+            self.root.after(delay, self.pbai_deal)
+
     def pbai_deal(self):
+        self._pbai_deal_scheduled = False
         if not self.pbai_on:
             return
         if self.game_active:
             # Previous game still resolving, retry later
-            self.root.after(500, self.pbai_deal)
+            self._schedule_pbai_deal(delay=500)
             return
         self.current_bet = self.driver.get_bet_size(self.balance)
         self.deal_cards()
@@ -666,15 +700,18 @@ class BlackjackApp:
         if not self.pbai_on:
             return
         if self.game_active:
-            self.pbai_action()
+            self.root.after(1, self.pbai_action)
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-llm", action="store_true")
+    parser.add_argument("--pbai", action="store_true", help="Auto-start PBAI mode")
     args = parser.parse_args()
 
     root = tk.Tk()
-    BlackjackApp(root, use_llm=not args.no_llm)
+    app = BlackjackApp(root, use_llm=not args.no_llm)
+    if args.pbai:
+        root.after(500, app.start_pbai)
     root.mainloop()

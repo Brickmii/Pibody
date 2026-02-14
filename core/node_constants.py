@@ -300,6 +300,42 @@ FIRE_TO_MOTION = {
     6: 'movement',
 }
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# BASE MOTION TOKENS — Cognitive vocabulary (20 verbs across 6 fires)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Each fire's bootstrap is the "mother" of its base motion cluster.
+# These spawn at birth as children near their parent bootstrap.
+# They form the cognitive vocabulary that all thought decomposes into.
+#
+
+BASE_MOTION_PREFIX = 'bm_'  # Node concept prefix for base motions
+
+# Fire → list of cognitive verbs
+BASE_MOTIONS = {
+    1: ['take', 'get'],                                    # Heat (Magnitude)
+    2: ['easily', 'quickly', 'better'],                    # Polarity (Differentiation)
+    3: ['see', 'view', 'visual', 'visually', 'visualize'], # Existence (Perception)
+    4: ['analyze', 'understand', 'identify'],              # Righteousness (Evaluation)
+    5: ['create', 'build', 'design', 'make'],              # Order (Construction)
+    6: ['explore', 'find', 'discover'],                    # Movement (Navigation)
+}
+
+# Flat list of all 20 base motions
+ALL_BASE_MOTIONS = []
+for _fire_num in sorted(BASE_MOTIONS.keys()):
+    ALL_BASE_MOTIONS.extend(BASE_MOTIONS[_fire_num])
+
+# Reverse lookup: verb → fire number
+MOTION_TO_FIRE = {}
+for _fire_num, _verbs in BASE_MOTIONS.items():
+    for _verb in _verbs:
+        MOTION_TO_FIRE[_verb] = _fire_num
+
+# Heat per base motion: K * 0.5 (half a thermal quantum — modest seed heat)
+BASE_MOTION_HEAT = {verb: K * 0.5 for verb in ALL_BASE_MOTIONS}
+
+
 def get_fire_heat(fire_number: int) -> float:
     """Get the heat contribution for a specific fire (1-6)."""
     return FIRE_HEAT.get(fire_number, K)

@@ -15,6 +15,7 @@ The core handles:
 """
 
 import logging
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional, Callable, Tuple
@@ -187,6 +188,147 @@ class ActionSuggestion:
     action: str
     duration: Optional[float] = None  # None = use default
     score: float = 0.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MOTION BUS — Shared verb activation vector
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class MotionBus:
+    """Shared verb activation vector — 20 base motions as cognitive bus.
+
+    Multiple sources write activations [0,1]; decide() reads them as
+    action weight boosts.  Activations decay each tick.
+
+    Sources:
+        Chat text  ────→  activate_from_text()   (strength 0.7)
+        Vision ctx ────→  activate_from_perception()  (0.2–0.5)
+        Introspector ──→  activate()              (0.4)
+
+    Sink:
+        decide() reads get_weight_boosts() → {action: multiplier}
+        tick() decays activations (called after read)
+    """
+
+    DECAY_FACTOR = 0.85
+    ACTIVATION_THRESHOLD = 0.1
+    BOOST_SCALE = 3.0
+
+    def __init__(self, manifold=None):
+        from core.node_constants import ALL_BASE_MOTIONS, BASE_MOTION_PREFIX
+        self._activations: Dict[str, float] = {
+            f"{BASE_MOTION_PREFIX}{v}": 0.0 for v in ALL_BASE_MOTIONS
+        }
+        self._manifold = manifold
+        self._verbs = list(ALL_BASE_MOTIONS)  # flat list of verb stems
+        self._prefix = BASE_MOTION_PREFIX
+
+    # ───────────────────────── write interface ─────────────────────────
+
+    def activate(self, concept: str, strength: float, source: str = "unknown") -> None:
+        """Max-merge activation (strongest signal wins, no runaway stacking).
+
+        Also injects heat into the manifold bm_* node so Conscience
+        can learn verb co-activation patterns.
+        """
+        if concept not in self._activations:
+            return
+        strength = max(0.0, min(1.0, strength))
+        self._activations[concept] = max(self._activations[concept], strength)
+
+        # Heat injection: bm_* node accumulates heat → manifold learns
+        if self._manifold and strength > 0:
+            node = self._manifold.get_node_by_concept(concept)
+            if node:
+                from core.node_constants import K
+                node.add_heat(strength * K * 0.1)
+
+        logger.debug(f"MotionBus activate: {concept}={strength:.2f} (src={source})")
+
+    def activate_from_text(self, text: str, base_strength: float = 0.7) -> List[str]:
+        """Word-boundary match verbs in text → activate.
+
+        Returns list of activated verb concepts (e.g. ['bm_explore', 'bm_find']).
+        """
+        activated = []
+        text_lower = text.lower()
+        for verb in self._verbs:
+            if re.search(r'\b' + re.escape(verb) + r'\b', text_lower):
+                concept = f"{self._prefix}{verb}"
+                self.activate(concept, base_strength, "chat")
+                activated.append(concept)
+        return activated
+
+    def activate_from_perception(self, props: Dict[str, Any]) -> None:
+        """Vision/state context → verb activation.
+
+        Reads standard perception properties and activates appropriate verbs.
+        """
+        # bm_see always active when perceiving (we ARE seeing)
+        self.activate(f"{self._prefix}see", 0.2, "perception")
+
+        # Hostile entities nearby → bm_find, bm_quickly
+        hostile_count = props.get("hostile_count", 0)
+        if hostile_count and hostile_count > 0:
+            self.activate(f"{self._prefix}find", 0.4, "perception")
+            self.activate(f"{self._prefix}quickly", 0.3, "perception")
+
+        # Has vision target → bm_identify
+        if props.get("has_target"):
+            self.activate(f"{self._prefix}identify", 0.35, "perception")
+
+        # Drowning → bm_quickly
+        if props.get("is_drowning"):
+            self.activate(f"{self._prefix}quickly", 0.5, "perception")
+
+        # High novelty (heat_value > K) → bm_discover, bm_explore
+        heat_value = props.get("heat_value", 0)
+        if heat_value and heat_value > 1.5:
+            self.activate(f"{self._prefix}discover", 0.3, "perception")
+            self.activate(f"{self._prefix}explore", 0.25, "perception")
+
+        # Open terrain → bm_explore
+        if props.get("open_terrain"):
+            self.activate(f"{self._prefix}explore", 0.3, "perception")
+
+        # Has resources nearby → bm_get, bm_take
+        if props.get("has_resources"):
+            self.activate(f"{self._prefix}get", 0.3, "perception")
+            self.activate(f"{self._prefix}take", 0.25, "perception")
+
+    # ───────────────────────── read interface ──────────────────────────
+
+    def get_weight_boosts(self) -> Dict[str, float]:
+        """Convert activations to {action: multiplier} via BASE_MOTION_ACTION_MAP.
+
+        boost = 1.0 + activation * BOOST_SCALE
+        Multiple verbs mapping to same action: take max boost.
+        """
+        from core.introspector import Introspector
+        action_map = Introspector.BASE_MOTION_ACTION_MAP
+
+        boosts: Dict[str, float] = {}
+        for concept, activation in self._activations.items():
+            if activation < self.ACTIVATION_THRESHOLD:
+                continue
+            mapped_actions = action_map.get(concept, [])
+            boost = 1.0 + activation * self.BOOST_SCALE
+            for action in mapped_actions:
+                boosts[action] = max(boosts.get(action, 1.0), boost)
+
+        return boosts
+
+    def tick(self) -> None:
+        """Decay all activations. Zero out anything below threshold."""
+        for concept in self._activations:
+            self._activations[concept] *= self.DECAY_FACTOR
+            if self._activations[concept] < self.ACTIVATION_THRESHOLD:
+                self._activations[concept] = 0.0
+
+    def get_active(self) -> Dict[str, float]:
+        """Return {concept: activation} for active verbs only."""
+        return {c: a for c, a in self._activations.items()
+                if a >= self.ACTIVATION_THRESHOLD}
 
 
 class Driver(ABC):
@@ -485,6 +627,11 @@ class EnvironmentCore:
         # Weight boosts from Introspector suggestions
         self._weight_boosts: Dict[str, float] = {}
 
+        # Motion bus (shared verb activation vector)
+        self._motion_bus: Optional[MotionBus] = None
+        if self.manifold:
+            self._motion_bus = MotionBus(manifold=self.manifold)
+
         # Birth
         self._birth()
     
@@ -500,7 +647,25 @@ class EnvironmentCore:
     def set_manifold(self, manifold) -> None:
         """Connect a manifold to this environment core."""
         self.manifold = manifold
+        if manifold and self._motion_bus is None:
+            self._motion_bus = MotionBus(manifold=manifold)
         logger.info("Manifold connected to EnvironmentCore")
+
+    def activate_verbs(self, text: str) -> List[str]:
+        """Activate motion verbs from chat text. Returns list of activated concepts."""
+        if self._motion_bus:
+            return self._motion_bus.activate_from_text(text)
+        return []
+
+    def get_motion_bus_state(self) -> Dict[str, Any]:
+        """Return current motion bus state for API/debug."""
+        if not self._motion_bus:
+            return {"active": False, "verbs": {}}
+        return {
+            "active": True,
+            "verbs": self._motion_bus.get_active(),
+            "boosts": self._motion_bus.get_weight_boosts(),
+        }
 
     def connect_visual_cortex(self, visual_cortex) -> None:
         """Connect a VisualCortex for vision integration."""
@@ -569,11 +734,21 @@ class EnvironmentCore:
         if not introspector.should_think():
             return None
 
+        # Inject active verbs into domain context for query builder
+        if self._motion_bus:
+            domain_ctx["active_verbs"] = self._motion_bus.get_active()
+
         # Pass domain context to introspector (not raw perception)
         suggestions = introspector.suggest(domain_ctx)
 
         if not suggestions:
             return None
+
+        # Feed bm_* suggestions back onto the bus
+        if self._motion_bus and suggestions:
+            for s in suggestions:
+                if s.startswith("bm_"):
+                    self._motion_bus.activate(s, 0.4, "introspector")
 
         # 5. WEIGHT BOOSTS from suggestions
         available = self.get_supported_actions()
@@ -706,7 +881,11 @@ class EnvironmentCore:
         # AUTO-INTEGRATE: Update manifold with perception
         if self.manifold:
             self._integrate_perception(perception)
-        
+
+        # MOTION BUS: perception context → verb activations
+        if self._motion_bus and perception.properties:
+            self._motion_bus.activate_from_perception(perception.properties)
+
         logger.debug(f"Perception from {driver.DRIVER_ID}: {len(perception.entities)} entities")
         return perception
     
@@ -966,6 +1145,15 @@ class EnvironmentCore:
 
         # Route to DecisionNode (OUTPUT)
         decision_node = self._get_decision_node()
+
+        # MOTION BUS: merge verb boosts into weight boosts, then decay
+        if self._motion_bus:
+            bus_boosts = self._motion_bus.get_weight_boosts()
+            for action, boost in bus_boosts.items():
+                self._weight_boosts[action] = max(
+                    self._weight_boosts.get(action, 1.0), boost
+                )
+            self._motion_bus.tick()  # Decay after read
 
         # Get exploration rate (decays as we learn more)
         exploration_rate = self.manifold.get_exploration_rate() if self.manifold else 0.3

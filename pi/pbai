@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+"""PBAI CLI — talk to PBAI from the terminal.
+
+Usage:
+    pbai status              Show daemon status + psychology
+    pbai chat "go explore"   Send chat text (activates motion verbs)
+    pbai bus                 Show motion bus state
+    pbai heat [amount]       Inject heat into Ego (default 5)
+    pbai manifold            Show manifold summary
+    pbai logs                Tail daemon logs (journalctl)
+    pbai restart             Restart daemon service
+"""
+
+import sys
+import json
+import urllib.request
+import urllib.error
+
+API = "http://localhost:8420"
+
+
+def api_get(path):
+    try:
+        with urllib.request.urlopen(f"{API}{path}", timeout=5) as r:
+            return json.loads(r.read().decode())
+    except urllib.error.URLError:
+        print("ERROR: PBAI daemon not running. Start with: sudo systemctl start pbai-daemon")
+        sys.exit(1)
+
+
+def api_post(path, data=None):
+    try:
+        body = json.dumps(data or {}).encode()
+        req = urllib.request.Request(f"{API}{path}", data=body, method="POST")
+        req.add_header("Content-Type", "application/json")
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return json.loads(r.read().decode())
+    except urllib.error.URLError:
+        print("ERROR: PBAI daemon not running. Start with: sudo systemctl start pbai-daemon")
+        sys.exit(1)
+
+
+def cmd_status():
+    s = api_get("/status")
+    p = api_get("/psychology")
+    print(f"State:  {s.get('state', '?')}")
+    print(f"Loops:  {s.get('loop_count', 0)}")
+    print(f"Driver: {s.get('active_driver', 'none')}")
+    print()
+    for name in ("identity", "ego", "conscience"):
+        node = p.get(name, {})
+        print(f"  {name:11s}  heat={node.get('heat', 0):.3f}  "
+              f"axes={node.get('axes', 0)}  "
+              f"existence={node.get('existence', '?')}")
+    print(f"\n  exploration_rate: {p.get('exploration_rate', 0):.3f}")
+
+
+def cmd_chat(text):
+    result = api_post("/chat", {"text": text})
+    activated = result.get("activated_verbs", [])
+    bus = result.get("motion_bus", {}).get("verbs", {})
+
+    if activated:
+        print(f"Activated: {', '.join(activated)}")
+    else:
+        print("No motion verbs matched.")
+
+    if bus:
+        print("Bus:")
+        for verb, val in sorted(bus.items(), key=lambda x: -x[1]):
+            bar = "#" * int(val * 20)
+            print(f"  {verb:16s} {val:.2f} {bar}")
+
+
+def cmd_bus():
+    state = api_get("/motion_bus")
+    verbs = state.get("verbs", {})
+    boosts = state.get("boosts", {})
+
+    if not verbs:
+        print("Motion bus idle (no active verbs)")
+        return
+
+    print("Active verbs:")
+    for verb, val in sorted(verbs.items(), key=lambda x: -x[1]):
+        bar = "#" * int(val * 20)
+        print(f"  {verb:16s} {val:.2f} {bar}")
+
+    if boosts:
+        print("\nAction boosts:")
+        for action, boost in sorted(boosts.items(), key=lambda x: -x[1]):
+            print(f"  {action:20s} x{boost:.1f}")
+
+
+def cmd_heat(amount=5):
+    api_post("/inject/heat", {"target": "ego", "amount": amount})
+    api_post("/inject/heat", {"target": "identity", "amount": amount * 0.6})
+    print(f"Injected ego={amount:.1f} identity={amount * 0.6:.1f}")
+
+
+def cmd_manifold():
+    m = api_get("/manifold")
+    print(f"Nodes: {m.get('nodes', 0)}  Loop: {m.get('loop_number', 0)}  "
+          f"Total heat: {m.get('total_heat', 0):.1f}")
+    nodes = m.get("node_list", [])
+    if nodes:
+        print(f"\nTop {len(nodes)} nodes:")
+        for n in nodes:
+            print(f"  {n['concept']:30s}  heat={n['heat']:.2f}  axes={n['axes']}")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(0)
+
+    cmd = sys.argv[1]
+
+    if cmd == "status":
+        cmd_status()
+    elif cmd == "chat":
+        if len(sys.argv) < 3:
+            print("Usage: pbai chat \"your message\"")
+            sys.exit(1)
+        cmd_chat(" ".join(sys.argv[2:]))
+    elif cmd == "bus":
+        cmd_bus()
+    elif cmd == "heat":
+        amount = float(sys.argv[2]) if len(sys.argv) > 2 else 5.0
+        cmd_heat(amount)
+    elif cmd == "manifold":
+        cmd_manifold()
+    elif cmd == "logs":
+        import os
+        os.execvp("journalctl", ["journalctl", "-u", "pbai-daemon", "-f", "--no-pager"])
+    elif cmd == "restart":
+        import os
+        os.execvp("sudo", ["sudo", "systemctl", "restart", "pbai-daemon"])
+    else:
+        print(f"Unknown command: {cmd}")
+        print(__doc__)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

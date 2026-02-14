@@ -1,0 +1,20 @@
+[Unit]
+Description=PBAI Daemon (Planck-Grounded Thermal Manifold)
+After=network.target
+
+[Service]
+Type=simple
+User=pbai
+WorkingDirectory=/home/pbai/pibody
+ExecStart=/usr/bin/python3 -u -m pi.daemon --save-path /home/pbai/pibody/growth --port 8420 --body-port 8421
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Keep heat across restarts — don't kill child processes immediately
+KillMode=mixed
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

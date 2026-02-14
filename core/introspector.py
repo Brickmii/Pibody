@@ -35,6 +35,7 @@ from .node_constants import (
     MAX_ORDER_TOKENS,
     THRESHOLD_HEAT, THRESHOLD_POLARITY, THRESHOLD_EXISTENCE,
     THRESHOLD_RIGHTEOUSNESS, THRESHOLD_ORDER, THRESHOLD_MOVEMENT,
+    BASE_MOTION_PREFIX, ALL_BASE_MOTIONS,
 )
 
 logger = logging.getLogger(__name__)
@@ -309,6 +310,10 @@ class Introspector:
         self._stm: List[Dict[str, Any]] = []
         self._stm_capacity: int = 12  # Movement constant (12 directions)
 
+        # Base motion embedding cache (invalidated on manifold reload)
+        self._bm_cache: Optional['torch.Tensor'] = None
+        self._bm_concepts: List[str] = []
+
         # Transformer (None if torch unavailable)
         self._transformer = None
         if _HAS_TORCH:
@@ -351,6 +356,70 @@ class Introspector:
             return False
 
         return True
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # BASE MOTION TOKENS — Cognitive vocabulary embedding + scoring
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def _get_base_motion_embeddings(self) -> Optional['torch.Tensor']:
+        """Get (M, D_EMB) embeddings for all base motion nodes.
+
+        Caches result — invalidate by setting self._bm_cache = None.
+
+        Returns:
+            (M, D_EMB) tensor where M <= 20 (only nodes present in manifold),
+            or None if torch unavailable or no base motions found.
+        """
+        if not _HAS_TORCH or self._transformer is None:
+            return None
+
+        if self._bm_cache is not None:
+            return self._bm_cache
+
+        bm_nodes = []
+        bm_concepts = []
+        for verb in ALL_BASE_MOTIONS:
+            concept = f"{BASE_MOTION_PREFIX}{verb}"
+            node = self.manifold.get_node_by_concept(concept)
+            if node and node.existence == EXISTENCE_ACTUAL:
+                bm_nodes.append(node)
+                bm_concepts.append(concept)
+
+        if not bm_nodes:
+            return None
+
+        with torch.no_grad():
+            self._bm_cache = self._embed_all_nodes(bm_nodes)
+            self._bm_concepts = bm_concepts
+
+        return self._bm_cache
+
+    def score_against_base_motions(self, node: Node) -> Dict[str, float]:
+        """Compute cosine similarity between a node and all base motions.
+
+        Returns dict: {bm_concept: score} with scores in [0, 1].
+        This is the node's "motion decomposition" — which verbs it activates.
+        """
+        if not _HAS_TORCH or self._transformer is None:
+            return {}
+
+        bm_embs = self._get_base_motion_embeddings()
+        if bm_embs is None or bm_embs.shape[0] == 0:
+            return {}
+
+        with torch.no_grad():
+            node_emb = self._pool_node_embedding(node)  # (1, D_EMB)
+            # Cosine similarity
+            node_norm = torch.nn.functional.normalize(node_emb, dim=1)  # (1, D_EMB)
+            bm_norm = torch.nn.functional.normalize(bm_embs, dim=1)    # (M, D_EMB)
+            sims = torch.matmul(node_norm, bm_norm.T).squeeze(0)       # (M,)
+            # Clamp to [0, 1]
+            sims = sims.clamp(0.0, 1.0)
+
+        result = {}
+        for i, concept in enumerate(self._bm_concepts):
+            result[concept] = sims[i].item()
+        return result
 
     # ═══════════════════════════════════════════════════════════════════════════
     # SIMULATION — Project options through cube (unchanged)
@@ -744,6 +813,37 @@ class Introspector:
                 focus = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
                 query = query + 0.1 * focus  # Additive hint (same as HeatAttention)
 
+        # Base motion context: score primary hot node against base motions
+        # and blend weighted base motion embeddings into query (0.15 weight)
+        bm_embs = self._get_base_motion_embeddings()
+        if bm_embs is not None and bm_embs.shape[0] > 0 and hot_nodes:
+            primary = hot_nodes[0]
+            bm_scores = self.score_against_base_motions(primary)
+            if bm_scores:
+                score_tensor = torch.tensor(
+                    [bm_scores.get(c, 0.0) for c in self._bm_concepts],
+                    dtype=torch.float32,
+                )
+                score_sum = score_tensor.sum()
+                if score_sum > 0:
+                    weights_bm = score_tensor / score_sum  # (M,)
+                    bm_blend = (weights_bm.unsqueeze(1) * bm_embs).sum(dim=0, keepdim=True)
+                    query = query + 0.15 * bm_blend
+
+        # Active verb enrichment: MotionBus-activated verbs weight the BM embeddings
+        # stronger than passive scoring (0.2 vs 0.15) because these are explicitly activated
+        active_verbs = domain_ctx.get("active_verbs", {})
+        if active_verbs and bm_embs is not None and bm_embs.shape[0] > 0:
+            verb_weights = torch.tensor(
+                [active_verbs.get(c, 0.0) for c in self._bm_concepts],
+                dtype=torch.float32,
+            )
+            verb_sum = verb_weights.sum()
+            if verb_sum > 0:
+                verb_norm = verb_weights / verb_sum  # (M,)
+                verb_blend = (verb_norm.unsqueeze(1) * bm_embs).sum(dim=0, keepdim=True)
+                query = query + 0.2 * verb_blend
+
         return query
 
     def _righteousness_gate(self, scores: 'torch.Tensor',
@@ -881,6 +981,36 @@ class Introspector:
     # WEIGHT BOOSTS — Convert suggestions to action weights (unchanged)
     # ═══════════════════════════════════════════════════════════════════════════
 
+    # Base motion → action mapping
+    BASE_MOTION_ACTION_MAP = {
+        # Heat (Magnitude)
+        'bm_take': ['attack', 'use'],
+        'bm_get': ['attack', 'use', 'mine_block', 'mine_forward'],
+        # Polarity (Differentiation)
+        'bm_easily': ['sprint_forward', 'sprint_jump'],
+        'bm_quickly': ['sprint_forward', 'sprint_jump', 'jump_forward'],
+        'bm_better': ['move_forward', 'sprint_forward'],
+        # Existence (Perception)
+        'bm_see': ['look_left', 'look_right', 'look_up', 'look_down'],
+        'bm_view': ['look_left', 'look_right', 'look_up', 'look_down'],
+        'bm_visual': ['look_left', 'look_right', 'look_up', 'look_down'],
+        'bm_visually': ['explore_left', 'explore_right', 'scout_ahead'],
+        'bm_visualize': ['explore_left', 'explore_right', 'scout_ahead', 'watch_step'],
+        # Righteousness (Evaluation)
+        'bm_analyze': ['look_left', 'look_right', 'look_up', 'look_down', 'wait'],
+        'bm_understand': ['look_left', 'look_right', 'wait'],
+        'bm_identify': ['look_left', 'look_right', 'look_up', 'look_down'],
+        # Order (Construction)
+        'bm_create': ['mine_block', 'mine_forward', 'use'],
+        'bm_build': ['mine_block', 'mine_forward', 'use'],
+        'bm_design': ['look_left', 'look_right', 'look_up', 'look_down'],
+        'bm_make': ['mine_block', 'mine_forward', 'use', 'attack'],
+        # Movement (Navigation)
+        'bm_explore': ['move_forward', 'explore_left', 'explore_right', 'sprint_forward'],
+        'bm_find': ['move_forward', 'sprint_forward', 'scout_ahead', 'explore_left'],
+        'bm_discover': ['move_forward', 'explore_left', 'explore_right', 'jump_forward'],
+    }
+
     def get_weight_boosts(self, suggestions: List[str], available_actions: List[str]) -> Dict[str, float]:
         """
         Convert Introspector suggestions to action weight boosts.
@@ -889,11 +1019,20 @@ class Introspector:
         - Direct match: concept == action name → boost 4.0
         - Partial match: concept is substring of action name → boost 2.5
         - Axis match: concept node has axis to node matching action → boost 2.0
+        - Base motion match: bm_* concept maps to actions via BASE_MOTION_ACTION_MAP → boost 3.0
         """
         boosts = {}
         action_set = set(available_actions)
 
         for concept in suggestions:
+            # Base motion match: bm_* concept → mapped actions
+            if concept.startswith(BASE_MOTION_PREFIX):
+                mapped = self.BASE_MOTION_ACTION_MAP.get(concept, [])
+                for action in mapped:
+                    if action in action_set:
+                        boosts[action] = max(boosts.get(action, 1.0), 3.0)
+                continue
+
             # Direct match: concept name IS an action
             if concept in action_set:
                 boosts[concept] = max(boosts.get(concept, 1.0), 4.0)

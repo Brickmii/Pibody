@@ -191,5 +191,5 @@ class HUDReader:
                 continue
             # Variance across all channels
             var = region.var()
-            result.append(var > variance_threshold)
+            result.append(bool(var > variance_threshold))
         return result

@@ -375,8 +375,8 @@ MC_ACTION_WEIGHTS = {
     "sprint":          1.5,
     "attack":          3.0,
     "use":             2.5,
-    "look_up":         3.5,
-    "look_down":       1.5,
+    "look_up":         3.0,
+    "look_down":       3.0,
     "look_left":       3.5,
     "look_right":      3.5,
     "open_inventory":  0.1,
@@ -396,8 +396,8 @@ MC_ACTION_WEIGHTS = {
     "turn_south":      1.5,
     "turn_east":       2.0,
     "turn_west":       2.0,
-    "turn_up":         2.0,
-    "turn_down":       0.5,
+    "turn_up":         1.5,
+    "turn_down":       1.5,
     "close_ui":        0.0,    # Only used when UI is open (forced)
     "swim_up":         0.0,    # Only used when drowning (boosted dynamically)
     "select_slot_1":   0.1,
@@ -444,6 +444,33 @@ MC_MAX_TURN_DELTA = 1260
 # Dead zone: if already within this many degrees, skip the turn
 MC_TURN_DEAD_ZONE = 5.0
 
+
+# Common chat nouns → actual Bedrock recipe output names
+MC_CRAFT_ALIASES = {
+    "wood": "planks",
+    "plank": "planks",
+    "stick": "stick",
+    "sticks": "stick",
+    "table": "crafting_table",
+    "bench": "crafting_table",
+    "workbench": "crafting_table",
+    "pickaxe": "wooden_pickaxe",
+    "axe": "wooden_axe",
+    "sword": "wooden_sword",
+    "shovel": "wooden_shovel",
+    "hoe": "wooden_hoe",
+    "furnace": "furnace",
+    "chest": "chest",
+    "torch": "torch",
+    "torches": "torch",
+    "tools": "wooden_pickaxe",
+    "bed": "bed",
+    "door": "wooden_door",
+    "boat": "boat",
+    "bowl": "bowl",
+    "ladder": "ladder",
+    "fence": "fence",
+}
 
 MC_SCREEN_CENTER = 32           # Vision grid is 64x64
 MC_LOOK_SENSITIVITY = 10.0     # Pixels → mouse delta multiplier
@@ -1130,16 +1157,18 @@ class MinecraftDriver(Driver):
         # Crafting: when target nouns match a craftable item
         if self._target_hints and not self._ui_open:
             for noun in self._target_hints:
-                recipes = self.get_recipes_for(noun)
+                # Resolve common aliases first (wood→planks, tools→wooden_pickaxe)
+                craft_name = MC_CRAFT_ALIASES.get(noun, noun)
+                recipes = self.get_recipes_for(craft_name)
                 if not recipes:
-                    # Try partial match
+                    # Try partial match against recipe index
                     for name in self._recipe_by_output:
-                        if noun in name:
+                        if craft_name in name:
                             recipes = self._recipe_by_output[name]
-                            noun = name
+                            craft_name = name
                             break
                 if recipes:
-                    seq = self._build_craft_sequence(noun)
+                    seq = self._build_craft_sequence(craft_name)
                     MC_ACTION_MAP["craft_item"] = {"sequence": seq}
                     plans.append(["craft_item"])
                     # Clear hints so craft doesn't re-trigger every cycle

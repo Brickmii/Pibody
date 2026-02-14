@@ -1202,7 +1202,10 @@ class EnvironmentCore:
                             weights_map[action] = weights_map.get(action, 1.0) * self._weight_boosts[action]
                     self._weight_boosts = {}  # Clear after use
                 weights = [weights_map.get(a, 1.0) for a in available_actions]
-                chosen = random.choices(available_actions, weights=weights, k=1)[0]
+                if sum(weights) > 0:
+                    chosen = random.choices(available_actions, weights=weights, k=1)[0]
+                else:
+                    chosen = random.choice(available_actions)
             else:
                 chosen = random.choice(available_actions)
             logger.info(f"Explore: {chosen} (rate={exploration_rate:.2f})")
@@ -1233,7 +1236,10 @@ class EnvironmentCore:
                 if hasattr(driver, 'get_action_weights'):
                     weights_map = driver.get_action_weights(available_actions)
                     weights = [weights_map.get(a, 1.0) for a in available_actions]
-                    chosen = random.choices(available_actions, weights=weights, k=1)[0]
+                    if sum(weights) > 0:
+                        chosen = random.choices(available_actions, weights=weights, k=1)[0]
+                    else:
+                        chosen = random.choice(available_actions)
                     logger.debug(f"Decision: {chosen} (weighted)")
                 else:
                     chosen = decision_node.decide(

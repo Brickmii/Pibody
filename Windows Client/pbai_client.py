@@ -28,9 +28,9 @@ Outcome → Heat Backprop → Learn
 ════════════════════════════════════════════════════════════════════════════════
 
 USAGE:
-    python pbai_client.py --host pibody.local
-    python pbai_client.py --host pibody.local --kill-key F12
-    python pbai_client.py --host pibody.local --no-learn
+    python pbai_client.py --host 192.168.5.42
+    python pbai_client.py --host 192.168.5.42 --kill-key F12
+    python pbai_client.py --host 192.168.5.42 --no-learn
 
 REQUIREMENTS:
     pip install torch mss pydirectinput pyautogui websockets numpy keyboard

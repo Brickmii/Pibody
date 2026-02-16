@@ -32,12 +32,15 @@ EMBODIMENT:
     
 TEMPERATURE ZONES (Planck-Grounded):
     Baseline = 40°C (comfortable silicon temp)
-    
-    < baseline + Fire1 (42.5°C) : Cool    - Maximum tick rate
-    < baseline + Fire3 (46.5°C) : Warm    - Normal tick rate  
-    < baseline + Fire5 (57°C)   : Hot     - Reduced tick rate
-    < baseline + Fire6 (71°C)   : Danger  - Minimum tick rate
-    > 80°C                      : Critical - Pause entirely
+    Danger anchor = 80°C (40°C above baseline)
+
+    Zone widths follow φ-ratio scaling (ZONE_UNIT = 5K ≈ 7.6°C):
+
+    < ~48°C  (baseline + 5K)         : Cool     - Maximum tick rate (1/φ²)
+    < ~60°C  (baseline + 5K(1+φ))    : Warm     - Normal tick rate (1.0)
+    < 80°C   (baseline + 40)         : Hot      - Reduced tick rate (φ)
+    < 85°C                           : Danger   - Severe throttle (φ²)
+    > 85°C                           : Critical - Pause entirely
 
 ════════════════════════════════════════════════════════════════════════════════
 """
@@ -70,21 +73,16 @@ except ImportError:
 # Baseline comfortable temperature (Celsius)
 TEMP_BASELINE = 40.0
 
-# Zone thresholds using Fire heat scaling (K × φⁿ in Celsius deltas)
-# Fire 6 represents body temperature, but for CPU zones we use smaller deltas
-# The ratio between fires is still φ, just scaled for Celsius CPU temps
-DELTA_FIRE_1 = K * PHI ** 1  # ~2.5°C
-DELTA_FIRE_2 = K * PHI ** 2  # ~4.0°C (= K × φ² = 4)
-DELTA_FIRE_3 = K * PHI ** 3  # ~6.5°C
-DELTA_FIRE_4 = K * PHI ** 4  # ~10.5°C
-DELTA_FIRE_5 = K * PHI ** 5  # ~17°C
-DELTA_FIRE_6 = K * PHI ** 6  # ~27°C
+# Zone thresholds: φ-ratio zone widths anchored to danger = 80°C
+# ZONE_UNIT = 5K ≈ 7.64°C — zone widths grow by φ each step
+# Proof: 5K(1 + φ + φ²) = 5K·2φ² = 10·Kφ² = 10·4 = 40 (exact)
+# So 3 zones fill exactly 40°C from baseline to danger.
+ZONE_UNIT = 5 * K                              # ≈ 7.64°C (grounded: 5 thermal quanta)
 
-TEMP_COOL = TEMP_BASELINE + DELTA_FIRE_1      # ~42.5°C - below = max performance
-TEMP_WARM = TEMP_BASELINE + DELTA_FIRE_3      # ~46.5°C - normal operating range
-TEMP_HOT = TEMP_BASELINE + DELTA_FIRE_5       # ~57°C - start throttling
-TEMP_DANGER = TEMP_BASELINE + DELTA_FIRE_6    # ~67°C - severe throttling  
-TEMP_CRITICAL = 85.0                           # Hard limit - pause
+TEMP_COOL    = TEMP_BASELINE + ZONE_UNIT                    # ~47.6°C
+TEMP_WARM    = TEMP_BASELINE + ZONE_UNIT * (1.0 + PHI)      # ~60.0°C
+TEMP_DANGER  = TEMP_BASELINE + 40.0                          # 80.0°C (exact)
+TEMP_CRITICAL = 85.0                                         # Hard limit - pause
 
 # Tick interval multipliers for each zone
 # These use 1/φⁿ scaling (same as existence thresholds)
@@ -222,7 +220,7 @@ def get_zone(temperature: float) -> Tuple[str, float, int]:
         return ('cool', MULTIPLIER_COOL, fire_level)
     elif temperature < TEMP_WARM:
         return ('warm', MULTIPLIER_WARM, fire_level)
-    elif temperature < TEMP_HOT:
+    elif temperature < TEMP_DANGER:
         return ('hot', MULTIPLIER_HOT, fire_level)
     elif temperature < TEMP_CRITICAL:
         return ('danger', MULTIPLIER_DANGER, fire_level)
@@ -284,12 +282,12 @@ class ThermalManager:
         if enable_fan_control:
             self._init_fan_control()
         
-        logger.info(f"ThermalManager initialized (Planck-grounded)")
+        logger.info(f"ThermalManager initialized (Planck-grounded, ZONE_UNIT=5K)")
         logger.info(f"  Baseline: {TEMP_BASELINE}°C")
-        logger.info(f"  Cool < {TEMP_COOL:.1f}°C (Fire 1)")
-        logger.info(f"  Warm < {TEMP_WARM:.1f}°C (Fire 3)")
-        logger.info(f"  Hot < {TEMP_HOT:.1f}°C (Fire 5)")
-        logger.info(f"  Danger < {TEMP_DANGER:.1f}°C (Fire 6)")
+        logger.info(f"  Cool < {TEMP_COOL:.1f}°C")
+        logger.info(f"  Warm < {TEMP_WARM:.1f}°C")
+        logger.info(f"  Hot  < {TEMP_DANGER:.1f}°C")
+        logger.info(f"  Danger < {TEMP_CRITICAL:.1f}°C")
     
     def _init_fan_control(self):
         """Initialize GPIO fan control."""
@@ -454,7 +452,7 @@ class SimulatedThermalManager(ThermalManager):
             zone=zone,
             tick_multiplier=multiplier,
             fan_speed=None,
-            throttled=self._simulated_temp > TEMP_HOT,
+            throttled=self._simulated_temp > TEMP_DANGER,
             fire_level=fire_level,
             temp_above_baseline=max(0, self._simulated_temp - TEMP_BASELINE),
         )

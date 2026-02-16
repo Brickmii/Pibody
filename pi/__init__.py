@@ -33,7 +33,7 @@ THERMAL ZONES:
 from .thermal import (
     ThermalManager, ThermalState,
     create_thermal_manager, read_cpu_temp, get_zone,
-    TEMP_COOL, TEMP_WARM, TEMP_HOT, TEMP_DANGER, TEMP_CRITICAL
+    TEMP_COOL, TEMP_WARM, TEMP_DANGER, TEMP_CRITICAL
 )
 
 from .daemon import (
@@ -53,7 +53,7 @@ __all__ = [
     # Thermal
     'ThermalManager', 'ThermalState', 'create_thermal_manager',
     'read_cpu_temp', 'get_zone',
-    'TEMP_COOL', 'TEMP_WARM', 'TEMP_HOT', 'TEMP_DANGER', 'TEMP_CRITICAL',
+    'TEMP_COOL', 'TEMP_WARM', 'TEMP_DANGER', 'TEMP_CRITICAL',
     
     # Daemon
     'PBAIDaemon', 'DaemonState', 'DaemonStats',

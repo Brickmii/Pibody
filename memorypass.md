@@ -105,7 +105,109 @@
 - Manifold has room to grow — 10GB available for richer node structure
 - Any future driver (browser, robot, etc.) provides its own verb→action map
 
-## Files
+## Files (Steps 1-5)
 1. `core/introspector.py` — delete BASE_MOTION_ACTION_MAP, update get_weight_boosts() signature
 2. `drivers/minecraft/minecraft_driver.py` — add MC_VERB_ACTION_MAP, redefine mine_block, remove mine_forward, remove look_at_target weight, add get_verb_action_map()
 3. `drivers/environment.py` — add get_verb_action_map() to Driver ABC, thread map through MotionBus and introspect()
+
+---
+
+## Step 6: Introspector Deliberation Window + Execution Monitoring
+
+### Problem
+The introspector uses a transformer (ManifoldAttention) to reason plans, but gets exactly one forward pass before committing to a short 2-4 step action chain. Once a plan is enqueued, `introspect()` hard-gates with `if self.has_plan(): return None` — the introspector goes completely blind during execution. Fire and forget.
+
+The system has 16GB RAM, 10GB+ free. The bottleneck isn't memory — it's that the introspector is architecturally limited to one-shot planning with no supervision.
+
+### Current Flow (per environment cycle, every 10 ticks)
+```
+perceive() → introspect() → decide() → act()
+                 │
+                 ├─ One transformer pass → 15 concepts
+                 ├─ Convert to weight boosts
+                 ├─ Build 2-4 step plan → enqueue
+                 └─ if has_plan(): return None  ← BLIND until queue drains
+```
+
+### Target Flow
+```
+perceive() → introspect() → decide() → act()
+                 │
+                 ├─ IF no plan:
+                 │    ├─ deliberate() — multiple transformer passes
+                 │    ├─ Each pass refines the previous, narrowing focus
+                 │    ├─ Ego heat limits depth (each pass costs COST_EVALUATE)
+                 │    └─ Build 6-8 step plan → enqueue
+                 │
+                 └─ IF has plan (executing):
+                      ├─ monitor() — lightweight state check
+                      ├─ Embed current state, compare against remaining plan
+                      ├─ If diverged → replan (abort + new deliberate)
+                      └─ If on track → continue execution
+```
+
+### 6a. Add `deliberate()` to Introspector (`core/introspector.py`)
+
+Multi-pass reasoning method that replaces single-shot `suggest()` for plan formation:
+
+```python
+def deliberate(self, domain_ctx: Dict, max_passes: int = 3) -> Optional[List[str]]:
+```
+
+- **Pass 1 (Broad):** Run existing `suggest()` — get top 15 concepts
+- **Pass 2+ (Refine):** Feed previous pass results back into the query builder as extra context, re-score. Each pass narrows focus and reranks.
+- The refinement injects prior suggestions into `_build_query()` as an additional weighted signal (like active_verbs already does)
+- Output: A ranked, longer concept sequence (up to ~8-10 actions instead of 2-4)
+- Cost: Each pass pays `COST_EVALUATE` from Ego — natural energy budget limits deliberation depth (low energy = fewer passes, high energy = deeper thinking)
+
+### 6b. Add `monitor()` to Introspector (`core/introspector.py`)
+
+Lightweight execution check that runs every cycle during plan execution:
+
+```python
+def monitor(self, domain_ctx: Dict, remaining_plan: List[str]) -> Optional[List[str]]:
+```
+
+- Does NOT run full cross-node attention (too expensive every cycle)
+- Instead: embeds current state query, computes cosine similarity against remaining plan's expected concepts
+- If similarity drops below threshold → signal "replan needed"
+- Returns `None` (plan still valid) or a replacement plan
+- Cost: ~1/3 of a full suggest() — just query embedding + dot products, no full attention
+
+### 6c. Update `introspect()` in EnvironmentCore (`drivers/environment.py`)
+
+Replace the hard gate:
+```python
+# BEFORE (line 765-766):
+if self.has_plan():
+    return None  # Blind during execution
+
+# AFTER:
+if self.has_plan():
+    # Monitor execution — introspector stays active
+    adjusted = introspector.monitor(domain_ctx, self._action_queue)
+    if adjusted is not None:
+        self.enqueue_plan(adjusted)
+        logger.info(f"Introspector replanned: {adjusted}")
+    return None  # Still executing, but now supervised
+```
+
+When no plan exists, use `deliberate()` instead of `suggest()`:
+```python
+# BEFORE (line 776):
+suggestions = introspector.suggest(domain_ctx)
+
+# AFTER:
+suggestions = introspector.deliberate(domain_ctx)
+```
+
+### 6d. Build longer plans + increase STM
+
+- Extend plan building in `introspect()` from 2-4 steps to 6-8 steps
+- Interleave target_action with top suggestions (existing pattern, more steps)
+- Bump `_stm_capacity` from 12 to 24 — more short-term memory for pattern detection over longer windows
+
+### Files (Step 6)
+1. `core/introspector.py` — add `deliberate()`, add `monitor()`, add `_build_refinement_query()`, bump `_stm_capacity` to 24
+2. `drivers/environment.py` — replace blind gate with monitor, use `deliberate()` instead of `suggest()`, extend plan length
+3. `pi/daemon.py` — no changes needed (existing `_environment_cycle()` already calls `introspect()` every cycle)

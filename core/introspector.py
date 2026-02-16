@@ -1020,6 +1020,7 @@ class Introspector:
         'bm_build': ['mine_block', 'mine_forward', 'use', 'select_slot_1'],
         'bm_design': ['look_left', 'look_right', 'look_up', 'look_down'],
         'bm_make': ['mine_block', 'mine_forward', 'use', 'attack', 'select_slot_1'],
+        'bm_craft': ['use', 'open_inventory', 'select_slot_1'],
         # Movement (Navigation)
         'bm_explore': ['move_forward', 'explore_left', 'explore_right', 'sprint_forward'],
         'bm_find': ['move_forward', 'sprint_forward', 'scout_ahead', 'explore_left'],

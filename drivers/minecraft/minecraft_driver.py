@@ -563,6 +563,7 @@ class MinecraftDriver(Driver):
 
         # Target hints from MotionBus noun extraction
         self._target_hints: List[str] = []
+        self._active_verbs: Dict[str, float] = {}  # Active motion bus verbs
 
         # Initialize with MinecraftPort if none provided
         if port is None:
@@ -1154,8 +1155,10 @@ class MinecraftDriver(Driver):
         if 0 < hunger < 12:
             plans.append(["use"])  # Eating with food selected
 
-        # Crafting: when target nouns match a craftable item
-        if self._target_hints and not self._ui_open:
+        # Crafting: only when active verb is make/create/build/craft (not get/take)
+        _CRAFT_VERBS = {'bm_make', 'bm_create', 'bm_build', 'bm_craft'}
+        has_craft_verb = any(v in _CRAFT_VERBS for v in self._active_verbs)
+        if self._target_hints and not self._ui_open and has_craft_verb:
             for noun in self._target_hints:
                 # Resolve common aliases first (wood→planks, tools→wooden_pickaxe)
                 craft_name = MC_CRAFT_ALIASES.get(noun, noun)

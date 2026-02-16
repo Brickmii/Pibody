@@ -317,7 +317,7 @@ BASE_MOTIONS = {
     2: ['easily', 'quickly', 'better'],                    # Polarity (Differentiation)
     3: ['see', 'view', 'look', 'visual', 'visually', 'visualize'], # Existence (Perception)
     4: ['analyze', 'understand', 'identify'],              # Righteousness (Evaluation)
-    5: ['create', 'build', 'design', 'make'],              # Order (Construction)
+    5: ['create', 'build', 'design', 'make', 'craft'],      # Order (Construction)
     6: ['explore', 'find', 'go', 'discover'],               # Movement (Navigation)
 }
 

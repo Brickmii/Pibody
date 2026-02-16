@@ -740,11 +740,13 @@ class EnvironmentCore:
                 # Inject target into weight boosts for next decide()
                 self._weight_boosts["look_at_target"] = 6.0
 
-        # 1b. NOUN HINTS — thread from motion bus to driver, then clear
+        # 1b. NOUN HINTS + ACTIVE VERBS — thread from motion bus to driver
         if self._motion_bus and self._motion_bus.target_hints:
             if hasattr(driver, '_target_hints'):
                 driver._target_hints = self._motion_bus.target_hints
                 self._motion_bus._target_hints = []  # Consume: don't re-send stale hints
+        if self._motion_bus and hasattr(driver, '_active_verbs'):
+            driver._active_verbs = self._motion_bus.get_active()
 
         # 2. DOMAIN CONTEXT — driver provides scoped data
         domain_ctx = {}

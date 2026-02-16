@@ -3,6 +3,8 @@
 
 Usage:
     pbai status              Show daemon status + psychology
+    pbai on                  Start daemon + heat drip
+    pbai off                 Save manifold, stop daemon + heat drip
     pbai chat "go explore"   Send chat text (activates motion verbs)
     pbai bus                 Show motion bus state
     pbai heat [amount]       Inject heat into Ego (default 5)
@@ -13,10 +15,12 @@ Usage:
 
 import sys
 import json
+import subprocess
 import urllib.request
 import urllib.error
 
 API = "http://localhost:8420"
+SERVICES = ["pbai-daemon", "pbai-heatdrip"]
 
 
 def api_get(path):
@@ -98,6 +102,41 @@ def cmd_heat(amount=5):
     print(f"Injected ego={amount:.1f} identity={amount * 0.6:.1f}")
 
 
+def _daemon_active():
+    """Check if pbai-daemon systemd service is active."""
+    r = subprocess.run(
+        ["systemctl", "is-active", "pbai-daemon"],
+        capture_output=True, text=True,
+    )
+    return r.stdout.strip() == "active"
+
+
+def cmd_on():
+    if _daemon_active():
+        print("Daemon already running.")
+        return
+    print("Starting PBAI...")
+    for svc in SERVICES:
+        subprocess.run(["sudo", "systemctl", "start", svc], check=True)
+    print("PBAI is on.")
+
+
+def cmd_off():
+    if not _daemon_active():
+        print("Daemon already stopped.")
+        return
+    # Graceful save before shutdown
+    try:
+        api_post("/save")
+        print("Manifold saved.")
+    except SystemExit:
+        pass  # daemon may already be unreachable
+    print("Stopping PBAI...")
+    for svc in reversed(SERVICES):
+        subprocess.run(["sudo", "systemctl", "stop", svc])
+    print("PBAI is off.")
+
+
 def cmd_manifold():
     m = api_get("/manifold")
     print(f"Nodes: {m.get('nodes', 0)}  Loop: {m.get('loop_number', 0)}  "
@@ -118,6 +157,10 @@ def main():
 
     if cmd == "status":
         cmd_status()
+    elif cmd == "on":
+        cmd_on()
+    elif cmd == "off":
+        cmd_off()
     elif cmd == "chat":
         if len(sys.argv) < 3:
             print("Usage: pbai chat \"your message\"")

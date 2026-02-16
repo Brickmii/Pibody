@@ -998,6 +998,8 @@ class Introspector:
         # Heat (Magnitude)
         'bm_take': ['attack', 'use', 'select_slot_1', 'select_slot_2'],
         'bm_get': ['attack', 'use', 'mine_block', 'mine_forward', 'select_slot_1'],
+        'bm_mine': ['mine_block', 'mine_forward', 'attack', 'select_slot_1'],
+        'bm_dig': ['mine_block', 'mine_forward', 'attack'],
         # Polarity (Differentiation)
         'bm_easily': ['sprint_forward', 'sprint_jump'],
         'bm_quickly': ['sprint_forward', 'sprint_jump', 'jump_forward'],

@@ -313,7 +313,7 @@ BASE_MOTION_PREFIX = 'bm_'  # Node concept prefix for base motions
 
 # Fire → list of cognitive verbs
 BASE_MOTIONS = {
-    1: ['take', 'get'],                                    # Heat (Magnitude)
+    1: ['take', 'get', 'mine', 'dig'],                      # Heat (Magnitude)
     2: ['easily', 'quickly', 'better'],                    # Polarity (Differentiation)
     3: ['see', 'view', 'look', 'visual', 'visually', 'visualize'], # Existence (Perception)
     4: ['analyze', 'understand', 'identify'],              # Righteousness (Evaluation)

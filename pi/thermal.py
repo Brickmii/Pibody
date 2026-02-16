@@ -195,7 +195,6 @@ def get_fire_level(temperature: float) -> int:
         return 1
     
     above_baseline = temperature - TEMP_BASELINE
-    
     # Check each fire level threshold
     for fire in range(6, 0, -1):
         if above_baseline >= FIRE_HEAT[fire]:

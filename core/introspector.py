@@ -308,7 +308,7 @@ class Introspector:
 
         # Short-term simulation memory — recent results for pattern detection
         self._stm: List[Dict[str, Any]] = []
-        self._stm_capacity: int = 12  # Movement constant (12 directions)
+        self._stm_capacity: int = 48  # Extended for deliberation window
 
         # Base motion embedding cache (invalidated on manifold reload)
         self._bm_cache: Optional['torch.Tensor'] = None
@@ -990,45 +990,183 @@ class Introspector:
         return concepts
 
     # ═══════════════════════════════════════════════════════════════════════════
-    # WEIGHT BOOSTS — Convert suggestions to action weights (unchanged)
+    # DELIBERATE — Multi-pass transformer reasoning (replaces single-shot suggest)
     # ═══════════════════════════════════════════════════════════════════════════
 
-    # Base motion → action mapping
-    BASE_MOTION_ACTION_MAP = {
-        # Heat (Magnitude)
-        'bm_take': ['attack', 'use', 'select_slot_1', 'select_slot_2'],
-        'bm_get': ['attack', 'use', 'mine_block', 'mine_forward', 'select_slot_1'],
-        'bm_mine': ['mine_block', 'mine_forward', 'attack', 'select_slot_1'],
-        'bm_dig': ['mine_block', 'mine_forward', 'attack'],
-        # Polarity (Differentiation)
-        'bm_easily': ['sprint_forward', 'sprint_jump'],
-        'bm_quickly': ['sprint_forward', 'sprint_jump', 'jump_forward'],
-        'bm_better': ['move_forward', 'sprint_forward'],
-        # Existence (Perception)
-        'bm_see': ['look_left', 'look_right', 'look_up', 'look_down'],
-        'bm_view': ['look_left', 'look_right', 'look_up', 'look_down'],
-        'bm_look': ['look_left', 'look_right', 'look_up', 'look_down', 'explore_left', 'explore_right'],
-        'bm_visual': ['look_left', 'look_right', 'look_up', 'look_down'],
-        'bm_visually': ['explore_left', 'explore_right', 'scout_ahead'],
-        'bm_visualize': ['explore_left', 'explore_right', 'scout_ahead', 'watch_step'],
-        # Righteousness (Evaluation)
-        'bm_analyze': ['look_left', 'look_right', 'look_up', 'look_down', 'wait'],
-        'bm_understand': ['look_left', 'look_right', 'wait'],
-        'bm_identify': ['look_left', 'look_right', 'look_up', 'look_down'],
-        # Order (Construction)
-        'bm_create': ['mine_block', 'mine_forward', 'use', 'select_slot_1'],
-        'bm_build': ['mine_block', 'mine_forward', 'use', 'select_slot_1'],
-        'bm_design': ['look_left', 'look_right', 'look_up', 'look_down'],
-        'bm_make': ['mine_block', 'mine_forward', 'use', 'attack', 'select_slot_1'],
-        'bm_craft': ['use', 'open_inventory', 'select_slot_1'],
-        # Movement (Navigation)
-        'bm_explore': ['move_forward', 'explore_left', 'explore_right', 'sprint_forward'],
-        'bm_find': ['move_forward', 'sprint_forward', 'scout_ahead', 'explore_left'],
-        'bm_go': ['move_forward', 'sprint_forward', 'sprint_jump', 'jump_forward'],
-        'bm_discover': ['move_forward', 'explore_left', 'explore_right', 'jump_forward'],
-    }
+    def deliberate(self, domain_ctx: Dict, max_passes: int = 3) -> Optional[List[str]]:
+        """Multi-pass reasoning: each pass refines the previous, narrowing focus.
 
-    def get_weight_boosts(self, suggestions: List[str], available_actions: List[str]) -> Dict[str, float]:
+        Pass 1: Run suggest() — broad top-15 concepts.
+        Pass 2+: Inject prior results as weighted signal into query, re-score.
+        Each pass pays COST_EVALUATE from Ego — natural energy budget limits depth.
+
+        Returns a ranked concept sequence (up to ~10 actions) or None.
+        """
+        # Pass 1: broad exploration via suggest()
+        concepts = self.suggest(domain_ctx)
+        if not concepts:
+            return None
+
+        # No transformer → can't refine, return single-pass result
+        if self._transformer is None:
+            return concepts
+
+        # Refinement passes (2..max_passes), gated by Ego energy
+        nodes = self._eligible_nodes()
+        if not nodes:
+            return concepts
+
+        for pass_num in range(2, max_passes + 1):
+            # Energy gate: each refinement costs COST_EVALUATE
+            if not self.should_think():
+                break
+
+            with torch.no_grad():
+                node_embeddings = self._embed_all_nodes(nodes)
+                if node_embeddings.shape[0] == 0:
+                    break
+
+                # Build refinement query: base query + prior pass signal
+                query = self._build_refinement_query(
+                    domain_ctx, node_embeddings, nodes, concepts
+                )
+
+                scores = self._transformer.forward(node_embeddings, query)
+                scores = self._righteousness_gate(scores, nodes)
+
+            # Re-score and merge with previous concepts
+            scored = []
+            for i, node in enumerate(nodes):
+                scored.append((node.concept, scores[i].item()))
+
+            # Domain filter (same as suggest)
+            domain_prefix = domain_ctx.get("domain_prefix", "")
+            if domain_prefix:
+                _KNOWN_PREFIXES = ("ow_", "the_", "end_", "tc_", "bj_")
+                scored = [(c, s) for c, s in scored
+                          if c.startswith(domain_prefix)
+                          or not any(c.startswith(p) for p in _KNOWN_PREFIXES
+                                     if not p.startswith(domain_prefix))]
+
+            scored.sort(key=lambda x: x[1], reverse=True)
+            refined = [c for c, s in scored[:15]]
+
+            if not refined:
+                break
+
+            # Merge: refined pass concepts take priority, append novel from prior
+            seen = set(refined)
+            for c in concepts:
+                if c not in seen:
+                    refined.append(c)
+                    seen.add(c)
+            concepts = refined[:15]
+
+            # Pay for this pass
+            if self.manifold.ego_node:
+                self.manifold.ego_node.spend_heat(COST_EVALUATE, minimum=PSYCHOLOGY_MIN_HEAT)
+
+            logger.debug(f"Deliberate pass {pass_num}: top={concepts[0] if concepts else 'none'}")
+
+        return concepts
+
+    def _build_refinement_query(self, domain_ctx: Dict,
+                                 node_embeddings: 'torch.Tensor',
+                                 nodes: List[Node],
+                                 prior_concepts: List[str]) -> 'torch.Tensor':
+        """Build query for refinement pass, injecting prior suggestions as signal.
+
+        Same as _build_query, but adds prior concept embeddings as extra context.
+        """
+        # Start with standard query
+        query = self._build_query(domain_ctx, node_embeddings, nodes)
+
+        # Add prior concept embeddings as refinement signal (weight 0.25)
+        prior_embs = []
+        for c in prior_concepts[:5]:
+            node = self.manifold.get_node_by_concept(c)
+            if node is not None:
+                emb = self._pool_node_embedding(node)
+                if emb is not None:
+                    prior_embs.append(emb)
+
+        if prior_embs:
+            prior_avg = torch.stack(prior_embs).mean(dim=0)
+            query = query + 0.25 * prior_avg
+
+        return query
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MONITOR — Lightweight execution check during plan execution
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    _MONITOR_DIVERGENCE_THRESHOLD = 0.3
+
+    def monitor(self, domain_ctx: Dict, remaining_plan: List[str]) -> Optional[List[str]]:
+        """Lightweight check: is the current state still consistent with the plan?
+
+        Embeds current state query and computes cosine similarity against
+        remaining plan action embeddings. If similarity drops below threshold,
+        signals replan needed.
+
+        Returns None (plan still valid) or a replacement concept list.
+        Cost: ~1/3 of suggest() — just query embedding + dot products.
+        """
+        if not remaining_plan:
+            return None
+
+        if self._transformer is None:
+            return None  # Can't monitor without embeddings
+
+        # Energy gate: monitoring is cheap but not free
+        if not self.should_think():
+            return None
+
+        nodes = self._eligible_nodes()
+        if not nodes:
+            return None
+
+        with torch.no_grad():
+            node_embeddings = self._embed_all_nodes(nodes)
+            if node_embeddings.shape[0] == 0:
+                return None
+
+            # Build current state query
+            query = self._build_query(domain_ctx, node_embeddings, nodes)  # (1, D_EMB)
+
+            # Embed plan actions: get embeddings for concepts in remaining plan
+            plan_embs = []
+            for action_name in remaining_plan:
+                node = self.manifold.get_node_by_concept(action_name)
+                if node is not None:
+                    emb = self._pool_node_embedding(node)
+                    if emb is not None:
+                        plan_embs.append(emb)
+
+            if not plan_embs:
+                return None  # Can't evaluate plan — let it run
+
+            # Average plan embedding
+            plan_avg = torch.stack(plan_embs).mean(dim=0)  # (1, D_EMB)
+
+            # Cosine similarity between current state and plan direction
+            cos_sim = torch.nn.functional.cosine_similarity(query, plan_avg, dim=1)
+            similarity = cos_sim.item()
+
+        if similarity < self._MONITOR_DIVERGENCE_THRESHOLD:
+            # State has diverged — trigger replan via deliberate
+            logger.info(f"Monitor: diverged (sim={similarity:.3f} < {self._MONITOR_DIVERGENCE_THRESHOLD}), replanning")
+            return self.deliberate(domain_ctx)
+
+        logger.debug(f"Monitor: on track (sim={similarity:.3f})")
+        return None
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # WEIGHT BOOSTS — Convert suggestions to action weights
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def get_weight_boosts(self, suggestions: List[str], available_actions: List[str],
+                          verb_action_map: Dict[str, List[str]] = None) -> Dict[str, float]:
         """
         Convert Introspector suggestions to action weight boosts.
 
@@ -1036,15 +1174,18 @@ class Introspector:
         - Direct match: concept == action name → boost 4.0
         - Partial match: concept is substring of action name → boost 2.5
         - Axis match: concept node has axis to node matching action → boost 2.0
-        - Base motion match: bm_* concept maps to actions via BASE_MOTION_ACTION_MAP → boost 3.0
+        - Base motion match: bm_* concept maps to actions via verb_action_map → boost 3.0
+
+        verb_action_map is provided by the active driver (domain-specific).
         """
         boosts = {}
         action_set = set(available_actions)
+        vmap = verb_action_map or {}
 
         for concept in suggestions:
             # Base motion match: bm_* concept → mapped actions
             if concept.startswith(BASE_MOTION_PREFIX):
-                mapped = self.BASE_MOTION_ACTION_MAP.get(concept, [])
+                mapped = vmap.get(concept, [])
                 for action in mapped:
                     if action in action_set:
                         boosts[action] = max(boosts.get(action, 1.0), 3.0)

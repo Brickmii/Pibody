@@ -324,20 +324,19 @@ class MotionBus:
 
     # ───────────────────────── read interface ──────────────────────────
 
-    def get_weight_boosts(self) -> Dict[str, float]:
-        """Convert activations to {action: multiplier} via BASE_MOTION_ACTION_MAP.
+    def get_weight_boosts(self, verb_action_map: Dict[str, list] = None) -> Dict[str, float]:
+        """Convert activations to {action: multiplier} via driver's verb→action map.
 
         boost = 1.0 + activation * BOOST_SCALE
         Multiple verbs mapping to same action: take max boost.
         """
-        from core.introspector import Introspector
-        action_map = Introspector.BASE_MOTION_ACTION_MAP
+        vmap = verb_action_map or {}
 
         boosts: Dict[str, float] = {}
         for concept, activation in self._activations.items():
             if activation < self.ACTIVATION_THRESHOLD:
                 continue
-            mapped_actions = action_map.get(concept, [])
+            mapped_actions = vmap.get(concept, [])
             boost = 1.0 + activation * self.BOOST_SCALE
             for action in mapped_actions:
                 boosts[action] = max(boosts.get(action, 1.0), boost)
@@ -588,6 +587,15 @@ class Driver(ABC):
         """Check if driver supports an action type."""
         return action_type in self.SUPPORTED_ACTIONS
 
+    def get_verb_action_map(self) -> Dict[str, List[str]]:
+        """Return verb→action mapping for this domain.
+
+        Maps base motion verbs (bm_*) to domain-specific action names.
+        Override in subclasses. Core introspector uses this to convert
+        conceptual suggestions into action weight boosts.
+        """
+        return {}
+
     def get_domain_context(self, perception: 'Perception') -> Dict[str, Any]:
         """Return domain-scoped context for introspection.
 
@@ -738,7 +746,7 @@ class EnvironmentCore:
             target_action = driver._get_target_action()
             if target_action and not self.has_plan():
                 # Inject target into weight boosts for next decide()
-                self._weight_boosts["look_at_target"] = 6.0
+                self._weight_boosts["look_at_target"] = 2.0
 
         # 1b. NOUN HINTS + ACTIVE VERBS — thread from motion bus to driver
         if self._motion_bus and self._motion_bus.target_hints:
@@ -761,19 +769,28 @@ class EnvironmentCore:
             logger.info(f"Reactive plan: {reactive_plans[0]}")
             return None  # Reactive plan overrides introspection
 
-        # 4. INTROSPECTOR SANDBOX — scoped by domain context
-        if self.has_plan():
-            return None  # Already have a plan, skip introspection
-
-        if not introspector.should_think():
-            return None
-
+        # 4. INTROSPECTOR — monitor during execution, deliberate when idle
         # Inject active verbs into domain context for query builder
         if self._motion_bus:
             domain_ctx["active_verbs"] = self._motion_bus.get_active()
 
-        # Pass domain context to introspector (not raw perception)
-        suggestions = introspector.suggest(domain_ctx)
+        if self.has_plan():
+            # Monitor execution — introspector stays active during plan
+            if hasattr(introspector, 'monitor'):
+                adjusted = introspector.monitor(domain_ctx, self._action_queue)
+                if adjusted is not None:
+                    self.enqueue_plan(adjusted)
+                    logger.info(f"Introspector replanned: {adjusted[:3]}...")
+            return None  # Still executing (now supervised)
+
+        if not introspector.should_think():
+            return None
+
+        # Multi-pass deliberation (replaces single-shot suggest)
+        if hasattr(introspector, 'deliberate'):
+            suggestions = introspector.deliberate(domain_ctx)
+        else:
+            suggestions = introspector.suggest(domain_ctx)
 
         if not suggestions:
             return None
@@ -786,14 +803,16 @@ class EnvironmentCore:
 
         # 5. WEIGHT BOOSTS from suggestions
         available = self.get_supported_actions()
-        boosts = introspector.get_weight_boosts(suggestions, available)
+        verb_map = driver.get_verb_action_map() if hasattr(driver, 'get_verb_action_map') else {}
+        boosts = introspector.get_weight_boosts(suggestions, available, verb_map)
         self._weight_boosts.update(boosts)
 
-        # 6. DELIBERATIVE PLAN — if targeting + suggestions, interleave
+        # 6. DELIBERATIVE PLAN — if targeting + suggestions, build 6-8 step plan
         if target_action and len(suggestions) >= 1:
-            plan = [target_action, suggestions[0]]
-            if len(suggestions) > 1:
-                plan.extend([target_action, suggestions[1]])
+            plan = []
+            for s in suggestions[:4]:
+                plan.append(target_action)
+                plan.append(s)
             self.enqueue_plan(plan)
             logger.info(f"Introspector plan ({len(plan)} steps): {plan}")
 
@@ -1182,7 +1201,8 @@ class EnvironmentCore:
 
         # MOTION BUS: merge verb boosts into weight boosts, then decay
         if self._motion_bus:
-            bus_boosts = self._motion_bus.get_weight_boosts()
+            driver_vmap = driver.get_verb_action_map() if driver and hasattr(driver, 'get_verb_action_map') else {}
+            bus_boosts = self._motion_bus.get_weight_boosts(driver_vmap)
             for action, boost in bus_boosts.items():
                 self._weight_boosts[action] = max(
                     self._weight_boosts.get(action, 1.0), boost

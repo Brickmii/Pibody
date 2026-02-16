@@ -546,7 +546,7 @@ class TestSTM(unittest.TestCase):
         summary = self.intro.get_stm_summary()
         self.assertIn("stm_entries", summary)
         self.assertIn("stm_capacity", summary)
-        self.assertEqual(summary["stm_capacity"], 12)
+        self.assertEqual(summary["stm_capacity"], 48)
 
     def test_stm_pattern_needs_data(self):
         """Pattern detection requires >= 3 entries."""
@@ -616,7 +616,14 @@ class TestBaseMotionEmbeddings(unittest.TestCase):
 
 
 class TestBaseMotionWeightBoosts(unittest.TestCase):
-    """Test base motion → action weight boosts."""
+    """Test base motion → action weight boosts (verb map provided by driver)."""
+
+    # Test verb map — simulates what MinecraftDriver.get_verb_action_map() returns
+    VERB_MAP = {
+        'bm_explore': ['move_forward', 'explore_left', 'explore_right', 'sprint_forward'],
+        'bm_see': ['look_left', 'look_right', 'look_up', 'look_down'],
+        'bm_take': ['attack', 'use', 'select_slot_1', 'select_slot_2'],
+    }
 
     def setUp(self):
         self.m = populated_manifold()
@@ -626,14 +633,14 @@ class TestBaseMotionWeightBoosts(unittest.TestCase):
         """bm_explore should boost move_forward at 3.0."""
         suggestions = ["bm_explore"]
         actions = ["move_forward", "jump", "attack", "look_left"]
-        boosts = self.intro.get_weight_boosts(suggestions, actions)
+        boosts = self.intro.get_weight_boosts(suggestions, actions, self.VERB_MAP)
         self.assertAlmostEqual(boosts.get("move_forward", 0), 3.0)
 
     def test_bm_see_boosts_look_actions(self):
         """bm_see should boost look_left and look_right at 3.0."""
         suggestions = ["bm_see"]
         actions = ["move_forward", "look_left", "look_right", "attack"]
-        boosts = self.intro.get_weight_boosts(suggestions, actions)
+        boosts = self.intro.get_weight_boosts(suggestions, actions, self.VERB_MAP)
         self.assertAlmostEqual(boosts.get("look_left", 0), 3.0)
         self.assertAlmostEqual(boosts.get("look_right", 0), 3.0)
 
@@ -641,7 +648,7 @@ class TestBaseMotionWeightBoosts(unittest.TestCase):
         """Mix of bm_ and regular suggestions should both produce boosts."""
         suggestions = ["bm_explore", "move_forward"]
         actions = ["move_forward", "jump", "look_left"]
-        boosts = self.intro.get_weight_boosts(suggestions, actions)
+        boosts = self.intro.get_weight_boosts(suggestions, actions, self.VERB_MAP)
         # move_forward gets 4.0 (direct) which is > 3.0 (bm), so 4.0 wins
         self.assertAlmostEqual(boosts.get("move_forward", 0), 4.0)
 
@@ -649,7 +656,7 @@ class TestBaseMotionWeightBoosts(unittest.TestCase):
         """bm_ suggestion shouldn't boost actions not in its map."""
         suggestions = ["bm_take"]
         actions = ["move_forward", "jump"]
-        boosts = self.intro.get_weight_boosts(suggestions, actions)
+        boosts = self.intro.get_weight_boosts(suggestions, actions, self.VERB_MAP)
         # bm_take maps to attack/use, not move_forward/jump
         self.assertNotIn("move_forward", boosts)
         self.assertNotIn("jump", boosts)

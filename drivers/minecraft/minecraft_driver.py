@@ -328,16 +328,8 @@ MC_ACTION_MAP = {
         {"motor_type": "wait", "duration": 0.6},
         {"motor_type": "key_release", "key": "w"},
     ]},
-    # Mining: look down + hold left click to break block below/ahead
+    # Mining: universal — mines whatever you're currently facing
     "mine_block": {"sequence": [
-        {"motor_type": "look", "direction": (0, 280)},
-        {"motor_type": "wait", "duration": 0.1},
-        {"motor_type": "mouse_hold", "button": "left", "duration": 3.0},
-    ]},
-    # Mine forward: look straight ahead + hold attack to break block in front
-    "mine_forward": {"sequence": [
-        {"motor_type": "look", "direction": (0, 0)},
-        {"motor_type": "wait", "duration": 0.1},
         {"motor_type": "mouse_hold", "button": "left", "duration": 3.0},
     ]},
     # Cardinal turning — yaw-aware, delta computed at act() time
@@ -391,7 +383,6 @@ MC_ACTION_WEIGHTS = {
     "scout_ahead":     3.5,
     "watch_step":      0.5,
     "mine_block":      3.0,
-    "mine_forward":    3.0,
     "turn_north":      2.0,
     "turn_south":      1.5,
     "turn_east":       2.0,
@@ -409,6 +400,45 @@ MC_ACTION_WEIGHTS = {
     "select_slot_7":   0.1,
     "select_slot_8":   0.1,
     "select_slot_9":   0.1,
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VERB → ACTION MAP: Base motion verbs → domain-specific actions
+# Moved from core/introspector.py — driver owns all domain-specific mappings.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+MC_VERB_ACTION_MAP = {
+    # Fire 1 — Heat (Magnitude)
+    'bm_take': ['attack', 'use', 'select_slot_1', 'select_slot_2'],
+    'bm_get': ['attack', 'use', 'mine_block', 'select_slot_1'],
+    'bm_mine': ['mine_block', 'attack', 'select_slot_1'],
+    'bm_dig': ['mine_block', 'attack'],
+    # Fire 2 — Polarity (Differentiation)
+    'bm_easily': ['sprint_forward', 'sprint_jump'],
+    'bm_quickly': ['sprint_forward', 'sprint_jump', 'jump_forward'],
+    'bm_better': ['move_forward', 'sprint_forward'],
+    # Fire 3 — Existence (Perception)
+    'bm_see': ['look_left', 'look_right', 'look_up', 'look_down'],
+    'bm_view': ['look_left', 'look_right', 'look_up', 'look_down'],
+    'bm_look': ['look_left', 'look_right', 'look_up', 'look_down', 'explore_left', 'explore_right'],
+    'bm_visual': ['look_left', 'look_right', 'look_up', 'look_down'],
+    'bm_visually': ['explore_left', 'explore_right', 'scout_ahead'],
+    'bm_visualize': ['explore_left', 'explore_right', 'scout_ahead', 'watch_step'],
+    # Fire 4 — Righteousness (Evaluation)
+    'bm_analyze': ['look_left', 'look_right', 'look_up', 'look_down', 'wait'],
+    'bm_understand': ['look_left', 'look_right', 'wait'],
+    'bm_identify': ['look_left', 'look_right', 'look_up', 'look_down'],
+    # Fire 5 — Order (Construction)
+    'bm_create': ['mine_block', 'use', 'select_slot_1'],
+    'bm_build': ['mine_block', 'use', 'select_slot_1'],
+    'bm_design': ['look_left', 'look_right', 'look_up', 'look_down'],
+    'bm_make': ['mine_block', 'use', 'attack', 'select_slot_1'],
+    'bm_craft': ['use', 'open_inventory', 'select_slot_1'],
+    # Fire 6 — Movement (Navigation)
+    'bm_explore': ['move_forward', 'explore_left', 'explore_right', 'sprint_forward'],
+    'bm_find': ['move_forward', 'sprint_forward', 'scout_ahead', 'explore_left'],
+    'bm_go': ['move_forward', 'sprint_forward', 'sprint_jump', 'jump_forward'],
+    'bm_discover': ['move_forward', 'explore_left', 'explore_right', 'jump_forward'],
 }
 
 
@@ -630,6 +660,10 @@ class MinecraftDriver(Driver):
         """Check if action is supported, including dynamic actions."""
         return action_type in self.SUPPORTED_ACTIONS or action_type in MC_ACTION_MAP
 
+    def get_verb_action_map(self) -> Dict[str, list]:
+        """Return Minecraft verb→action map for introspector weight boosts."""
+        return MC_VERB_ACTION_MAP
+
     def get_action_weights(self, actions: list = None) -> Dict[str, float]:
         """Return exploration weights for actions (higher = more likely).
 
@@ -657,7 +691,7 @@ class MinecraftDriver(Driver):
 
         # If targeting found a valid peak, add look_at_target with high weight
         if self._current_target and "look_at_target" in MC_ACTION_MAP:
-            weights["look_at_target"] = 6.0
+            weights["look_at_target"] = 2.0
 
         return weights
 
@@ -1357,7 +1391,6 @@ class MinecraftDriver(Driver):
             "wait": K * 0.05,
             "look_at_target": K * 0.15,
             "mine_block": K * 1.0,
-            "mine_forward": K * 1.0,
             "turn_north": K * 0.15,
             "turn_south": K * 0.15,
             "turn_east": K * 0.15,
@@ -1740,7 +1773,7 @@ if __name__ == "__main__":
     print("\n10. Sequence Actions (Look-Move Combos)")
 
     sequences = [a for a in driver.SUPPORTED_ACTIONS if "sequence" in MC_ACTION_MAP.get(a, {})]
-    check(len(sequences) == 6, f"6 sequence actions defined ({len(sequences)})")
+    check(len(sequences) == 5, f"5 sequence actions defined ({len(sequences)})")
     check("explore_left" in driver.SUPPORTED_ACTIONS, "explore_left in SUPPORTED_ACTIONS")
     check("scout_ahead" in driver.SUPPORTED_ACTIONS, "scout_ahead in SUPPORTED_ACTIONS")
     check("watch_step" in driver.SUPPORTED_ACTIONS, "watch_step in SUPPORTED_ACTIONS")
@@ -1762,9 +1795,9 @@ if __name__ == "__main__":
     check("scout_ahead" in w, "scout_ahead has weight")
     check(w.get("scout_ahead", 0) == 3.5, f"scout_ahead weight = 3.5 ({w.get('scout_ahead')})")
 
-    # Total action count: 17 single + 9 slot + 6 cardinal + 5 combo + 6 sequence = 43
+    # Total action count: 17 single + 9 slot + 6 cardinal + 5 combo + 5 sequence = 42
     total_actions = len(MC_ACTION_MAP)
-    check(total_actions == 43, f"Total actions = 43 ({total_actions})")
+    check(total_actions == 42, f"Total actions = 42 ({total_actions})")
 
     # ── Targeting (Layer 2) ──
     print("\n11. Perception-Driven Targeting")
@@ -1807,7 +1840,7 @@ if __name__ == "__main__":
     # get_action_weights includes look_at_target when target exists
     w_target = driver3.get_action_weights()
     check("look_at_target" in w_target, "look_at_target in action weights")
-    check(w_target["look_at_target"] == 6.0, f"look_at_target weight = 6.0 ({w_target.get('look_at_target')})")
+    check(w_target["look_at_target"] == 2.0, f"look_at_target weight = 2.0 ({w_target.get('look_at_target')})")
 
     # Dead zone: peak at center → no target
     center_state = dict(test_state)
@@ -1853,7 +1886,7 @@ if __name__ == "__main__":
     dx, dy = driver4._compute_cardinal_direction("turn_down")
     check(abs(dy - 315.0) < 1.0, f"Ahead→Down dy≈315 ({dy:.1f})")
 
-    # Total action count: 26 single/slot + 6 cardinal + 5 combo + 6 sequence = 43 static
+    # Total action count: 26 single/slot + 6 cardinal + 5 combo + 5 sequence = 42 static
     # (+1 dynamic look_at_target from section 11, +1 dynamic craft_item)
     # Remove dynamic entries before counting
     had_lat = "look_at_target" in MC_ACTION_MAP
@@ -1863,7 +1896,7 @@ if __name__ == "__main__":
     if had_craft:
         del MC_ACTION_MAP["craft_item"]
     total = len(MC_ACTION_MAP)
-    check(total == 43, f"Total static actions = 43 ({total})")
+    check(total == 42, f"Total static actions = 42 ({total})")
     if had_lat:
         MC_ACTION_MAP["look_at_target"] = {"motor": MotorType.LOOK, "direction": (0, 0)}
     if had_craft:

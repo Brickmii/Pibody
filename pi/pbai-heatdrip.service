@@ -6,7 +6,7 @@ Requires=pbai-daemon.service
 [Service]
 Type=simple
 User=pbai
-ExecStart=/bin/bash -c 'while true; do curl -s -X POST http://localhost:8420/inject/heat -H "Content-Type: application/json" -d "{\"target\":\"ego\",\"amount\":5}" > /dev/null; curl -s -X POST http://localhost:8420/inject/heat -H "Content-Type: application/json" -d "{\"target\":\"identity\",\"amount\":3}" > /dev/null; sleep 3; done'
+ExecStart=/bin/bash -c 'while true; do curl -s -X POST http://localhost:8420/inject/heat -H "Content-Type: application/json" -d "{\"target\":\"ego\",\"amount\":10}" > /dev/null; curl -s -X POST http://localhost:8420/inject/heat -H "Content-Type: application/json" -d "{\"target\":\"identity\",\"amount\":6}" > /dev/null; sleep 3; done'
 Restart=on-failure
 RestartSec=5
 

@@ -290,9 +290,9 @@ class ThreeFrameEncoder(nn.Module):
         # Initialize heat
         heat = torch.zeros(B, self.resolution, self.resolution, device=device)
         
-        # 1. Center bias via fire map (higher fire = more important)
+        # 1. Mild center bias via fire map (foveal hint, not dominant)
         fire_weight = self.fire_map.float() / 6.0  # Normalize to 0-1
-        heat = heat + fire_weight.unsqueeze(0) * 0.3
+        heat = heat + fire_weight.unsqueeze(0) * 0.05
         
         # 2. Edge detection
         edges = self.edge_conv(image)  # (B, 2, H, W)
@@ -314,8 +314,9 @@ class ThreeFrameEncoder(nn.Module):
         # Clamp
         heat = torch.clamp(heat, 0, 1)
         
-        # Fire-weighted heat (multiply by fire zone importance)
-        fire_weighted = heat * (self.fire_map.float() / 3.0).unsqueeze(0)
+        # Fire-weighted heat (gentle center preference, not dominating)
+        # Range: 0.67 (edge, zone 1) to 1.5 (center, zone 6)
+        fire_weighted = heat * (self.fire_map.float() / 6.0 + 0.5).unsqueeze(0)
         
         # Stack raw and weighted
         return torch.stack([heat, fire_weighted], dim=-1)  # (B, H, W, 2)

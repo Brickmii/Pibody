@@ -783,12 +783,16 @@ class Clock:
         # This is correct - no task means no external heat flow
         
         # Heat flows within allowed nodes
+        # Psychology nodes only lose heat through existence tax and action consequences,
+        # never through passive redistribution — skip them as donors
         for node in self.manifold.nodes.values():
             if node.id not in allowed_ids:
                 continue
+            if node.id in psychology_ids:
+                continue
             if node.heat <= PSYCHOLOGY_MIN_HEAT:
                 continue
-            
+
             # Flow to connected cooler nodes (only if in cluster)
             for axis in node.frame.axes.values():
                 if axis.target_id not in allowed_ids:

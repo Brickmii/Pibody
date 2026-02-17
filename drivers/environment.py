@@ -1022,9 +1022,8 @@ class EnvironmentCore:
                 ego.spend_heat(ego_cost, minimum=PSYCHOLOGY_MIN_HEAT)
         if self.manifold and self.manifold.identity_node:
             self.manifold.identity_node.spend_heat(COST_ACTION_IDENTITY * scale, minimum=PSYCHOLOGY_MIN_HEAT)
-        if self.manifold and self.manifold.conscience_node:
-            self.manifold.conscience_node.spend_heat(COST_ACTION_CONSCIENCE * scale, minimum=PSYCHOLOGY_MIN_HEAT)
-        logger.debug(f"Action cost: I={COST_ACTION_IDENTITY*scale:.3f} E={COST_ACTION_EGO*scale:.3f} C={COST_ACTION_CONSCIENCE*scale:.3f}")
+        # Conscience doesn't pay upfront — it gets rewarded/penalized on outcome
+        logger.debug(f"Action cost: I={COST_ACTION_IDENTITY*scale:.3f} E={COST_ACTION_EGO*scale:.3f}")
         
         result = driver.act(action)
         
@@ -1158,16 +1157,28 @@ class EnvironmentCore:
         success = result.success
         heat_value = result.heat_value
         
-        # For gym environments, reward Ego with heat on positive outcomes
-        if heat_value > 0:
-            from core.node_constants import K, COST_ACTION_IDENTITY, COST_ACTION_EGO, COST_ACTION_CONSCIENCE
-            heat_gain = min(heat_value * 0.1, K * 0.1)
-            if self.manifold.identity_node:
-                self.manifold.identity_node.add_heat(heat_gain * COST_ACTION_IDENTITY)
-            if self.manifold.ego_node:
-                self.manifold.ego_node.add_heat(heat_gain * COST_ACTION_EGO)
+        # Reward/penalize psychology based on action outcomes
+        # Conscience made the plan — it gets the credit or the blame
+        from core.node_constants import K, COST_TICK, COST_ACTION_CONSCIENCE
+        if success:
+            # Conscience judged well — reward it
             if self.manifold.conscience_node:
-                self.manifold.conscience_node.add_heat(heat_gain * COST_ACTION_CONSCIENCE)
+                # Base reward for any successful action + bonus for high-value outcomes
+                reward = COST_ACTION_CONSCIENCE
+                if heat_value > 0:
+                    reward += min(heat_value * 0.1, K * 0.1)
+                self.manifold.conscience_node.add_heat_unchecked(reward)
+            # Bonus to identity/ego on high-value outcomes
+            if heat_value > 0:
+                heat_gain = min(heat_value * 0.1, K * 0.1)
+                if self.manifold.identity_node:
+                    self.manifold.identity_node.add_heat(heat_gain * 0.236)
+                if self.manifold.ego_node:
+                    self.manifold.ego_node.add_heat(heat_gain * 0.146)
+        elif not success and heat_value < 0:
+            # Conscience made a bad call (negative outcome, not just disconnection)
+            if self.manifold.conscience_node:
+                self.manifold.conscience_node.spend_heat(COST_TICK)
         
         # Route to DecisionNode (OUTPUT)
         decision_node = self._get_decision_node()

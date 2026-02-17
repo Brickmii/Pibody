@@ -24,6 +24,7 @@ USAGE:
 """
 
 import re
+import time
 import numpy as np
 from typing import List, Dict, Any, Optional
 
@@ -55,6 +56,10 @@ class HUDReader:
 
         # Lazy-init easyocr reader
         self._ocr_reader = None
+
+        # Coordinate OCR cache (easyocr is ~200-500ms, only re-run every 5s)
+        self._coord_cache: Dict[str, float] = {}
+        self._coord_cache_time: float = 0.0
 
     def _compute_regions(self):
         """Pre-compute HUD element pixel coordinates."""
@@ -138,26 +143,6 @@ class HUDReader:
         x1 = min(w, cx + r + 1)
         return image[y0:y1, x0:x1].reshape(-1, 3)
 
-    def _can_see_hud(self, image: np.ndarray) -> bool:
-        """Check if heart container outlines are visible at expected positions.
-
-        Heart containers have dark outlines (near-black) even when empty.
-        If we can't see them, the HUD isn't where we expect.
-        """
-        containers_found = 0
-        gs = self.gs
-        for cx, cy in self._heart_centers[:3]:  # Check first 3 positions
-            # Sample at outline offset (top-left of heart icon)
-            ox, oy = cx - 4 * gs, cy - 4 * gs
-            pixels = self._sample_region(image, ox, oy)
-            if len(pixels) == 0:
-                continue
-            # Dark outline: very low RGB
-            dark_mask = (pixels[:, 0] < 40) & (pixels[:, 1] < 10) & (pixels[:, 2] < 10)
-            if dark_mask.sum() / len(pixels) > 0.3:
-                containers_found += 1
-        return containers_found >= 2
-
     def _read_health(self, image: np.ndarray) -> float:
         """Count red hearts -> health (0-20 half-hearts).
 
@@ -233,6 +218,11 @@ class HUDReader:
         if not HAS_EASYOCR:
             return {}
 
+        # Return cached result if within TTL (easyocr is ~200-500ms)
+        now = time.monotonic()
+        if self._coord_cache and (now - self._coord_cache_time) < 5.0:
+            return dict(self._coord_cache)
+
         try:
             # Lazy-init the reader (heavy first-time load)
             if self._ocr_reader is None:
@@ -248,11 +238,13 @@ class HUDReader:
 
             match = re.search(r'Position:\s*([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)', text)
             if match:
-                return {
+                self._coord_cache = {
                     "x": float(match.group(1)),
                     "y": float(match.group(2)),
                     "z": float(match.group(3)),
                 }
+                self._coord_cache_time = now
+                return dict(self._coord_cache)
         except Exception:
             pass
         return {}

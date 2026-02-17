@@ -161,6 +161,8 @@ class MotorExecutor:
         self._held_keys = set()
         self._held_buttons = set()
         self._killed = False
+        self._yaw = 0.0
+        self._pitch = 0.0
         
         if self.enabled:
             logger.info(f"Motor: {'pydirectinput' if self.use_directinput else 'pyautogui'}")
@@ -238,7 +240,11 @@ class MotorExecutor:
             
             elif mt == "look":
                 d = action.get("direction", [0, 0])
-                self._moveRel(int(d[0]) if d else 0, int(d[1]) if len(d) > 1 else 0)
+                dx = int(d[0]) if d else 0
+                dy = int(d[1]) if len(d) > 1 else 0
+                self._moveRel(dx, dy)
+                self._yaw = (self._yaw + dx / 7.0) % 360
+                self._pitch = max(-90.0, min(90.0, self._pitch + dy / 7.0))
             
             elif mt == "mouse_click":
                 x, y = action.get("x"), action.get("y")
@@ -273,6 +279,14 @@ class MotorExecutor:
             logger.error(f"Motor error: {e}")
             return False
     
+    @property
+    def yaw(self) -> float:
+        return self._yaw
+
+    @property
+    def pitch(self) -> float:
+        return self._pitch
+
     def release_all(self):
         """Release all held keys/buttons."""
         for k in list(self._held_keys):
@@ -540,6 +554,8 @@ class PBAIClient:
                     "health": hud_data["health"],
                     "hunger": hud_data["hunger"],
                     "air": hud_data.get("air", -1),
+                    "yaw": self.motor.yaw,
+                    "pitch": self.motor.pitch,
                     **hud_data.get("coordinates", {}),
                 }
                 world_state["hotbar"] = {
@@ -643,6 +659,8 @@ class PBAIClient:
                 "health": hud_data["health"],
                 "hunger": hud_data["hunger"],
                 "air": hud_data.get("air", -1),
+                "yaw": self.motor.yaw,
+                "pitch": self.motor.pitch,
                 **hud_data.get("coordinates", {}),
             }
             world_state["hotbar"] = {

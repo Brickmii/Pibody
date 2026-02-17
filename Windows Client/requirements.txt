@@ -4,3 +4,5 @@ pyautogui
 websockets
 numpy
 keyboard
+easyocr
+pillow

@@ -773,11 +773,12 @@ class Manifold:
     # ═══════════════════════════════════════════════════════════════════════════
 
     def add_axis_safe(self, node: Node, direction: str, target_id: str, polarity: int = 1) -> Axis:
-        """Add axis with 44-limit enforcement. Creates child on overflow.
+        """Add axis with 44-limit enforcement. Routes to children on overflow.
 
         Strengthening an existing axis is always OK (not a new token).
-        Under limit: normal add. At limit: 45th axis triggers emergence —
-        birth child node, give it the overflow axis.
+        Under limit: normal add. At limit: route to existing child with
+        room, or birth a new one. Recurses so children that fill up
+        overflow into grandchildren — building sequence depth.
 
         Args:
             node: The node to add the axis to
@@ -798,9 +799,25 @@ class Manifold:
         if len(node.frame.axes) < MAX_ORDER_TOKENS:
             return node.add_axis(direction, target_id, polarity)
 
-        # AT LIMIT: 45th axis → emergence — birth child, give it the overflow
-        child = self._create_overflow_child(node)
-        return child.add_axis(direction, target_id, polarity)
+        # AT LIMIT: find existing child with room, or birth a new one.
+        # Recurse so full children overflow into grandchildren (deeper sequences).
+        child = self._get_or_create_overflow_child(node)
+        return self.add_axis_safe(child, direction, target_id, polarity)
+
+    def _get_or_create_overflow_child(self, parent: Node) -> Node:
+        """Find existing child with room, or birth a new one.
+
+        Children accumulate axes up to 44 before overflowing themselves.
+        This builds sequence depth: parent=1st motion, child=2nd motion,
+        grandchild=3rd motion, etc.
+        """
+        children = self.get_overflow_children(parent)
+        for child in children:
+            if len(child.frame.axes) < MAX_ORDER_TOKENS:
+                return child
+
+        # All children full (or none exist) — birth a new one
+        return self._create_overflow_child(parent)
 
     def _create_overflow_child(self, parent: Node) -> Node:
         """Birth a child node to carry overflow from a full parent.

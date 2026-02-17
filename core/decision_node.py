@@ -350,7 +350,10 @@ class ChoiceNode:
                 context_choice_key = f"ctx:{ctx_key}_{choice.selected}"
                 ctx_axis = self.node.get_axis(context_choice_key)
                 if ctx_axis is None:
-                    ctx_axis = self.node.add_axis(context_choice_key, f"{self.name}_{context_choice_key}")
+                    if self.manifold:
+                        ctx_axis = self.manifold.add_axis_safe(self.node, context_choice_key, f"{self.name}_{context_choice_key}")
+                    else:
+                        ctx_axis = self.node.add_axis(context_choice_key, f"{self.name}_{context_choice_key}")
                     ctx_axis.make_proper()
                 
                 # Record outcome
@@ -371,59 +374,82 @@ class ChoiceNode:
         # Auto-save
         self.save()
     
-    def get_best_choice(self, state_key: str, options: List[str], 
+    def _find_axis_in_tree(self, direction: str) -> Optional['Axis']:
+        """Search parent node and overflow children for an axis by direction.
+
+        Walks the overflow tree so sequence history recorded on children
+        is visible to decision-making.
+        """
+        # Check parent first
+        axis = self.node.get_axis(direction)
+        if axis:
+            return axis
+
+        # Search overflow children
+        if self.manifold:
+            for child in self.manifold.get_overflow_children(self.node):
+                axis = child.get_axis(direction)
+                if axis:
+                    return axis
+
+        return None
+
+    def get_best_choice(self, state_key: str, options: List[str],
                         context: Dict[str, Any] = None) -> Optional[str]:
         """
         Get the historically best choice for a state.
-        
+
         Considers:
         1. State-specific history (state_key + action)
         2. Context-based history (context_item + action) - enables generalization
-        
+
+        Searches parent node AND overflow children so sequence history
+        accumulated on children contributes to decision-making.
+
         Args:
             state_key: Current state
             options: Available options
             context: Current context (features like near_cliff)
-            
+
         Returns:
             Best option based on combined history, or None if no history
         """
         if context is None:
             context = {}
-        
+
         # Score each option
         option_scores = {}
-        
+
         for option in options:
             score = 0.0
             weight = 0.0
-            
+
             # 1. State-specific score (weighted 0.6)
-            state_axis = self.node.get_axis(f"{state_key}_{option}")
+            state_axis = self._find_axis_in_tree(f"{state_key}_{option}")
             if state_axis:
                 state_score = self._score_from_axis(state_axis)
                 if state_score is not None:
                     score += state_score * 0.6
                     weight += 0.6
-            
+
             # 2. Context-based scores (weighted 0.4 total, split among active contexts)
             active_contexts = [k for k, v in context.items() if v]
             if active_contexts:
                 ctx_weight_each = 0.4 / len(active_contexts)
                 for ctx_key in active_contexts:
-                    ctx_axis = self.node.get_axis(f"ctx:{ctx_key}_{option}")
+                    ctx_axis = self._find_axis_in_tree(f"ctx:{ctx_key}_{option}")
                     if ctx_axis:
                         ctx_score = self._score_from_axis(ctx_axis)
                         if ctx_score is not None:
                             score += ctx_score * ctx_weight_each
                             weight += ctx_weight_each
-            
+
             if weight > 0:
                 option_scores[option] = score / weight
-        
+
         if not option_scores:
             return None
-        
+
         # Return best scoring option
         return max(option_scores, key=option_scores.get)
     
@@ -508,9 +534,9 @@ class DecisionNode(ChoiceNode):
         # ═══════════════════════════════════════════════════════════════════════
         # Rolling buffer of recent decisions - "what just happened"
         # Each entry: (state, action, outcome, success, t_K)
-        # Size: 12 (movement constant - one per direction)
+        # Size: 48 (44 order tokens + 4 psychology nodes)
         self.short_term_memory: List[Dict[str, Any]] = []
-        self.stm_capacity: int = 12  # Movement constant
+        self.stm_capacity: int = 48
     
     def _record_to_stm(self, state: str, action: str, outcome: str, success: bool) -> None:
         """Record completed decision to short-term memory."""
@@ -541,18 +567,22 @@ class DecisionNode(ChoiceNode):
         return [m["success"] for m in self.short_term_memory[-n:]]
     
     def get_stm_context(self) -> Dict[str, Any]:
-        """Get short-term memory as context dict for decision-making."""
+        """Get short-term memory as context dict for decision-making.
+
+        Exposes the full 48-slot buffer so context axes capture
+        sequence patterns across the entire working memory window.
+        """
         if not self.short_term_memory:
             return {}
-        
-        recent = self.short_term_memory[-3:]  # Last 3
+
+        memory = self.short_term_memory
         return {
-            "stm_actions": [m["action"] for m in recent],
-            "stm_states": [m["state"] for m in recent],
-            "stm_successes": [m["success"] for m in recent],
+            "stm_actions": [m["action"] for m in memory],
+            "stm_states": [m["state"] for m in memory],
+            "stm_successes": [m["success"] for m in memory],
             "stm_streak": self._get_streak(),
-            "stm_last_action": recent[-1]["action"] if recent else None,
-            "stm_last_success": recent[-1]["success"] if recent else None,
+            "stm_last_action": memory[-1]["action"] if memory else None,
+            "stm_last_success": memory[-1]["success"] if memory else None,
         }
     
     def _get_streak(self) -> int:

@@ -920,19 +920,19 @@ class Introspector:
         # Domain post-filter — exclude foreign domain concepts
         if domain_prefix:
             _KNOWN_PREFIXES = ("ow_", "the_", "end_", "tc_", "bj_")
+            _driver_concepts = domain_ctx.get("driver_concepts", set())
             def _is_own_domain(c):
                 # Concepts starting with our prefix are always OK
                 if c.startswith(domain_prefix):
                     return True
-                # Concepts starting with a DIFFERENT known prefix are foreign
-                for pfx in _KNOWN_PREFIXES:
-                    if c.startswith(pfx) and not pfx.startswith(domain_prefix):
-                        return False
-                # State keys with digits from unknown prefix are foreign
-                if '_' in c and any(ch.isdigit() for ch in c):
-                    return False
-                # Everything else (actions, abstract concepts) is OK
-                return True
+                # Base motions are always OK
+                if c.startswith(BASE_MOTION_PREFIX):
+                    return True
+                # Driver concepts (actions + block names) are always OK
+                if _driver_concepts and c in _driver_concepts:
+                    return True
+                # Everything else is foreign
+                return False
             scored = [(c, s) for c, s in scored if _is_own_domain(c)]
             if not scored:
                 return None
@@ -1042,11 +1042,14 @@ class Introspector:
             # Domain filter (same as suggest)
             domain_prefix = domain_ctx.get("domain_prefix", "")
             if domain_prefix:
-                _KNOWN_PREFIXES = ("ow_", "the_", "end_", "tc_", "bj_")
-                scored = [(c, s) for c, s in scored
-                          if c.startswith(domain_prefix)
-                          or not any(c.startswith(p) for p in _KNOWN_PREFIXES
-                                     if not p.startswith(domain_prefix))]
+                _driver_concepts = domain_ctx.get("driver_concepts", set())
+                def _is_own(c):
+                    if c.startswith(domain_prefix) or c.startswith(BASE_MOTION_PREFIX):
+                        return True
+                    if _driver_concepts and c in _driver_concepts:
+                        return True
+                    return False
+                scored = [(c, s) for c, s in scored if _is_own(c)]
 
             scored.sort(key=lambda x: x[1], reverse=True)
             refined = [c for c, s in scored[:15]]

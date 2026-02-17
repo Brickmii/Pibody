@@ -190,6 +190,22 @@ class ActionSuggestion:
     score: float = 0.0
 
 
+@dataclass
+class DecisionChain:
+    """State carried through Map→Plot→Weigh→Simulate→Decide→Execute→Evaluate."""
+    perception: Optional['Perception'] = None
+    state_key: str = ""
+    context: Dict[str, Any] = field(default_factory=dict)
+    available_actions: List[str] = field(default_factory=list)
+    suggestions: List[str] = field(default_factory=list)
+    weights: Dict[str, float] = field(default_factory=dict)
+    simulated_skip: set = field(default_factory=set)
+    chosen_action: str = ""
+    action: Optional['Action'] = None
+    result: Optional['ActionResult'] = None
+    timings: Dict[str, float] = field(default_factory=dict)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # MOTION BUS — Shared verb activation vector
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -684,6 +700,12 @@ class EnvironmentCore:
         if manifold and self._motion_bus is None:
             self._motion_bus = MotionBus(manifold=manifold)
         logger.info("Manifold connected to EnvironmentCore")
+
+    def get_t_K(self) -> int:
+        """Get current thermal tick from manifold."""
+        if self.manifold:
+            return self.manifold.loop_number
+        return self.loop_count
 
     def activate_verbs(self, text: str) -> List[str]:
         """Activate motion verbs from chat text. Returns list of activated concepts."""
@@ -1438,7 +1460,362 @@ class EnvironmentCore:
                    f"C={changes['conscience']:+.2f}")
         
         return changes
-    
+
+    # ───────────────────────────────────────────────────────────────────────────
+    # 7-STEP DECISION CHAIN: Map → Plot → Weigh → Simulate → Decide → Execute → Evaluate
+    # ───────────────────────────────────────────────────────────────────────────
+
+    def step_map(self, chain: DecisionChain) -> None:
+        """Step 1: MAP — Perceive environment + update state.
+
+        Calls driver.perceive(), integrates perception into manifold,
+        activates motion bus from perception context.
+        Sets chain.perception, state_key, context, available_actions.
+        """
+        t0 = time()
+        chain.perception = self.perceive()
+
+        # State key and context (set by _integrate_perception via perceive)
+        chain.state_key = getattr(self, '_current_state_key', 'unknown')
+        chain.context = getattr(self, '_current_context', {})
+
+        # Available actions (state-aware if driver supports it)
+        driver = self.get_active_driver()
+        if driver and hasattr(driver, 'get_actions'):
+            chain.available_actions = driver.get_actions(
+                getattr(driver, '_current_hand_state', None))
+        else:
+            chain.available_actions = self.get_supported_actions()
+
+        chain.timings['map'] = time() - t0
+        logger.info(f"[Chain:Map] state={chain.state_key} actions={len(chain.available_actions)}"
+                    f" ({chain.timings['map']:.2f}s)")
+
+    def step_plot(self, chain: DecisionChain, introspector) -> bool:
+        """Step 2: PLOT — One introspector pass (suggest) + reactive plans + targeting.
+
+        Sets chain.suggestions. Returns True if a reactive plan was enqueued
+        (caller should skip to Execute for plan draining).
+        """
+        t0 = time()
+        if not introspector:
+            chain.timings['plot'] = time() - t0
+            return False
+
+        driver = self.get_active_driver()
+        if not driver:
+            chain.timings['plot'] = time() - t0
+            return False
+
+        # Targeting — independent of introspector
+        target_action = None
+        if hasattr(driver, '_get_target_action'):
+            target_action = driver._get_target_action()
+            if target_action and not self.has_plan():
+                self._weight_boosts["look_at_target"] = 2.0
+
+        # Noun hints + active verbs → driver
+        if self._motion_bus and self._motion_bus.target_hints:
+            if hasattr(driver, '_target_hints'):
+                driver._target_hints = self._motion_bus.target_hints
+                self._motion_bus._target_hints = []
+        if self._motion_bus and hasattr(driver, '_active_verbs'):
+            driver._active_verbs = self._motion_bus.get_active()
+
+        # Domain context
+        domain_ctx = {}
+        if hasattr(driver, 'get_domain_context'):
+            domain_ctx = driver.get_domain_context(chain.perception)
+
+        # Reactive plans — driver state triggers plans directly
+        reactive_plans = domain_ctx.get("reactive_plans", [])
+        if reactive_plans and not self.has_plan():
+            self.enqueue_plan(reactive_plans[0])
+            logger.info(f"[Chain:Plot] Reactive plan: {reactive_plans[0]}")
+            chain.timings['plot'] = time() - t0
+            return True  # Skip to Execute (drain plan)
+
+        # Inject active verbs for query builder
+        if self._motion_bus:
+            domain_ctx["active_verbs"] = self._motion_bus.get_active()
+
+        # If executing a plan, monitor but don't re-suggest
+        if self.has_plan():
+            if hasattr(introspector, 'monitor'):
+                adjusted = introspector.monitor(domain_ctx, self._action_queue)
+                if adjusted is not None:
+                    self.enqueue_plan(adjusted)
+                    logger.info(f"[Chain:Plot] Replanned: {adjusted[:3]}...")
+            chain.timings['plot'] = time() - t0
+            return True  # Still executing plan
+
+        if not introspector.should_think():
+            chain.timings['plot'] = time() - t0
+            return False
+
+        # ONE introspector pass — suggest() not deliberate()
+        chain.suggestions = introspector.suggest(domain_ctx) or []
+
+        # Feed bm_* suggestions back onto the bus
+        if self._motion_bus and chain.suggestions:
+            for s in chain.suggestions:
+                if s.startswith("bm_"):
+                    self._motion_bus.activate(s, 0.4, "introspector")
+
+        # Build deliberative plan if targeting + suggestions
+        if target_action and len(chain.suggestions) >= 1:
+            plan = []
+            for s in chain.suggestions[:4]:
+                plan.append(target_action)
+                plan.append(s)
+            self.enqueue_plan(plan)
+            logger.info(f"[Chain:Plot] Plan ({len(plan)} steps): {plan}")
+
+        chain.timings['plot'] = time() - t0
+        logger.info(f"[Chain:Plot] {len(chain.suggestions)} suggestions"
+                    f" ({chain.timings['plot']:.2f}s)")
+        return False
+
+    def step_weigh(self, chain: DecisionChain, introspector) -> None:
+        """Step 3: WEIGH — Merge suggestion boosts + motion bus + driver weights.
+
+        Converts introspector suggestions to weight boosts, merges motion bus
+        verb boosts, merges driver action weights. Sets chain.weights.
+        """
+        t0 = time()
+        driver = self.get_active_driver()
+        available = chain.available_actions
+
+        # Start from driver base weights
+        if driver and hasattr(driver, 'get_action_weights'):
+            chain.weights = driver.get_action_weights(available)
+        else:
+            chain.weights = {a: 1.0 for a in available}
+
+        # Introspector suggestion boosts
+        if chain.suggestions and introspector:
+            verb_map = driver.get_verb_action_map() if driver and hasattr(driver, 'get_verb_action_map') else {}
+            boosts = introspector.get_weight_boosts(chain.suggestions, available, verb_map)
+            for action, boost in boosts.items():
+                chain.weights[action] = chain.weights.get(action, 1.0) * boost
+
+        # Stored weight boosts (from targeting, prior suggestions)
+        if self._weight_boosts:
+            for action, boost in self._weight_boosts.items():
+                if action in chain.weights:
+                    chain.weights[action] = chain.weights.get(action, 1.0) * boost
+            self._weight_boosts = {}  # Clear after use
+
+        # Motion bus verb boosts
+        if self._motion_bus:
+            driver_vmap = driver.get_verb_action_map() if driver and hasattr(driver, 'get_verb_action_map') else {}
+            bus_boosts = self._motion_bus.get_weight_boosts(driver_vmap)
+            for action, boost in bus_boosts.items():
+                if action in chain.weights:
+                    chain.weights[action] = max(chain.weights[action], boost)
+            self._motion_bus.tick()  # Decay after read
+
+        chain.timings['weigh'] = time() - t0
+        # Log top 3 weighted actions
+        top3 = sorted(chain.weights.items(), key=lambda x: x[1], reverse=True)[:3]
+        logger.info(f"[Chain:Weigh] top={top3} ({chain.timings['weigh']:.2f}s)")
+
+    def step_simulate(self, chain: DecisionChain) -> None:
+        """Step 4: SIMULATE — Check STM for repeated failures, skip known-bad actions.
+
+        Looks at DecisionNode's short-term memory for the top weighted actions.
+        If an action was tried from the same state_key in the last 5 STM entries
+        and failed every time, zero its weight.
+        """
+        t0 = time()
+        decision_node = self._get_decision_node()
+        if not decision_node or not decision_node.short_term_memory:
+            chain.timings['simulate'] = time() - t0
+            return
+
+        stm = decision_node.short_term_memory
+        # Only check recent entries
+        recent = stm[-5:]
+
+        # Find actions that have been tried from this state and always failed
+        for action in list(chain.weights.keys()):
+            attempts = [m for m in recent
+                        if m["state"] == chain.state_key and m["action"] == action]
+            if len(attempts) >= 2 and all(not m["success"] for m in attempts):
+                chain.simulated_skip.add(action)
+                chain.weights[action] = 0.0
+
+        chain.timings['simulate'] = time() - t0
+        if chain.simulated_skip:
+            logger.info(f"[Chain:Simulate] Skipping {chain.simulated_skip}"
+                        f" ({chain.timings['simulate']:.2f}s)")
+
+    def step_decide(self, chain: DecisionChain) -> None:
+        """Step 5: DECIDE — Explore/exploit choice using weighted actions.
+
+        Uses DecisionNode for recording. Drains action queue first if a plan
+        is active. Sets chain.chosen_action, chain.action.
+        """
+        import random
+        t0 = time()
+
+        available = chain.available_actions
+        if not available:
+            chain.chosen_action = "wait"
+            chain.action = Action(action_type="wait")
+            chain.timings['decide'] = time() - t0
+            return
+
+        # Drain action queue first (plans from Plot)
+        if self._action_queue:
+            next_action = self._action_queue.pop(0)
+            valid_set = set(available)
+            driver = self.get_active_driver()
+            if driver and hasattr(driver, '_current_target') and driver._current_target:
+                valid_set.add("look_at_target")
+            if next_action in valid_set:
+                chain.chosen_action = next_action
+                chain.action = Action(action_type=next_action, target=next_action)
+                chain.timings['decide'] = time() - t0
+                logger.info(f"[Chain:Decide] Plan: {next_action}"
+                            f" ({len(self._action_queue)} left)"
+                            f" ({chain.timings['decide']:.2f}s)")
+                return
+            else:
+                logger.warning(f"[Chain:Decide] Queued {next_action} invalid — clearing plan")
+                self._action_queue.clear()
+
+        # Explore/exploit
+        exploration_rate = self.manifold.get_exploration_rate() if self.manifold else 0.3
+        decision_node = self._get_decision_node()
+
+        # Filter out zero-weight actions (simulated_skip)
+        weights = chain.weights
+        live_actions = [a for a in available if weights.get(a, 1.0) > 0]
+        if not live_actions:
+            live_actions = available  # Fallback: don't deadlock
+
+        if random.random() < exploration_rate:
+            # Explore: weighted random
+            w = [weights.get(a, 1.0) for a in live_actions]
+            if sum(w) > 0:
+                chosen = random.choices(live_actions, weights=w, k=1)[0]
+            else:
+                chosen = random.choice(live_actions)
+            logger.info(f"[Chain:Decide] Explore: {chosen} (rate={exploration_rate:.2f})")
+        else:
+            # Exploit: best weighted action (with tiebreaker)
+            driver = self.get_active_driver()
+            if hasattr(driver, 'get_action_scores'):
+                scores = driver.get_action_scores()
+                if scores and any(s != 0.5 for s in scores.values()):
+                    chosen = max(scores.keys(),
+                                 key=lambda a: scores[a] + random.random() * 0.01)
+                    logger.info(f"[Chain:Decide] Exploit (learned): {chosen}")
+                else:
+                    chosen = decision_node.decide(
+                        state_key=chain.state_key,
+                        options=live_actions,
+                        context=chain.context)
+                    logger.info(f"[Chain:Decide] Exploit (DN): {chosen}")
+            else:
+                # Weighted sampling
+                w = [weights.get(a, 1.0) for a in live_actions]
+                if sum(w) > 0:
+                    chosen = random.choices(live_actions, weights=w, k=1)[0]
+                else:
+                    chosen = random.choice(live_actions)
+                logger.info(f"[Chain:Decide] Exploit (weighted): {chosen}")
+
+        # Record decision for learning
+        decision_node.begin_decision(
+            chain.state_key, available,
+            self.manifold.get_confidence() if self.manifold else 1.0,
+            chain.context)
+        decision_node.commit_decision(chosen)
+
+        chain.chosen_action = chosen
+        chain.action = Action(action_type=chosen, target=chosen)
+        chain.timings['decide'] = time() - t0
+
+    def step_execute(self, chain: DecisionChain) -> None:
+        """Step 6: EXECUTE — Send action to driver via heat economy.
+
+        Calls self.act() which handles Ego heat spending and driver.act().
+        Sets chain.result.
+        """
+        t0 = time()
+        chain.result = self.act(chain.action)
+        chain.timings['execute'] = time() - t0
+        logger.info(f"[Chain:Execute] {chain.chosen_action}"
+                    f" → {'OK' if chain.result.success else 'FAIL'}"
+                    f" ({chain.timings['execute']:.2f}s)")
+
+    def step_evaluate(self, chain: DecisionChain) -> None:
+        """Step 7: EVALUATE (Error/Goal) — Integrate result, conscience, STM.
+
+        Routes result to DecisionNode for learning. Records outcome.
+        """
+        t0 = time()
+        # _integrate_action_result routes to DecisionNode.complete_decision()
+        if self.manifold and chain.action and chain.result:
+            self._integrate_action_result(chain.action, chain.result)
+
+        self.loop_count += 1
+        chain.timings['evaluate'] = time() - t0
+
+        total = sum(chain.timings.values())
+        logger.info(f"[Chain:Evaluate] loop={self.loop_count}"
+                    f" total={total:.2f}s"
+                    f" (map={chain.timings.get('map', 0):.1f}"
+                    f" plot={chain.timings.get('plot', 0):.1f}"
+                    f" weigh={chain.timings.get('weigh', 0):.1f}"
+                    f" sim={chain.timings.get('simulate', 0):.1f}"
+                    f" dec={chain.timings.get('decide', 0):.1f}"
+                    f" exe={chain.timings.get('execute', 0):.1f}"
+                    f" eval={chain.timings.get('evaluate', 0):.1f})")
+
+    def run_decision_chain(self, introspector=None) -> DecisionChain:
+        """Run the full 7-step decision chain: Map→Plot→Weigh→Simulate→Decide→Execute→Evaluate.
+
+        This is the single entry point the daemon calls instead of the old
+        perceive→introspect→decide→act pipeline.
+
+        Args:
+            introspector: The Introspector instance (optional, for Plot/Weigh steps)
+
+        Returns:
+            Completed DecisionChain with result and timings
+        """
+        chain = DecisionChain()
+
+        # 1. MAP — perceive + update state
+        self.step_map(chain)
+
+        # 2. PLOT — one introspector pass + reactive plans
+        has_plan = self.step_plot(chain, introspector)
+
+        # 3. WEIGH — merge all weight sources
+        self.step_weigh(chain, introspector)
+
+        # 4. SIMULATE — filter repeated failures
+        self.step_simulate(chain)
+
+        # 5. DECIDE — explore/exploit (or drain plan)
+        self.step_decide(chain)
+
+        # 6. EXECUTE — send action to driver
+        self.step_execute(chain)
+
+        # 7. EVALUATE — integrate result, conscience, STM
+        self.step_evaluate(chain)
+
+        return chain
+
+    # ───────────────────────────────────────────────────────────────────────────
+    # LEGACY STEP (kept for GymDriver compatibility)
+    # ───────────────────────────────────────────────────────────────────────────
+
     def step(self, perception: Perception = None) -> Tuple[Action, ActionResult, Dict[str, float]]:
         """
         Complete one step: perceive → tick → decide → act → feedback.

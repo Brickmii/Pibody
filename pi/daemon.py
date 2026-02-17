@@ -549,57 +549,41 @@ class PBAIDaemon:
         return self.clock._calculate_interval()
     
     def _environment_cycle(self):
-        """
-        One environment engagement cycle.
-        
-        - Choose environment
-        - Engage (perceive/act)
-        - Record outcome
+        """One environment engagement cycle via 7-step decision chain.
+
+        Map → Plot → Weigh → Simulate → Decide → Execute → Evaluate
         """
         # Choose
         chosen = self.chooser.choose()
         self.stats.total_choices += 1
-        
+
         if chosen == 'rest':
-            # Voluntary rest
             self.state = DaemonState.RESTING
             self.stats.voluntary_rests += 1
             self.current_environment = None
             return
-        
+
         self.state = DaemonState.RUNNING
         self.current_environment = chosen
-        
+
         # Activate environment
         if chosen in self.env_core.drivers:
             self.env_core.activate_driver(chosen)
         else:
             logger.warning(f"Environment {chosen} not registered")
             return
-        
-        # Engagement: perceive → introspect → decide → act
-        heat_before = self.manifold.total_heat()
 
         try:
-            perception = self.env_core.perceive()
+            chain = self.env_core.run_decision_chain(self.introspector)
 
-            # Introspection through environment (handles targeting, planning, domain scoping)
-            suggestions = self.env_core.introspect(self.introspector, perception)
-
-            action = self.env_core.decide(perception)
-            result = self.env_core.act(action)
-            
-            heat_after = self.manifold.total_heat()
-            heat_delta = heat_after - heat_before
-            
-            # Record
+            # Record outcome for chooser
             self.chooser.record_outcome(
                 chosen,
-                heat_earned=result.heat_value,
+                heat_earned=chain.result.heat_value if chain.result else 0,
                 heat_spent=COST_ACTION,
-                success=result.success
+                success=chain.result.success if chain.result else False
             )
-            
+
         except Exception as e:
             logger.error(f"Environment cycle error: {e}")
             self.chooser.record_outcome(chosen, 0, COST_ACTION, False)

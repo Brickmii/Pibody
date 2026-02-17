@@ -72,6 +72,118 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# BLOCK COLOR COMPENDIUM: Reference RGB at full brightness
+# Chromaticity matching (brightness-independent) lets us identify blocks at any
+# time of day or lighting condition.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+MC_BLOCK_COLORS = {
+    # ── Wood ──
+    "planks":           (162, 130, 78),   # oak variant (default)
+    "log":              (109, 85, 50),    # oak bark
+    "wood":             (109, 85, 50),    # stripped log exterior
+    "bookshelf":        (100, 75, 68),   # wood + colored book spines (red/blue tint)
+    "crafting_table":   (135, 101, 60),
+    "chest":            (155, 115, 48),   # more orange than planks
+    "mangrove_planks":  (117, 54, 48),
+    "mangrove_log":     (84, 56, 39),
+    # ── Earth ──
+    "dirt":             (134, 96, 67),
+    "grass":            (124, 189, 74),   # top face
+    "sand":             (219, 207, 163),
+    "gravel":           (131, 127, 126),
+    "clay":             (159, 164, 177),
+    "mud":              (60, 57, 61),
+    "podzol":           (91, 63, 36),
+    "mycelium":         (111, 99, 101),
+    "farmland":         (100, 67, 41),
+    "sandstone":        (216, 203, 156),
+    # ── Stone ──
+    "stone":            (125, 125, 125),
+    "cobblestone":      (127, 127, 127),
+    "granite":          (149, 103, 85),
+    "diorite":          (188, 188, 188),
+    "andesite":         (136, 136, 136),
+    "deepslate":        (80, 80, 82),
+    "mossy_cobblestone": (110, 127, 95),
+    "brick_block":      (150, 97, 83),
+    # ── Ores ──
+    "coal_ore":         (100, 100, 100),
+    "iron_ore":         (136, 129, 122),
+    "gold_ore":         (135, 130, 105),  # stone base + gold flecks
+    "diamond_ore":      (93, 219, 213),
+    "redstone_ore":     (140, 52, 43),
+    "lapis_ore":        (58, 88, 165),
+    "emerald_ore":      (62, 179, 78),
+    "copper_ore":       (115, 115, 100),
+    # ── Nature ──
+    "leaves":           (58, 93, 26),
+    "water":            (44, 65, 198),
+    "flowing_water":    (44, 65, 198),
+    "lava":             (207, 92, 15),
+    "flowing_lava":     (207, 92, 15),
+    "snow":             (249, 254, 254),
+    "ice":              (145, 183, 253),
+    "tallgrass":        (88, 140, 48),
+    "seagrass":         (32, 83, 28),
+    # ── Functional ──
+    "furnace":          (117, 117, 117),
+    "glass":            (200, 220, 230),
+    "torch":            (255, 197, 61),
+    "glowstone":        (171, 131, 68),
+    # ── Nether ──
+    "netherrack":       (97, 38, 38),
+    "nether_brick":     (44, 22, 26),
+    "soul_sand":        (75, 58, 50),    # darker, more muted than planks
+    "basalt":           (72, 72, 78),
+    # ── End ──
+    "end_stone":        (219, 222, 158),
+    "obsidian":         (15, 10, 24),
+    # ── Sky / ambient (not blocks, but useful for scene classification) ──
+    "sky_day":          (135, 206, 235),
+    "sky_night":        (10, 10, 30),
+    "void":             (0, 0, 0),
+}
+
+
+def match_color_to_block(r: int, g: int, b: int,
+                         threshold: float = 0.12) -> tuple:
+    """
+    Match an observed RGB color to a known block using chromaticity.
+
+    Chromaticity = (r/total, g/total, b/total) removes brightness,
+    so night/day lighting doesn't matter — only the color ratio.
+
+    Returns:
+        (block_name, confidence) or (None, 0.0)
+    """
+    r, g, b = int(r), int(g), int(b)
+    total = r + g + b
+    if total < 15:  # Too dark to identify
+        return (None, 0.0)
+
+    cr, cg, cb = r / total, g / total, b / total
+
+    best_match = None
+    best_dist = float('inf')
+
+    for block_name, (br, bg, bb) in MC_BLOCK_COLORS.items():
+        bt = br + bg + bb
+        if bt < 1:
+            continue
+        bcr, bcg, bcb = br / bt, bg / bt, bb / bt
+        dist = math.sqrt((cr - bcr)**2 + (cg - bcg)**2 + (cb - bcb)**2)
+        if dist < best_dist:
+            best_dist = dist
+            best_match = block_name
+
+    if best_dist < threshold:
+        confidence = 1.0 - (best_dist / threshold)
+        return (best_match, confidence)
+    return (None, 0.0)
+
+
 # Bedrock entity data lacks type/category — hardcode hostile mob names
 _HOSTILE_MOBS = frozenset({
     "blaze", "cave_spider", "creeper", "drowned", "elder_guardian",
@@ -696,6 +808,19 @@ class MinecraftDriver(Driver):
         return weights
 
     # ═══════════════════════════════════════════════════════════════════════════
+    # VISUAL IDENTIFICATION (color compendium → game knowledge)
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def identify_color(self, r: int, g: int, b: int) -> tuple:
+        """
+        Identify a block from its observed color.
+
+        Returns:
+            (block_name, confidence) — block_name is None if unrecognized.
+        """
+        return match_color_to_block(r, g, b)
+
+    # ═══════════════════════════════════════════════════════════════════════════
     # GAME KNOWLEDGE (minecraft-data)
     # ═══════════════════════════════════════════════════════════════════════════
 
@@ -1103,11 +1228,11 @@ class MinecraftDriver(Driver):
                     continue
                 if node.heat == float('inf') or node.existence != 'actual':
                     continue
-                # Include: domain state keys OR known MC actions OR abstract concepts
+                # Include: domain state keys OR known MC actions OR vision block names
                 is_domain_state = node.concept.startswith(dim + '_')
                 is_action = node.concept in MC_ACTION_MAP
-                is_general = '_' not in node.concept  # abstract concepts (no underscores)
-                if is_domain_state or is_action or is_general:
+                is_block = node.concept in MC_BLOCK_COLORS
+                if is_domain_state or is_action or is_block:
                     domain_nodes.append(node)
             domain_nodes.sort(key=lambda n: n.heat, reverse=True)
 
@@ -1125,6 +1250,8 @@ class MinecraftDriver(Driver):
             "target_action": target_action,
             "reactive_plans": reactive_plans,
             "action_durations": {a: MC_ACTION_MAP[a].get("duration", 0.2) for a in MC_ACTION_MAP if "duration" in MC_ACTION_MAP[a]},
+            "driver_actions": set(MC_ACTION_MAP.keys()),
+            "driver_concepts": set(MC_ACTION_MAP.keys()) | set(MC_BLOCK_COLORS.keys()),
         }
 
     def _build_craft_sequence(self, item_name: str) -> list:

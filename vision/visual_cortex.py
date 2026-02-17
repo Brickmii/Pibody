@@ -234,10 +234,97 @@ class VisualCortex:
         
         return step
     
+    def process_world_state(self, world_state: dict) -> Optional[VisionStep]:
+        """Process a world_state dict from the PC vision transformer.
+
+        Reconstructs color/position/heat fields from sparse peaks
+        and feeds them through the VisionStepEngine pipeline for
+        persistence tracking, existence gating, and manifold integration.
+
+        Args:
+            world_state: Dict with peaks, center, heat_stats, resolution
+
+        Returns:
+            VisionStep with tracked features, or None on error
+        """
+        if not world_state or not world_state.get('peaks'):
+            return None
+
+        res = self.resolution  # 64
+        ws_res = world_state.get('resolution', 512)
+        scale = res / ws_res
+
+        # Background from center and mean heat
+        center = world_state.get('center', {})
+        bg_color = center.get('color', [128, 128, 128])
+        bg_heat = world_state.get('heat_stats', {}).get('mean', 0.0)
+
+        # Initialize fields
+        color_field = np.full((res, res, 3), bg_color, dtype=np.uint8)
+        heat_field = np.full((res, res), bg_heat, dtype=np.float32)
+
+        # Position field via meshgrid
+        xs = np.linspace(-1.0, 1.0, res, dtype=np.float32)
+        ys = np.linspace(-1.0, 1.0, res, dtype=np.float32)
+        gx, gy = np.meshgrid(xs, ys)
+        position_field = np.stack([gx, gy], axis=-1)
+
+        # Place peaks as small splats
+        for peak in world_state.get('peaks', []):
+            px = int(peak['x'] * scale)
+            py = int(peak['y'] * scale)
+            px = min(max(0, px), res - 1)
+            py = min(max(0, py), res - 1)
+
+            color = peak.get('color', bg_color)
+            heat = peak.get('heat', 0.0)
+
+            # Splat a small region around the peak
+            r = 2
+            for dy in range(-r, r + 1):
+                for dx in range(-r, r + 1):
+                    nx, ny = px + dx, py + dy
+                    if 0 <= nx < res and 0 <= ny < res:
+                        falloff = 1.0 / (1 + dx * dx + dy * dy)
+                        heat_field[ny, nx] = max(heat_field[ny, nx], heat * falloff)
+                        if dx == 0 and dy == 0:
+                            color_field[ny, nx] = color
+
+        # Feed through engine
+        step = self.engine.process_frame(color_field, position_field, heat_field)
+        step.t_K = self.get_t_K()
+
+        self.last_step = step
+        self.frame_count += 1
+
+        # Structure detection
+        structure_now = self._check_structure_detection()
+        if structure_now and not self._structure_detected:
+            self._pattern_seek_mode = True
+            if self.on_structure_detected:
+                self.on_structure_detected(step)
+        elif not structure_now and self._structure_detected:
+            self._pattern_seek_mode = False
+        self._structure_detected = structure_now
+
+        # Callbacks
+        if self.on_motion_detected and step.get_motion_detected():
+            self.on_motion_detected(step)
+
+        if self.on_new_actual and step.new_actuals:
+            for feature in step.new_actuals:
+                self.on_new_actual(feature)
+
+        # Manifold integration
+        if self.manifold and step.new_actuals:
+            self._integrate_to_manifold(step)
+
+        return step
+
     def process_screen(self, tick_clock: bool = True) -> Optional[VisionStep]:
         """
         Capture and process the screen.
-        
+
         Returns:
             VisionStep or None if capture failed
         """
@@ -247,14 +334,68 @@ class VisualCortex:
         return self.process_image(image, tick_clock=tick_clock)
     
     def _integrate_to_manifold(self, step: VisionStep):
-        """Integrate vision step into manifold."""
+        """Integrate vision step into manifold using driver's compendium.
+
+        For each newly-actual visual feature:
+        1. Ask the active driver to identify the color → block name
+        2. Create/update a manifold node named after the block (not grid coords)
+        3. Connect the identified node to the driver node
+        """
+        import logging
+        _logger = logging.getLogger(__name__)
+        if not self.manifold or not step.new_actuals:
+            return
+
+        # Get active driver for color identification
+        driver = None
+        if self.environment:
+            driver = self.environment.get_active_driver()
+
+        affected = 0
         try:
-            from vision.vision_step import integrate_vision_step
-            affected = integrate_vision_step(self.manifold, step)
+            from core.nodes import Node
+
+            for feature in step.new_actuals:
+                node_data = feature.to_node_data()
+                concept = node_data["concept"]  # default: visual_X_Y
+
+                # Ask driver's compendium to identify the color
+                if driver and hasattr(driver, 'identify_color'):
+                    r, g, b = feature.color
+                    block_name, confidence = driver.identify_color(r, g, b)
+                    if block_name and confidence > 0.3:
+                        concept = block_name
+
+                # Create or reinforce the node
+                existing = self.manifold.get_node_by_concept(concept)
+                if existing:
+                    existing.add_heat(node_data["heat"])
+                    affected += 1
+                else:
+                    node = Node(
+                        concept=concept,
+                        theta=node_data["theta"],
+                        phi=node_data["phi"],
+                        radius=node_data["radius"],
+                        heat=node_data["heat"],
+                        righteousness=node_data["righteousness"],
+                        existence=node_data["existence"]
+                    )
+                    self.manifold.add_node(node)
+                    affected += 1
+
+                    # Connect to driver node so the block is in the action graph
+                    if driver and hasattr(driver, 'driver_node') and driver.driver_node:
+                        dn = driver.driver_node
+                        if dn.node:
+                            self.manifold.add_axis_safe(
+                                dn.node, concept[:20], node.id
+                            )
+
             if affected > 0:
-                print(f"  → Integrated {affected} nodes to manifold @ t_K={step.t_K}")
+                _logger.info(f"Vision integrated {affected} nodes to manifold @ t_K={step.t_K}")
         except Exception as e:
-            print(f"  → Manifold integration error: {e}")
+            _logger.debug(f"Manifold integration error: {e}")
     
     def spend_kappa(self, amount: float) -> bool:
         """

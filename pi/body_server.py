@@ -425,6 +425,16 @@ class BodyServer:
                     self._world_buffer.append(data)
                 self.last_world_state = data
 
+                # Feed to visual cortex for persistence tracking
+                # and manifold integration (throttled to every 3rd frame)
+                if self.daemon and self.daemon.visual_cortex:
+                    self._vision_frame_count = getattr(self, '_vision_frame_count', 0) + 1
+                    if self._vision_frame_count % 3 == 0:
+                        try:
+                            self.daemon.visual_cortex.process_world_state(data)
+                        except Exception as e:
+                            logger.debug(f"Visual cortex process error: {e}")
+
             # If there's a pending request, resolve it too
             if body.pending_vision and not body.pending_vision.done():
                 if msg.get("error"):

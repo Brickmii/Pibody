@@ -97,7 +97,41 @@ Add to `world_state["player"]`:
 "air": hud_data.get("air", 300)  # 300 = full, -1 = not underwater
 ```
 
-### 5. Log HUD values for verification
+### 5. Parse and send player position (x, y, z, yaw, pitch)
+
+The on-screen position data (F3 debug or overlay) needs to be read and included in the `player` dict. The Pi driver already expects it at `minecraft_driver.py:956-966`:
+```python
+px = player.get("x", 0.0)
+py = player.get("y", MC_Y_SEA)
+pz = player.get("z", 0.0)
+yaw = player.get("yaw", 0.0)
+pitch = player.get("pitch", 0.0)
+```
+
+Currently the client never sends these — they all fall back to defaults (x=0, y=62, z=0, yaw=0). The driver uses position for:
+- Hypersphere mapping (`mc_altitude_to_theta`, `mc_yaw_to_phi`)
+- Drowning detection (y < sea level)
+- State key biome/dimension encoding
+
+Options:
+- **OCR the debug overlay** — if coordinates are displayed on screen, use OCR (pytesseract or easyocr) to read the x/y/z text
+- **Read from game memory/API** — if a mod or companion app exposes coordinates
+- **Parse from F3 screen** — if F3 is toggled on, the coordinates are in a known screen position
+
+Add to `world_state["player"]` alongside health/hunger:
+```python
+world_state["player"] = {
+    "health": hud_data["health"],
+    "hunger": hud_data["hunger"],
+    "x": position_x,
+    "y": position_y,
+    "z": position_z,
+    "yaw": yaw,
+    "pitch": pitch,
+}
+```
+
+### 6. Log HUD values for verification
 
 In `pbai_client.py`, change the HUD debug log (currently `logger.debug`) to `logger.info` temporarily so you can see what values are being read:
 

@@ -442,7 +442,7 @@ MC_ACTION_MAP = {
     ]},
     # Mining: universal — mines whatever you're currently facing
     "mine_block": {"sequence": [
-        {"motor_type": "mouse_hold", "button": "left", "duration": 3.0},
+        {"motor_type": "mouse_hold", "button": "left", "duration": 5.0},
     ]},
     # Cardinal turning — yaw-aware, delta computed at act() time
     "turn_north":  {"motor": MotorType.LOOK, "cardinal": True},

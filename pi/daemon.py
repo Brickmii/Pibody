@@ -180,8 +180,10 @@ class EnvironmentChooser:
         total_heat = ego_heat + identity_heat
         
         # If too exhausted, must rest
-        if total_heat < COST_ACTION:
-            logger.info("Exhausted - choosing rest")
+        # Let act() handle the actual cost check — chooser just gates on minimum
+        from core.node_constants import PSYCHOLOGY_MIN_HEAT
+        if ego_heat <= PSYCHOLOGY_MIN_HEAT:
+            logger.debug(f"Ego resting (heat={ego_heat:.3f})")
             return 'rest'
         
         # Calculate exploration rate (Identity / Total)

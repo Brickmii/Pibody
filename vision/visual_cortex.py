@@ -318,6 +318,13 @@ class VisualCortex:
         # Manifold integration
         if self.manifold and step.new_actuals:
             self._integrate_to_manifold(step)
+        elif self.manifold and self.frame_count % 30 == 0:
+            import logging
+            logging.getLogger(__name__).debug(
+                f"Vision frame {self.frame_count}: {len(step.tracked)} tracked, "
+                f"{len(step.new_actuals)} new_actuals, "
+                f"{len(step.features)} features"
+            )
 
         return step
 
@@ -352,6 +359,7 @@ class VisualCortex:
             driver = self.environment.get_active_driver()
 
         affected = 0
+        identified = 0
         try:
             from core.nodes import Node
 
@@ -365,6 +373,11 @@ class VisualCortex:
                     block_name, confidence = driver.identify_color(r, g, b)
                     if block_name and confidence > 0.3:
                         concept = block_name
+                        identified += 1
+                    else:
+                        _logger.debug(f"Vision: no match for rgb({r},{g},{b}) → {block_name}({confidence:.2f})")
+                elif not driver:
+                    _logger.debug(f"Vision: no active driver for color ID")
 
                 # Create or reinforce the node
                 existing = self.manifold.get_node_by_concept(concept)
@@ -393,7 +406,7 @@ class VisualCortex:
                             )
 
             if affected > 0:
-                _logger.info(f"Vision integrated {affected} nodes to manifold @ t_K={step.t_K}")
+                _logger.info(f"Vision integrated {affected} nodes ({identified} identified) to manifold @ t_K={step.t_K}")
         except Exception as e:
             _logger.debug(f"Manifold integration error: {e}")
     

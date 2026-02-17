@@ -1082,7 +1082,11 @@ MOTION_COSTS = {
 COST_TRAVERSE = COST_MOVEMENT         # Moving along one axis
 COST_CREATE_NODE = COST_EXISTENCE     # Creating a new node (δ localization)
 COST_EVALUATE = COST_RIGHTEOUSNESS    # Evaluating frame (dim check)
-COST_ACTION = COST_HEAT               # Output action to environment (Σ)
+COST_ACTION = 1.0                     # Total action cost (distributed across psychology)
+COST_ACTION_IDENTITY = 0.618          # φ — identifier cost (knowing what to do)
+COST_ACTION_EGO = 0.200               # Identity risk (doing it)
+COST_ACTION_CONSCIENCE = 0.182        # Scaling cost (validating it)
+PERCEPTION_SUSTAIN = 1.0              # Heat gained per perception (balances COST_ACTION)
 COST_TICK = COST_MOVEMENT             # Base cost per tick
 COST_COLLAPSE = COST_BETA             # Wave function collapse (choice)
 

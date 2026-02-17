@@ -990,15 +990,18 @@ class EnvironmentCore:
                 outcome=f"Action '{action.action_type}' not supported by {driver.DRIVER_ID}"
             )
         
-        # HEAT ECONOMY: Ego must pay to act
-        # For gym environments, use reduced cost (they step much faster than normal)
+        # HEAT ECONOMY: Action cost distributed across psychology
+        #   Identity: 0.618 (identifier cost — knowing what to do)
+        #   Ego:      0.200 (identity risk — doing it)
+        #   Conscience: 0.182 (scaling cost — validating it)
+        from core.node_constants import COST_ACTION_IDENTITY, COST_ACTION_EGO, COST_ACTION_CONSCIENCE
         is_gym = hasattr(driver, 'gym_env')
-        action_cost = COST_ACTION * 0.01 if is_gym else COST_ACTION  # 1% cost for gym
-        
+        scale = 0.01 if is_gym else 1.0
+
         if self.manifold and self.manifold.ego_node:
             ego = self.manifold.ego_node
-            if ego.heat <= PSYCHOLOGY_MIN_HEAT + action_cost:
-                # Instead of failing, just log and continue (gym envs need to run)
+            ego_cost = COST_ACTION_EGO * scale
+            if ego.heat <= PSYCHOLOGY_MIN_HEAT + ego_cost:
                 if is_gym:
                     logger.debug(f"Ego low heat ({ego.heat:.3f}), continuing anyway for gym")
                 else:
@@ -1008,9 +1011,12 @@ class EnvironmentCore:
                         outcome="Insufficient heat for action (Ego exhausted)"
                     )
             else:
-                # Spend heat to output to environment
-                spent = ego.spend_heat(action_cost, minimum=PSYCHOLOGY_MIN_HEAT)
-                logger.debug(f"Ego spent {spent:.3f} heat on action")
+                ego.spend_heat(ego_cost, minimum=PSYCHOLOGY_MIN_HEAT)
+        if self.manifold and self.manifold.identity_node:
+            self.manifold.identity_node.spend_heat(COST_ACTION_IDENTITY * scale, minimum=PSYCHOLOGY_MIN_HEAT)
+        if self.manifold and self.manifold.conscience_node:
+            self.manifold.conscience_node.spend_heat(COST_ACTION_CONSCIENCE * scale, minimum=PSYCHOLOGY_MIN_HEAT)
+        logger.debug(f"Action cost: I={COST_ACTION_IDENTITY*scale:.3f} E={COST_ACTION_EGO*scale:.3f} C={COST_ACTION_CONSCIENCE*scale:.3f}")
         
         result = driver.act(action)
         
@@ -1104,13 +1110,20 @@ class EnvironmentCore:
                 "properties": perception.properties
             })
         
-        # Ego sustain: perceiving the world maintains minimal ability to act
+        # Perception sustain: perceiving the world feeds all three psychology nodes
+        # Total input = 1.0 per perception, matching COST_ACTION = 1.0 output
+        # Ego gets a confidence-weighted boost: more confidence → more ability to act
+        from core.node_constants import PERCEPTION_SUSTAIN
+        sustain = PERCEPTION_SUSTAIN if perception.heat_value > 0 else PERCEPTION_SUSTAIN * 0.5
+        confidence = self.manifold.get_confidence() if self.manifold else 0.0
+        ego_boost = sustain * 0.200 + (confidence * sustain)  # Base + confidence-weighted
         if self.manifold.ego_node:
-            from core.node_constants import K as _K, PSYCHOLOGY_MIN_HEAT
-            # Small sustain: enough to rebuild capacity between actions, not enough to sustain indefinitely
-            ego_sustain = PSYCHOLOGY_MIN_HEAT if perception.heat_value > 0 else PSYCHOLOGY_MIN_HEAT * 0.5
-            self.manifold.ego_node.add_heat(ego_sustain)
-            logger.debug(f"Ego perception sustain: +{ego_sustain:.3f}")
+            self.manifold.ego_node.add_heat_unchecked(ego_boost)
+        if self.manifold.identity_node:
+            self.manifold.identity_node.add_heat_unchecked(sustain * 0.618)
+        if self.manifold.conscience_node:
+            self.manifold.conscience_node.add_heat_unchecked(sustain * 0.182)
+        logger.debug(f"Perception sustain: +{sustain:.3f} (I={sustain*0.618:.3f} E={ego_boost:.3f}[c={confidence:.2f}] C={sustain*0.182:.3f})")
 
         logger.debug(f"Routed perception to Clock: {state_key}")
     
@@ -1563,9 +1576,11 @@ class EnvironmentCore:
                     self._motion_bus.activate(s, 0.4, "introspector")
 
         # Build deliberative plan if targeting + suggestions
-        if target_action and len(chain.suggestions) >= 1:
+        # Filter out bm_* verbs — they belong on the motion bus, not in the action queue
+        actionable = [s for s in chain.suggestions[:4] if not s.startswith("bm_")]
+        if target_action and actionable:
             plan = []
-            for s in chain.suggestions[:4]:
+            for s in actionable:
                 plan.append(target_action)
                 plan.append(s)
             self.enqueue_plan(plan)

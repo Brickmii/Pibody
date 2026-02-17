@@ -393,7 +393,7 @@ class BodyServer:
             msg = json.loads(raw)
         except json.JSONDecodeError:
             return {"type": "error", "message": "Invalid JSON"}
-        
+
         msg_type = msg.get("type")
         
         # ─────────────────────────────────────────────────────────────────────
@@ -424,6 +424,12 @@ class BodyServer:
                 with self._world_buffer_lock:
                     self._world_buffer.append(data)
                 self.last_world_state = data
+
+                # Heat feed: every frame drips heat into Ego
+                # Must outpace existence tax (0.056/tick at ~2s interval)
+                # Heat feed: every frame drips 0.236 into Ego
+                if self.daemon and self.daemon.manifold and self.daemon.manifold.ego_node:
+                    self.daemon.manifold.ego_node.add_heat_unchecked(0.236)
 
                 # Feed to visual cortex for persistence tracking
                 # and manifold integration (throttled to every 3rd frame)

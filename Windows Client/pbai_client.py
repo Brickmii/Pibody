@@ -563,10 +563,11 @@ class PBAIClient:
                     "slots": hud_data["hotbar_slots"],
                 }
                 logger.info(f"HUD: health={hud_data['health']} hunger={hud_data['hunger']} air={hud_data.get('air', '?')}")
-                if not self._hud_debug_saved:
+                if not self._hud_debug_saved or getattr(self.hud_reader, '_force_debug_resave', False):
                     self.hud_reader.debug_save(image)
                     self._hud_debug_saved = True
-                    logger.info("Saved hud_debug.png")
+                    self.hud_reader._force_debug_resave = False
+                    logger.info("Saved hud_debug.png (gs=%d)", self.hud_reader.gs)
             except Exception as e:
                 logger.warning(f"HUD read error: {e}")
 
@@ -668,10 +669,11 @@ class PBAIClient:
                 "slots": hud_data["hotbar_slots"],
             }
             logger.info(f"HUD: health={hud_data['health']} hunger={hud_data['hunger']} air={hud_data.get('air', '?')}")
-            if not self._hud_debug_saved:
+            if not self._hud_debug_saved or getattr(self.hud_reader, '_force_debug_resave', False):
                 self.hud_reader.debug_save(image)
                 self._hud_debug_saved = True
-                logger.info("Saved hud_debug.png")
+                self.hud_reader._force_debug_resave = False
+                logger.info("Saved hud_debug.png (gs=%d)", self.hud_reader.gs)
 
         return world_state
 

@@ -23,10 +23,13 @@ USAGE:
     #        "coordinates": {"x": 100.0, "y": 64.0, "z": -200.0}}
 """
 
+import logging
 import re
 import time
 import numpy as np
 from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 
 try:
     import easyocr
@@ -53,6 +56,10 @@ class HUDReader:
 
         # Pre-compute pixel regions
         self._compute_regions()
+
+        # Auto-calibration state
+        self._calibrated = False
+        self._default_gs = gui_scale
 
         # Lazy-init easyocr reader
         self._ocr_reader = None
@@ -111,8 +118,70 @@ class HUDReader:
             bx = hunger_start_x - i * heart_spacing
             self._bubble_centers.append((bx, bubble_y))
 
-        # Sample radius for pixel checks
-        self._sample_r = max(1, gs)
+        # Sample radius for pixel checks (large enough for gs=4 icons ~32px)
+        self._sample_r = max(3, gs * 2)
+
+    def _auto_calibrate(self, image: np.ndarray) -> None:
+        """Try gui_scale values and pick the one that finds the most hearts/hunger."""
+        best_score = 0
+        best_gs = self._default_gs
+        scores: Dict[int, int] = {}
+
+        for try_gs in [4, 3, 2, 1]:
+            self.gs = try_gs
+            self._compute_regions()
+
+            score = 0
+            # Check first 5 heart positions for red pixels
+            for cx, cy in self._heart_centers[:5]:
+                pixels = self._sample_region(image, cx, cy)
+                if len(pixels) == 0:
+                    continue
+                red = (pixels[:, 0] > 150) & (pixels[:, 1] < 80) & (pixels[:, 2] < 80)
+                if red.sum() / len(pixels) > 0.15:
+                    score += 1
+
+            # Check first 5 hunger positions for brown pixels
+            for cx, cy in self._hunger_centers[:5]:
+                pixels = self._sample_region(image, cx, cy)
+                if len(pixels) == 0:
+                    continue
+                brown = (
+                    (pixels[:, 0] > 130) & (pixels[:, 0] < 210) &
+                    (pixels[:, 1] > 80) & (pixels[:, 1] < 150) &
+                    (pixels[:, 2] > 15) & (pixels[:, 2] < 80)
+                )
+                if brown.sum() / len(pixels) > 0.1:
+                    score += 1
+
+            scores[try_gs] = score
+            if score > best_score:
+                best_score = score
+                best_gs = try_gs
+
+        # Need at least 3 hits (out of 10) to trust the result
+        if best_score >= 3:
+            self.gs = best_gs
+            self._compute_regions()
+            self._calibrated = True
+            logger.info("Auto-calibrated gui_scale=%d (score=%d/10, all scores: %s)",
+                        best_gs, best_score, scores)
+
+            # Diagnostic: log RGB at first 3 heart positions
+            h, w = image.shape[:2]
+            for i, (cx, cy) in enumerate(self._heart_centers[:3]):
+                if 0 <= cy < h and 0 <= cx < w:
+                    r, g, b = image[cy, cx]
+                    logger.info("  heart[%d] (%d,%d) RGB=(%d,%d,%d)", i, cx, cy, r, g, b)
+
+            logger.info("  image shape: %s", image.shape)
+            self._force_debug_resave = True
+        else:
+            # Keep default, retry next frame
+            self.gs = self._default_gs
+            self._compute_regions()
+            logger.warning("Auto-calibrate inconclusive (best=%d, score=%d/10, scores=%s) — retrying next frame",
+                           best_gs, best_score, scores)
 
     def read_hud(self, image: np.ndarray) -> Dict[str, Any]:
         """Extract all HUD data from a raw RGB screenshot.
@@ -124,6 +193,9 @@ class HUDReader:
             dict with health, hunger, air, hotbar_selected, hotbar_slots,
             coordinates
         """
+        if not self._calibrated:
+            self._auto_calibrate(image)
+
         return {
             "health": self._read_health(image),
             "hunger": self._read_hunger(image),
@@ -298,7 +370,7 @@ class HUDReader:
 
         debug = Image.fromarray(image.copy())
         draw = ImageDraw.Draw(debug)
-        dot_r = max(2, self.gs)
+        dot_r = max(6, self.gs * 3)
 
         def dot(x, y, color):
             draw.ellipse([x - dot_r, y - dot_r, x + dot_r, y + dot_r], fill=color)

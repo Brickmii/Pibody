@@ -119,18 +119,9 @@ class HUDReader:
             dict with health, hunger, air, hotbar_selected, hotbar_slots,
             coordinates
         """
-        can_see = self._can_see_hud(image)
-
-        if can_see:
-            health = self._read_health(image)
-            hunger = self._read_hunger(image)
-        else:
-            health = -1.0
-            hunger = -1.0
-
         return {
-            "health": health,
-            "hunger": hunger,
+            "health": self._read_health(image),
+            "hunger": self._read_hunger(image),
             "air": self._read_air(image),
             "hotbar_selected": self._read_hotbar_selection(image),
             "hotbar_slots": self._read_hotbar_slots(image),

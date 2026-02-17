@@ -425,11 +425,17 @@ class BodyServer:
                     self._world_buffer.append(data)
                 self.last_world_state = data
 
-                # Heat feed: every frame drips heat into Ego
-                # Must outpace existence tax (0.056/tick at ~2s interval)
-                # Heat feed: every frame drips 0.236 into Ego
-                if self.daemon and self.daemon.manifold and self.daemon.manifold.ego_node:
-                    self.daemon.manifold.ego_node.add_heat_unchecked(0.236)
+                # Heat feed: every frame drips heat into psychology
+                # Distributed per COST_ACTION ratios (identity=0.618, ego=0.200, conscience=0.182)
+                if self.daemon and self.daemon.manifold:
+                    m = self.daemon.manifold
+                    frame_heat = 0.236
+                    if m.identity_node:
+                        m.identity_node.add_heat_unchecked(frame_heat * 0.618)
+                    if m.ego_node:
+                        m.ego_node.add_heat_unchecked(frame_heat * 0.200)
+                    if m.conscience_node:
+                        m.conscience_node.add_heat_unchecked(frame_heat * 0.182)
 
                 # Feed to visual cortex for persistence tracking
                 # and manifold integration (throttled to every 3rd frame)

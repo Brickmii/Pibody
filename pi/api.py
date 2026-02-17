@@ -18,6 +18,8 @@ ENDPOINTS:
 
 import json
 import logging
+import os
+import secrets
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from typing import TYPE_CHECKING
@@ -26,6 +28,22 @@ if TYPE_CHECKING:
     from .daemon import PBAIDaemon
 
 logger = logging.getLogger(__name__)
+
+_API_TOKEN = None
+
+
+def _get_or_create_token(growth_dir: str) -> str:
+    token_path = os.path.join(growth_dir, ".api_token")
+    if os.path.exists(token_path):
+        with open(token_path, 'r') as f:
+            token = f.read().strip()
+            if token:
+                return token
+    token = secrets.token_urlsafe(32)
+    os.makedirs(os.path.dirname(token_path), exist_ok=True)
+    with open(token_path, 'w') as f:
+        f.write(token)
+    return token
 
 
 class APIHandler(BaseHTTPRequestHandler):
@@ -56,13 +74,22 @@ class APIHandler(BaseHTTPRequestHandler):
             return {}
         body = self.rfile.read(content_length)
         return json.loads(body.decode())
-    
+
+    def _check_auth(self) -> bool:
+        if _API_TOKEN is None:
+            return True
+        auth = self.headers.get('Authorization', '')
+        if auth == f'Bearer {_API_TOKEN}':
+            return True
+        self._send_error("Unauthorized", 401)
+        return False
+
     def do_OPTIONS(self):
         """Handle CORS preflight."""
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         self.end_headers()
     
     def do_GET(self):
@@ -151,6 +178,8 @@ class APIHandler(BaseHTTPRequestHandler):
     
     def do_POST(self):
         """Handle POST requests."""
+        if not self._check_auth():
+            return
         parsed = urlparse(self.path)
         path = parsed.path
         
@@ -323,6 +352,10 @@ class PBAIAPIServer(HTTPServer):
 
 def create_api_server(daemon: 'PBAIDaemon', port: int) -> PBAIAPIServer:
     """Create API server."""
+    global _API_TOKEN
+    growth_dir = daemon.save_path or os.path.join(os.path.dirname(os.path.dirname(__file__)), 'growth')
+    _API_TOKEN = _get_or_create_token(growth_dir)
+    logger.info(f"API token stored in {growth_dir}/.api_token")
     return PBAIAPIServer(daemon, port)
 
 

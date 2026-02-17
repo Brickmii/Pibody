@@ -85,11 +85,6 @@ from .node_constants import (
     get_growth_path
 )
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s | %(levelname)s | %(message)s',
-    datefmt='%H:%M:%S'
-)
 logger = logging.getLogger(__name__)
 
 
@@ -344,10 +339,10 @@ class Manifold:
         total_heat = sum(n.heat for n in finite_nodes)
         n = len(finite_nodes)
         
-        # Max entropy: uniform distribution, max variance, no structure
+        # Max entropy: all heat at one node = maximum variance, no structure
         uniform_heat = total_heat / n
         max_magnitude = uniform_heat
-        max_variance = uniform_heat ** 2  # Theoretical max spread
+        max_variance = (total_heat ** 2 * (n - 1)) / (n ** 2) if n > 1 else 0.0
         max_disorder = 1.0  # No righteous nodes
         
         return (
@@ -863,6 +858,39 @@ class Manifold:
                 if child:
                     children.append(child)
         return children
+
+    def prune_overflow_children(self, max_children_per_parent: int = 5) -> int:
+        """Prune old overflow children, keeping the most recent N per parent."""
+        from collections import defaultdict
+        parent_children = defaultdict(list)
+
+        for concept, nid in list(self.nodes_by_concept.items()):
+            if '_c' not in concept:
+                continue
+            parts = concept.rsplit('_c', 1)
+            if len(parts) != 2:
+                continue
+            try:
+                child_num = int(parts[1])
+            except ValueError:
+                continue
+            parent_concept = parts[0]
+            node = self.nodes.get(nid)
+            if node:
+                parent_children[parent_concept].append((child_num, nid))
+
+        removed = 0
+        for parent_concept, children in parent_children.items():
+            if len(children) <= max_children_per_parent:
+                continue
+            children.sort(key=lambda x: x[0], reverse=True)
+            for child_num, nid in children[max_children_per_parent:]:
+                self.remove_node(nid)
+                removed += 1
+
+        if removed:
+            logger.info(f"Pruned {removed} overflow children (kept {max_children_per_parent}/parent)")
+        return removed
 
     # ═══════════════════════════════════════════════════════════════════════════
     # PSYCHOLOGY - Identity / Conscience / Ego
@@ -1794,7 +1822,10 @@ class Manifold:
             growth_dir = path
             
         os.makedirs(growth_dir, exist_ok=True)
-        
+
+        # Prune overflow children before save to control file size
+        self.prune_overflow_children(max_children_per_parent=5)
+
         # Collect non-psychology nodes
         other_nodes = {}
         psychology_ids = {

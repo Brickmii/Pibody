@@ -878,7 +878,15 @@ class EnvironmentCore:
         if driver_id not in self.drivers:
             logger.error(f"Driver '{driver_id}' not found")
             return False
-        
+
+        # Skip if already active — avoid redundant initialize() every cycle
+        if self.active_driver == driver_id:
+            return True
+
+        # Deactivate current driver if switching
+        if self.active_driver is not None:
+            self.deactivate_driver()
+
         driver = self.drivers[driver_id]
         
         if not driver.initialize():
@@ -1151,12 +1159,15 @@ class EnvironmentCore:
         heat_value = result.heat_value
         
         # For gym environments, reward Ego with heat on positive outcomes
-        if heat_value > 0 and self.manifold.ego_node:
-            # Give Ego some heat back (capped)
-            from core.node_constants import K
-            heat_gain = min(heat_value * 0.1, K * 0.1)  # Max 10% of K
-            self.manifold.ego_node.add_heat(heat_gain)
-            logger.debug(f"Ego gained {heat_gain:.3f} heat from positive outcome")
+        if heat_value > 0:
+            from core.node_constants import K, COST_ACTION_IDENTITY, COST_ACTION_EGO, COST_ACTION_CONSCIENCE
+            heat_gain = min(heat_value * 0.1, K * 0.1)
+            if self.manifold.identity_node:
+                self.manifold.identity_node.add_heat(heat_gain * COST_ACTION_IDENTITY)
+            if self.manifold.ego_node:
+                self.manifold.ego_node.add_heat(heat_gain * COST_ACTION_EGO)
+            if self.manifold.conscience_node:
+                self.manifold.conscience_node.add_heat(heat_gain * COST_ACTION_CONSCIENCE)
         
         # Route to DecisionNode (OUTPUT)
         decision_node = self._get_decision_node()
@@ -1576,8 +1587,10 @@ class EnvironmentCore:
                     self._motion_bus.activate(s, 0.4, "introspector")
 
         # Build deliberative plan if targeting + suggestions
-        # Filter out bm_* verbs — they belong on the motion bus, not in the action queue
-        actionable = [s for s in chain.suggestions[:4] if not s.startswith("bm_")]
+        # Filter bm_* verbs and validate against available actions
+        valid_set = set(chain.available_actions) if chain.available_actions else set()
+        actionable = [s for s in chain.suggestions[:4]
+                      if not s.startswith("bm_") and s in valid_set]
         if target_action and actionable:
             plan = []
             for s in actionable:

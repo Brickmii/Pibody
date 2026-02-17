@@ -28,9 +28,9 @@ Outcome → Heat Backprop → Learn
 ════════════════════════════════════════════════════════════════════════════════
 
 USAGE:
-    python pbai_client.py --host 192.168.5.42
-    python pbai_client.py --host 192.168.5.42 --kill-key F12
-    python pbai_client.py --host 192.168.5.42 --no-learn
+    python pbai_client.py --host 192.168.5.46
+    python pbai_client.py --host 192.168.5.46 --kill-key F12
+    python pbai_client.py --host 192.168.5.46 --no-learn
 
 REQUIREMENTS:
     pip install torch mss pydirectinput pyautogui websockets numpy keyboard
@@ -330,6 +330,9 @@ class PBAIClient:
             except Exception as e:
                 logger.warning(f"HUD reader init failed: {e}")
         
+        # One-shot debug overlay (saves hud_debug.png on first HUD read)
+        self._hud_debug_saved = False
+
         # Vision transformer
         self._init_vision(checkpoint)
         
@@ -536,13 +539,20 @@ class PBAIClient:
                 world_state["player"] = {
                     "health": hud_data["health"],
                     "hunger": hud_data["hunger"],
+                    "air": hud_data.get("air", -1),
+                    **hud_data.get("coordinates", {}),
                 }
                 world_state["hotbar"] = {
                     "selected": hud_data["hotbar_selected"],
                     "slots": hud_data["hotbar_slots"],
                 }
+                logger.info(f"HUD: health={hud_data['health']} hunger={hud_data['hunger']} air={hud_data.get('air', '?')}")
+                if not self._hud_debug_saved:
+                    self.hud_reader.debug_save(image)
+                    self._hud_debug_saved = True
+                    logger.info("Saved hud_debug.png")
             except Exception as e:
-                logger.debug(f"HUD read error: {e}")
+                logger.warning(f"HUD read error: {e}")
 
         logger.info(f"World state: t_K={world_state['t_K']}, kappa={world_state['kappa']:.4f}, peaks={len(world_state['peaks'])}")
 
@@ -607,7 +617,7 @@ class PBAIClient:
             try:
                 hud_data = self.hud_reader.read_hud(image)
             except Exception as e:
-                logger.debug(f"HUD read error: {e}")
+                logger.warning(f"HUD read error: {e}")
 
         img_tensor = torch.from_numpy(image).float().to(self.device)
         if img_tensor.max() > 1:
@@ -632,11 +642,18 @@ class PBAIClient:
             world_state["player"] = {
                 "health": hud_data["health"],
                 "hunger": hud_data["hunger"],
+                "air": hud_data.get("air", -1),
+                **hud_data.get("coordinates", {}),
             }
             world_state["hotbar"] = {
                 "selected": hud_data["hotbar_selected"],
                 "slots": hud_data["hotbar_slots"],
             }
+            logger.info(f"HUD: health={hud_data['health']} hunger={hud_data['hunger']} air={hud_data.get('air', '?')}")
+            if not self._hud_debug_saved:
+                self.hud_reader.debug_save(image)
+                self._hud_debug_saved = True
+                logger.info("Saved hud_debug.png")
 
         return world_state
 
@@ -741,7 +758,7 @@ async def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="PBAI CUDA Vision Client")
-    parser.add_argument("--host", default="192.168.5.42")
+    parser.add_argument("--host", default="192.168.5.46")
     parser.add_argument("--port", type=int, default=8421)
     parser.add_argument("--resolution", type=int, default=512  )
     parser.add_argument("--simulate", action="store_true")

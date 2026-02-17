@@ -122,66 +122,111 @@ class HUDReader:
         self._sample_r = max(3, gs * 2)
 
     def _auto_calibrate(self, image: np.ndarray) -> None:
-        """Try gui_scale values and pick the one that finds the most hearts/hunger."""
-        best_score = 0
-        best_gs = self._default_gs
-        scores: Dict[int, int] = {}
+        """Find hearts/hunger by scanning for red pixel clusters in the HUD.
 
-        for try_gs in [4, 3, 2, 1]:
-            self.gs = try_gs
-            self._compute_regions()
+        The Bedrock Edition HUD constants vary with resolution and GUI slider,
+        so instead of guessing gui_scale we scan the bottom of the screen for
+        red pixel clusters (hearts on the left, drumstick red on the right),
+        derive gui_scale from the measured spacing, and set positions directly.
+        """
+        h, w = image.shape[:2]
 
-            score = 0
-            # Check first 5 heart positions for red pixels
-            for cx, cy in self._heart_centers[:5]:
-                pixels = self._sample_region(image, cx, cy)
-                if len(pixels) == 0:
-                    continue
-                red = (pixels[:, 0] > 150) & (pixels[:, 1] < 80) & (pixels[:, 2] < 80)
-                if red.sum() / len(pixels) > 0.15:
-                    score += 1
+        # Scan bottom 25% for red pixels (hearts + drumstick outlines)
+        scan_top = int(h * 0.75)
+        bottom = image[scan_top:]
+        red_mask = (bottom[:, :, 0] > 150) & (bottom[:, :, 1] < 80) & (bottom[:, :, 2] < 80)
+        ys, xs = np.where(red_mask)
 
-            # Check first 5 hunger positions for brown pixels
-            for cx, cy in self._hunger_centers[:5]:
-                pixels = self._sample_region(image, cx, cy)
-                if len(pixels) == 0:
-                    continue
-                brown = (
-                    (pixels[:, 0] > 130) & (pixels[:, 0] < 210) &
-                    (pixels[:, 1] > 80) & (pixels[:, 1] < 150) &
-                    (pixels[:, 2] > 15) & (pixels[:, 2] < 80)
-                )
-                if brown.sum() / len(pixels) > 0.1:
-                    score += 1
+        if len(ys) < 50:
+            logger.warning("Auto-calibrate: only %d red pixels in bottom 25%%, retry next frame", len(ys))
+            return
 
-            scores[try_gs] = score
-            if score > best_score:
-                best_score = score
-                best_gs = try_gs
+        # Find the row with the most red pixels (peak of the heart row)
+        unique_ys, counts = np.unique(ys, return_counts=True)
+        peak_local_y = int(unique_ys[counts.argmax()])
+        peak_y = peak_local_y + scan_top
 
-        # Need at least 3 hits (out of 10) to trust the result
-        if best_score >= 3:
-            self.gs = best_gs
-            self._compute_regions()
-            self._calibrated = True
-            logger.info("Auto-calibrated gui_scale=%d (score=%d/10, all scores: %s)",
-                        best_gs, best_score, scores)
+        # Get X positions on that row and cluster them (gap > 3px = new icon)
+        peak_xs = sorted(xs[ys == peak_local_y].tolist())
+        clusters: List[int] = []
+        start = peak_xs[0]
+        prev = peak_xs[0]
+        for x in peak_xs[1:]:
+            if x - prev > 3:
+                clusters.append((start + prev) // 2)
+                start = x
+            prev = x
+        clusters.append((start + prev) // 2)
 
-            # Diagnostic: log RGB at first 3 heart positions
-            h, w = image.shape[:2]
-            for i, (cx, cy) in enumerate(self._heart_centers[:3]):
-                if 0 <= cy < h and 0 <= cx < w:
-                    r, g, b = image[cy, cx]
-                    logger.info("  heart[%d] (%d,%d) RGB=(%d,%d,%d)", i, cx, cy, r, g, b)
+        if len(clusters) < 10:
+            logger.warning("Auto-calibrate: only %d red clusters (need >=10), retry", len(clusters))
+            return
 
-            logger.info("  image shape: %s", image.shape)
-            self._force_debug_resave = True
+        # Split into hearts (left) and hunger (right) at the biggest gap
+        gaps = [(clusters[i + 1] - clusters[i], i) for i in range(len(clusters) - 1)]
+        max_gap_val, max_gap_idx = max(gaps, key=lambda g: g[0])
+
+        heart_xs = clusters[:max_gap_idx + 1]
+        hunger_xs = clusters[max_gap_idx + 1:]
+
+        if len(heart_xs) < 3:
+            logger.warning("Auto-calibrate: only %d heart clusters, retry", len(heart_xs))
+            return
+
+        # Derive gui_scale from heart spacing  (HEART_SPACING = 8 gui-px)
+        spacings = [heart_xs[i + 1] - heart_xs[i] for i in range(len(heart_xs) - 1)]
+        avg_spacing = sum(spacings) / len(spacings)
+        gs = max(1, round(avg_spacing / self.HEART_SPACING))
+        self.gs = gs
+
+        # ── Set heart centres directly from scan ──
+        self._heart_centers = [(x, peak_y) for x in heart_xs[:10]]
+
+        # ── Set hunger centres directly from scan (rightmost first) ──
+        if len(hunger_xs) >= 3:
+            self._hunger_centers = [(x, peak_y) for x in reversed(hunger_xs[:10])]
         else:
-            # Keep default, retry next frame
-            self.gs = self._default_gs
-            self._compute_regions()
-            logger.warning("Auto-calibrate inconclusive (best=%d, score=%d/10, scores=%s) — retrying next frame",
-                           best_gs, best_score, scores)
+            # Fallback: mirror hearts across screen centre
+            cx = w // 2
+            self._hunger_centers = [(2 * cx - x, peak_y) for x in reversed(heart_xs[:10])]
+
+        # ── Recompute hotbar slots from gs (HOTBAR_BOTTOM_OFFSET=22 is reliable) ──
+        sw, sh = self.sw, self.sh
+        slot_size = 20 * gs
+        slot_gap = 2 * gs
+        slot_stride = slot_size + slot_gap
+        hotbar_width = 9 * slot_size + 8 * slot_gap
+        hotbar_left = sw // 2 - hotbar_width // 2
+        hotbar_top = sh - self.HOTBAR_BOTTOM_OFFSET * gs
+
+        self._slot_centers = []
+        for i in range(9):
+            sx = hotbar_left + i * slot_stride + slot_size // 2
+            sy = hotbar_top + slot_size // 2
+            self._slot_centers.append((sx, sy))
+
+        self._slot_top_edges = []
+        for i in range(9):
+            sx = hotbar_left + i * slot_stride + slot_size // 2
+            sy = hotbar_top - gs
+            self._slot_top_edges.append((sx, sy))
+
+        # ── Air bubbles: same X as hunger, offset upward ──
+        bubble_y = peak_y - self.AIR_ROW_OFFSET * gs
+        self._bubble_centers = [(bx, bubble_y) for bx, _ in self._hunger_centers]
+
+        self._sample_r = max(3, gs * 2)
+        self._calibrated = True
+        self._force_debug_resave = True
+
+        logger.info("Auto-calibrated gui_scale=%d (spacing=%.1fpx, hearts=%d, hunger=%d)",
+                    gs, avg_spacing, len(heart_xs), len(hunger_xs))
+        logger.info("  heart_y=%d, first_heart_x=%d, image=%dx%d",
+                    peak_y, heart_xs[0], w, h)
+        for i, (cx, cy) in enumerate(self._heart_centers[:3]):
+            if 0 <= cy < h and 0 <= cx < w:
+                r, g, b = image[cy, cx]
+                logger.info("  heart[%d] (%d,%d) RGB=(%d,%d,%d)", i, cx, cy, r, g, b)
 
     def read_hud(self, image: np.ndarray) -> Dict[str, Any]:
         """Extract all HUD data from a raw RGB screenshot.
@@ -237,24 +282,29 @@ class HUDReader:
     def _read_hunger(self, image: np.ndarray) -> float:
         """Count drumsticks -> hunger (0-20 half-shanks).
 
-        Drumstick brown: R 130-210, G 80-150, B 15-80.
+        Drumstick has a red cap (R>150, G<80, B<80) and a brown/dark-brown
+        body.  We detect both since the sample region straddles the cap and
+        body at large GUI scales.
         """
         count = 0.0
         for cx, cy in self._hunger_centers:
             pixels = self._sample_region(image, cx, cy)
             if len(pixels) == 0:
                 continue
-            # Brown pixel mask (widened thresholds)
+            # Red cap of drumstick
+            red_mask = (pixels[:, 0] > 150) & (pixels[:, 1] < 80) & (pixels[:, 2] < 80)
+            # Brown body (original range + darker browns at high GUI scales)
             brown_mask = (
-                (pixels[:, 0] > 130) & (pixels[:, 0] < 210) &
-                (pixels[:, 1] > 80) & (pixels[:, 1] < 150) &
-                (pixels[:, 2] > 15) & (pixels[:, 2] < 80)
+                (pixels[:, 0] > 50) & (pixels[:, 0] < 220) &
+                (pixels[:, 1] > 25) & (pixels[:, 1] < 160) &
+                (pixels[:, 2] > 10) & (pixels[:, 2] < 80) &
+                ~red_mask  # avoid double-counting
             )
-            brown_ratio = brown_mask.sum() / len(pixels)
-            if brown_ratio > 0.4:
-                count += 2.0
-            elif brown_ratio > 0.1:
-                count += 1.0
+            food_ratio = (red_mask | brown_mask).sum() / len(pixels)
+            if food_ratio > 0.25:
+                count += 2.0   # Full drumstick
+            elif food_ratio > 0.08:
+                count += 1.0   # Half drumstick
         return min(count, 20.0)
 
     def _read_air(self, image: np.ndarray) -> int:

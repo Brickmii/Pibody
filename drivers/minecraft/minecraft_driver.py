@@ -966,8 +966,9 @@ class MinecraftDriver(Driver):
         py = player.get("y", MC_Y_SEA)
         pz = player.get("z", 0.0)
         yaw = player.get("yaw", 0.0)
-        health = player.get("health", 20.0)
-        hunger = player.get("hunger", 20.0)
+        # health/hunger = 0 means HUD unreadable, treat as full
+        health = player.get("health", 20.0) or 20.0
+        hunger = player.get("hunger", 20.0) or 20.0
 
         # Store raw yaw/pitch for cardinal turning
         self._player_yaw = yaw % 360.0
@@ -1318,11 +1319,10 @@ class MinecraftDriver(Driver):
         if 0 < health < 8 and hostile_count > 0:
             plans.append(["sprint_forward", "sprint_jump", "sprint_forward"])
 
-        # Eat: low hunger (when we can detect food in inventory)
-        # hunger=0 likely means HUD reader can't read it — treat as unknown
-        hunger = props.get("hunger", 20)
-        if 0 < hunger < 12:
-            plans.append(["use"])  # Eating with food selected
+        # Eat: low hunger — disabled until HUD reading is calibrated
+        # hunger = props.get("hunger", 20)
+        # if 6 < hunger < 12:
+        #     plans.append(["use"])  # Eating with food selected
 
         # Crafting: only when active verb is make/create/build/craft (not get/take)
         _CRAFT_VERBS = {'bm_make', 'bm_create', 'bm_build', 'bm_craft'}
@@ -1352,7 +1352,8 @@ class MinecraftDriver(Driver):
     def _build_state_key(self, gs: Dict[str, Any]) -> str:
         """Build a concise state key from game state."""
         player = gs.get("player", {})
-        health = int(player.get("health", 20))
+        # health=0 means unreadable (HUD not calibrated), treat as full
+        health = int(player.get("health", 20)) or 20
         biome = gs.get("biome", "unknown")[:10]
         dim = gs.get("dimension", "ow")[:3]
 

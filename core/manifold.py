@@ -81,6 +81,8 @@ from .node_constants import (
     MAX_ENTROPIC_PROBABILITY, entropy_exceeds_random_limit, get_structure_signal,
     # Emergence threshold
     MAX_ORDER_TOKENS,
+    # Costs
+    COST_ORDER,
     # Paths
     get_growth_path
 )
@@ -800,19 +802,23 @@ class Manifold:
         return self.add_axis_safe(child, direction, target_id, polarity)
 
     def _get_or_create_overflow_child(self, parent: Node) -> Node:
-        """Find existing child with room, or birth a new one.
+        """Find existing child with room, create new, or promote at 44-limit.
 
         Children accumulate axes up to 44 before overflowing themselves.
-        This builds sequence depth: parent=1st motion, child=2nd motion,
-        grandchild=3rd motion, etc.
+        At 44 children, the 45th triggers promotion — ego selects the best
+        child to become a sub-parent, routed through conscience.
         """
         children = self.get_overflow_children(parent)
         for child in children:
             if len(child.frame.axes) < MAX_ORDER_TOKENS:
                 return child
 
-        # All children full (or none exist) — birth a new one
-        return self._create_overflow_child(parent)
+        # Under child limit? Birth a new one
+        if len(children) < MAX_ORDER_TOKENS:
+            return self._create_overflow_child(parent)
+
+        # AT 44 CHILDREN: promote one to sub-parent (internal ego action)
+        return self._promote_overflow_child(parent, children)
 
     def _create_overflow_child(self, parent: Node) -> Node:
         """Birth a child node to carry overflow from a full parent.
@@ -848,48 +854,103 @@ class Manifold:
                       f"({len(parent.frame.axes)} axes full)")
         return child
 
+    def _promote_overflow_child(self, parent: Node, children: list) -> Node:
+        """Ego promotes the best child to sub-parent via conscience weighing.
+
+        Identity perceives: each child's heat and traversal depth.
+        Conscience weighs: validation confidence for each candidate.
+        Ego executes: selects highest-scoring child as sub-parent.
+
+        The promoted child becomes the overflow target. Its own overflow
+        will create grandchildren naturally via recursive add_axis_safe.
+        Ego pays COST_ORDER heat for the structural decision.
+        """
+        # ── Identity perceives: score each child's accumulated knowledge ──
+        scores = []
+        for child in children:
+            # Heat = accumulated importance (primary signal)
+            heat_score = child.heat
+
+            # Traversal depth = how active this branch is
+            traversal_total = sum(
+                ax.traversal_count for ax in child.frame.axes.values()
+            )
+
+            # Righteousness alignment (closer to 0 = better aligned)
+            r_weight = 1.0 / (1.0 + abs(child.righteousness))
+
+            identity_score = heat_score * (1.0 + traversal_total * 0.01) * r_weight
+
+            # ── Conscience weighs: validation confidence ──
+            conscience_weight = 1.0
+            if self.conscience_node:
+                conscience_axis = self.conscience_node.get_axis(child.concept)
+                if conscience_axis:
+                    t = conscience_axis.traversal_count
+                    raw_conf = t / (t + K)
+                    # Positive polarity = confirmed, negative = corrected
+                    if conscience_axis.polarity > 0:
+                        conscience_weight = 1.0 + raw_conf  # up to 2.0 boost
+                    else:
+                        conscience_weight = max(0.1, 1.0 - raw_conf)  # penalty
+
+            combined = identity_score * conscience_weight
+            scores.append((combined, child))
+
+        # ── Ego executes: select the highest-scoring child ──
+        scores.sort(key=lambda x: x[0], reverse=True)
+        promoted = scores[0][1]
+
+        # Ego pays COST_ORDER for the structural decision
+        if self.ego_node:
+            self.ego_node.spend_heat(COST_ORDER)
+
+        logger.info(
+            f"Promoted {promoted.concept} to sub-parent of {parent.concept} "
+            f"(score={scores[0][0]:.2f}, heat={promoted.heat:.2f}, "
+            f"children={len(children)}/{MAX_ORDER_TOKENS})"
+        )
+
+        return promoted
+
     def get_overflow_children(self, node: Node) -> list:
-        """Get all overflow children of a node by naming convention."""
+        """Get direct overflow children of a node by naming convention.
+
+        Only matches {concept}_cN where N is a number — not grandchildren
+        like {concept}_cN_cM. This keeps each level's child count accurate
+        so the 44-cap and promotion operate at the correct depth.
+        """
         prefix = f"{node.concept}_c"
         children = []
         for concept, nid in self.nodes_by_concept.items():
             if concept.startswith(prefix):
-                child = self.nodes.get(nid)
-                if child:
-                    children.append(child)
+                suffix = concept[len(prefix):]
+                if suffix.isdigit():
+                    child = self.nodes.get(nid)
+                    if child:
+                        children.append(child)
         return children
 
-    def prune_overflow_children(self, max_children_per_parent: int = 5) -> int:
-        """Prune old overflow children, keeping the most recent N per parent."""
-        from collections import defaultdict
-        parent_children = defaultdict(list)
+    def _cleanup_empty_children(self) -> int:
+        """Remove overflow children that have no axes and minimal heat.
 
+        Unlike pruning, this doesn't delete active children. Only removes
+        nodes that were created but never used (empty shells).
+        """
+        removed = 0
         for concept, nid in list(self.nodes_by_concept.items()):
             if '_c' not in concept:
                 continue
-            parts = concept.rsplit('_c', 1)
-            if len(parts) != 2:
-                continue
-            try:
-                child_num = int(parts[1])
-            except ValueError:
-                continue
-            parent_concept = parts[0]
             node = self.nodes.get(nid)
-            if node:
-                parent_children[parent_concept].append((child_num, nid))
-
-        removed = 0
-        for parent_concept, children in parent_children.items():
-            if len(children) <= max_children_per_parent:
+            if not node:
                 continue
-            children.sort(key=lambda x: x[0], reverse=True)
-            for child_num, nid in children[max_children_per_parent:]:
+            # Only remove if truly empty: no axes AND heat at or below starting K
+            if len(node.frame.axes) == 0 and node.heat <= K:
                 self.remove_node(nid)
                 removed += 1
 
         if removed:
-            logger.info(f"Pruned {removed} overflow children (kept {max_children_per_parent}/parent)")
+            logger.info(f"Cleaned up {removed} empty overflow children")
         return removed
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -1823,8 +1884,8 @@ class Manifold:
             
         os.makedirs(growth_dir, exist_ok=True)
 
-        # Prune overflow children before save to control file size
-        self.prune_overflow_children(max_children_per_parent=5)
+        # Clean up empty overflow children before save
+        self._cleanup_empty_children()
 
         # Collect non-psychology nodes
         other_nodes = {}

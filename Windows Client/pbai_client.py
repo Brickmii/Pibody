@@ -108,6 +108,12 @@ try:
 except ImportError:
     HAS_HUD_READER = False
 
+try:
+    from region_reader import RegionReader
+    HAS_REGION_READER = True
+except ImportError:
+    HAS_REGION_READER = False
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)s | %(message)s',
@@ -347,6 +353,10 @@ class PBAIClient:
         # One-shot debug overlay (saves hud_debug.png on first HUD read)
         self._hud_debug_saved = False
 
+        # MasterFrame-driven region reader (initialized on connect if Pi sends masterframe)
+        self.region_reader = None
+        self._region_debug_saved = False
+
         # Vision transformer
         self._init_vision(checkpoint)
         
@@ -452,6 +462,16 @@ class PBAIClient:
             if msg.get("type") == "hello":
                 self.connected = True
                 logger.info("✓ Connected to Pi")
+
+                # Initialize RegionReader from masterframe if provided
+                mf_data = msg.get("masterframe")
+                if mf_data and HAS_REGION_READER:
+                    try:
+                        self.region_reader = RegionReader(mf_data)
+                        logger.info("✓ RegionReader initialized from masterframe")
+                    except Exception as e:
+                        logger.warning(f"RegionReader init failed: {e}")
+
                 return True
             return False
             
@@ -547,7 +567,31 @@ class PBAIClient:
         world_state = self.build_world_state(self.model, img_tensor, top_k=10, output=output)
 
         # HUD reading on raw full-resolution image
-        if self.hud_reader is not None:
+        # RegionReader (masterframe-driven) takes priority over HUDReader
+        if self.region_reader is not None:
+            try:
+                region_data = self.region_reader.read_all(image)
+                world_state["player"] = {
+                    "health": region_data["health"],
+                    "hunger": region_data["hunger"],
+                    "air": region_data.get("air", -1),
+                    "yaw": self.motor.yaw,
+                    "pitch": self.motor.pitch,
+                    **region_data.get("coordinates", {}),
+                }
+                world_state["hotbar"] = {
+                    "selected": region_data["hotbar_selected"],
+                    "slots": region_data["hotbar_slots"],
+                }
+                world_state["screen_mode"] = region_data.get("screen_mode", "hud")
+                logger.info(f"MasterFrame: health={region_data['health']} hunger={region_data['hunger']} air={region_data.get('air', '?')}")
+                if not self._region_debug_saved:
+                    self.region_reader.debug_overlay(image)
+                    self._region_debug_saved = True
+                    logger.info("Saved masterframe_debug.png")
+            except Exception as e:
+                logger.warning(f"RegionReader error: {e}")
+        elif self.hud_reader is not None:
             try:
                 hud_data = self.hud_reader.read_hud(image)
                 world_state["player"] = {
@@ -629,8 +673,20 @@ class PBAIClient:
         the main thread since it uses thread-local Windows GDI resources.
         """
         # HUD reading on raw full-resolution image (before downscaling)
+        # RegionReader (masterframe-driven) takes priority over HUDReader
         hud_data = None
-        if self.hud_reader is not None:
+        if self.region_reader is not None:
+            try:
+                region_data = self.region_reader.read_all(image)
+                hud_data = region_data  # Unify into same variable for merge below
+                hud_data["screen_mode"] = region_data.get("screen_mode", "hud")
+                if not self._region_debug_saved:
+                    self.region_reader.debug_overlay(image)
+                    self._region_debug_saved = True
+                    logger.info("Saved masterframe_debug.png")
+            except Exception as e:
+                logger.warning(f"RegionReader error: {e}")
+        if hud_data is None and self.hud_reader is not None:
             try:
                 hud_data = self.hud_reader.read_hud(image)
             except Exception as e:
@@ -668,12 +724,16 @@ class PBAIClient:
                 "selected": hud_data["hotbar_selected"],
                 "slots": hud_data["hotbar_slots"],
             }
-            logger.info(f"HUD: health={hud_data['health']} hunger={hud_data['hunger']} air={hud_data.get('air', '?')}")
-            if not self._hud_debug_saved or getattr(self.hud_reader, '_force_debug_resave', False):
-                self.hud_reader.debug_save(image)
-                self._hud_debug_saved = True
-                self.hud_reader._force_debug_resave = False
-                logger.info("Saved hud_debug.png (gs=%d)", self.hud_reader.gs)
+            if hud_data.get("screen_mode"):
+                world_state["screen_mode"] = hud_data["screen_mode"]
+            src = "MasterFrame" if self.region_reader else "HUD"
+            logger.info(f"{src}: health={hud_data['health']} hunger={hud_data['hunger']} air={hud_data.get('air', '?')}")
+            if not self.region_reader and self.hud_reader:
+                if not self._hud_debug_saved or getattr(self.hud_reader, '_force_debug_resave', False):
+                    self.hud_reader.debug_save(image)
+                    self._hud_debug_saved = True
+                    self.hud_reader._force_debug_resave = False
+                    logger.info("Saved hud_debug.png (gs=%d)", self.hud_reader.gs)
 
         return world_state
 

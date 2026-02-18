@@ -62,6 +62,7 @@ from drivers.environment import (
     Driver, Port, PortState, PortMessage,
     Perception, Action, ActionResult, NullPort
 )
+from drivers.minecraft.masterframe import MasterFrame
 
 # Game knowledge (SpockBotMC/python-minecraft-data wrapping PrismarineJS)
 try:
@@ -698,6 +699,9 @@ class MinecraftDriver(Driver):
         self._screen_height = 1080
         self._gui_scale = 2
 
+        # Spatial knowledge of the Minecraft screen
+        self.masterframe = MasterFrame()
+
         # Build recipe reverse index (output name → recipes)
         self._recipe_by_output: Dict[str, list] = {}
         if self._mc_data:
@@ -951,6 +955,10 @@ class MinecraftDriver(Driver):
                 self._game_state = streamed
 
         gs = self._game_state
+
+        # Track screen mode from client (UI open suppresses movement)
+        screen_mode = gs.get("screen_mode", "hud")
+        self._ui_open = screen_mode != "hud"
 
         # Extract player position
         player = gs.get("player", {})

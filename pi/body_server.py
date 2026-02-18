@@ -404,7 +404,16 @@ class BodyServer:
             body.client_type = msg.get("client", "unknown")
             body.version = msg.get("version", "unknown")
             logger.info(f"Body hello: {body.client_type} v{body.version}")
-            return {"type": "hello", "status": "ok"}
+
+            # Send masterframe so client knows the screen layout
+            masterframe_data = None
+            if self.daemon and self.daemon.environment:
+                driver = self.daemon.environment.driver
+                if hasattr(driver, 'masterframe') and driver.masterframe:
+                    masterframe_data = driver.masterframe.to_dict()
+                    logger.info(f"Sending masterframe to client ({len(masterframe_data.get('modes', {}).get('hud', {}).get('regions', {}))} regions)")
+
+            return {"type": "hello", "status": "ok", "masterframe": masterframe_data}
         
         elif msg_type == "vision_result":
             # Response to our vision request

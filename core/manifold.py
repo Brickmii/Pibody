@@ -599,7 +599,8 @@ class Manifold:
             return
         
         salience = self.calculate_salience(node)
-        
+
+
         # ═══════════════════════════════════════════════════════════════════
         # 1 AXIS: CENTER (R=0) + RIGHTEOUS (R=1)
         # Infrastructure - cooperate - absolute threshold
@@ -1330,7 +1331,9 @@ class Manifold:
         else:
             # Correction needed - this is where error_correction would spawn
             self.conscience_node.add_heat_unchecked(0.05)  # Small gain for catching error
-            belief_node.righteousness = min(2.0, belief_node.righteousness + 0.5)  # Mark as misaligned
+            # Psychology nodes (R=0) keep R=0 — it's their structural identity
+            if belief_node.righteousness != 0:
+                belief_node.righteousness = min(2.0, belief_node.righteousness + 0.5)  # Mark as misaligned
     
     # ═══════════════════════════════════════════════════════════════════════════
     # EGO'S INFERENCE ENGINE - Multi-hop traversal

@@ -74,6 +74,12 @@ class RegionReader:
         self._coord_cache: Dict[str, float] = {}
         self._coord_cache_time: float = 0.0
 
+        # Auto-calibration: MasterFrame positions assume gs=2 but actual
+        # GUI scale varies. On first frame we scan for hearts to find the
+        # real positions and rescale all HUD regions.
+        self._calibrated = False
+        self._force_debug_resave = False
+
         region_count = len(self._get_all_regions())
         logger.info(f"RegionReader initialized: {region_count} regions")
 
@@ -125,6 +131,172 @@ class RegionReader:
         return "pixel"
 
     # ═══════════════════════════════════════════════════════════════════════════
+    # AUTO-CALIBRATION
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def _update_region(self, name: str, x: float, y: float, w: float, h: float):
+        """Update a region's normalized bounds (works with both backends)."""
+        if self.masterframe:
+            region = self.masterframe.get_region(name)
+            if region:
+                region.x, region.y, region.w, region.h = x, y, w, h
+        elif name in self._regions:
+            r = self._regions[name]
+            r["x"], r["y"], r["w"], r["h"] = x, y, w, h
+
+    def _auto_calibrate(self, image: np.ndarray) -> None:
+        """Scan for red pixel clusters to find actual heart/hunger positions.
+
+        The MasterFrame ships with positions measured at gs=2 on 2560x1440,
+        but the actual GUI scale varies. We scan for red pixel clusters
+        (heart icons + drumstick red caps), derive the real scale, and
+        update every HUD region to match.
+        """
+        h, w = image.shape[:2]
+
+        # Scan bottom 25% for red pixels
+        scan_top = int(h * 0.75)
+        bottom = image[scan_top:]
+        red_mask = (bottom[:, :, 0] > 150) & (bottom[:, :, 1] < 80) & (bottom[:, :, 2] < 80)
+        ys, xs = np.where(red_mask)
+
+        if len(ys) < 50:
+            logger.warning("RegionReader calibrate: only %d red pixels, retry next frame", len(ys))
+            return
+
+        # Peak red row
+        unique_ys, counts = np.unique(ys, return_counts=True)
+        peak_local_y = int(unique_ys[counts.argmax()])
+        peak_y = peak_local_y + scan_top
+
+        # Cluster X positions on peak row
+        peak_xs = sorted(xs[ys == peak_local_y].tolist())
+        clusters: List[int] = []
+        start = peak_xs[0]
+        prev = peak_xs[0]
+        for x_val in peak_xs[1:]:
+            if x_val - prev > 3:
+                clusters.append((start + prev) // 2)
+                start = x_val
+            prev = x_val
+        clusters.append((start + prev) // 2)
+
+        if len(clusters) < 10:
+            logger.warning("RegionReader calibrate: only %d clusters, retry", len(clusters))
+            return
+
+        # Split hearts (left) / hunger (right) at biggest gap
+        gaps = [(clusters[i + 1] - clusters[i], i) for i in range(len(clusters) - 1)]
+        _, max_gap_idx = max(gaps, key=lambda g: g[0])
+        heart_xs = clusters[:max_gap_idx + 1]
+        hunger_xs = clusters[max_gap_idx + 1:]
+
+        if len(heart_xs) < 3:
+            logger.warning("RegionReader calibrate: only %d heart clusters, retry", len(heart_xs))
+            return
+
+        # Derive gui_scale from heart spacing (HEART_SPACING = 8 gui-px)
+        spacings = [heart_xs[i + 1] - heart_xs[i] for i in range(len(heart_xs) - 1)]
+        avg_spacing = sum(spacings) / len(spacings)
+        gs = max(1, round(avg_spacing / 8))
+
+        # Icon size in pixels: 9 gui-px * gs
+        icon_px = 9 * gs
+        icon_w = icon_px / w
+        icon_h = icon_px / h
+        spacing_norm = avg_spacing / w
+
+        # Normalized heart Y (icon top = peak center - half icon height)
+        heart_y_norm = (peak_y - icon_px // 2) / h
+
+        # ── Update heart regions ──
+        for i in range(10):
+            if i < len(heart_xs):
+                hx_norm = (heart_xs[i] - icon_px // 2) / w
+            else:
+                # Extrapolate from spacing
+                hx_norm = (heart_xs[0] - icon_px // 2) / w + i * spacing_norm
+            self._update_region(f"heart_{i}", hx_norm, heart_y_norm, icon_w, icon_h)
+
+        # Health bar composite
+        bar_x = (heart_xs[0] - icon_px // 2) / w
+        bar_w = ((heart_xs[min(9, len(heart_xs) - 1)] + icon_px // 2) / w) - bar_x
+        self._update_region("health_bar", bar_x, heart_y_norm, bar_w, icon_h)
+
+        # ── Update hunger regions (rightmost first) ──
+        if len(hunger_xs) >= 3:
+            hunger_rev = list(reversed(hunger_xs[:10]))  # hunger_0 = rightmost
+            for i in range(10):
+                if i < len(hunger_rev):
+                    hx_norm = (hunger_rev[i] - icon_px // 2) / w
+                else:
+                    hx_norm = (hunger_rev[0] - icon_px // 2) / w - i * spacing_norm
+                self._update_region(f"hunger_{i}", hx_norm, heart_y_norm, icon_w, icon_h)
+            # Hunger bar composite
+            leftmost = min(hunger_xs)
+            rightmost = max(hunger_xs)
+            hbar_x = (leftmost - icon_px // 2) / w
+            hbar_w = ((rightmost + icon_px // 2) / w) - hbar_x
+            self._update_region("hunger_bar", hbar_x, heart_y_norm, hbar_w, icon_h)
+        else:
+            # Mirror hearts across screen centre
+            for i in range(10):
+                if i < len(heart_xs):
+                    mirrored_px = w - heart_xs[i]
+                else:
+                    mirrored_px = w - (heart_xs[0] + i * int(avg_spacing))
+                hx_norm = (mirrored_px - icon_px // 2) / w
+                self._update_region(f"hunger_{i}", hx_norm, heart_y_norm, icon_w, icon_h)
+
+        # ── Update air bubble regions (same X as hunger, offset upward) ──
+        air_offset = 10 * gs  # AIR_ROW_OFFSET * gs
+        air_y_norm = (peak_y - air_offset - icon_px // 2) / h
+        for i in range(10):
+            hunger_reg = self._get_region(f"hunger_{i}")
+            if hunger_reg:
+                hx = hunger_reg.x if hasattr(hunger_reg, 'x') else hunger_reg["x"]
+                self._update_region(f"air_{i}", hx, air_y_norm, icon_w, icon_h)
+        # Air bar composite
+        hunger_bar = self._get_region("hunger_bar")
+        if hunger_bar:
+            hbx = hunger_bar.x if hasattr(hunger_bar, 'x') else hunger_bar["x"]
+            hbw = hunger_bar.w if hasattr(hunger_bar, 'w') else hunger_bar["w"]
+            self._update_region("air_bar", hbx, air_y_norm, hbw, icon_h)
+
+        # ── Update hotbar regions ──
+        slot_size = 20 * gs
+        slot_gap = 2 * gs
+        slot_stride = slot_size + slot_gap
+        hotbar_width = 9 * slot_size + 8 * slot_gap
+        hotbar_left = w // 2 - hotbar_width // 2
+        hotbar_top = h - 22 * gs  # HOTBAR_BOTTOM_OFFSET * gs
+
+        hotbar_x_norm = hotbar_left / w
+        hotbar_y_norm = hotbar_top / h
+        hotbar_w_norm = hotbar_width / w
+        slot_w_norm = slot_size / w
+        slot_h_norm = slot_size / h
+
+        self._update_region("hotbar", hotbar_x_norm, hotbar_y_norm,
+                            hotbar_w_norm, slot_h_norm)
+        for i in range(9):
+            sx = hotbar_left + i * slot_stride
+            self._update_region(f"hotbar_slot_{i + 1}",
+                                sx / w, hotbar_y_norm, slot_w_norm, slot_h_norm)
+
+        self._calibrated = True
+        self._force_debug_resave = True
+
+        logger.info("RegionReader auto-calibrated: gui_scale=%d (spacing=%.1fpx, hearts=%d, hunger=%d)",
+                    gs, avg_spacing, len(heart_xs), len(hunger_xs))
+        logger.info("  heart_y=%d, first_heart_x=%d, image=%dx%d",
+                    peak_y, heart_xs[0], w, h)
+        for i, hx in enumerate(heart_xs[:3]):
+            if 0 <= peak_y < h and 0 <= hx < w:
+                r, g, b = image[peak_y, hx]
+                logger.info("  heart[%d] (%d,%d) RGB=(%d,%d,%d)", i, hx, peak_y, r, g, b)
+
+    # ═══════════════════════════════════════════════════════════════════════════
     # MAIN API
     # ═══════════════════════════════════════════════════════════════════════════
 
@@ -140,6 +312,9 @@ class RegionReader:
             coordinates: dict with x, y, z (or empty)
             screen_mode: str ("hud")
         """
+        if not self._calibrated:
+            self._auto_calibrate(image)
+
         result = {}
 
         # ── Health (hearts) ──
@@ -171,6 +346,8 @@ class RegionReader:
         """Count red hearts → health (0-20 half-hearts).
 
         Full heart = dominant red channel (R>150, G<80, B<80).
+        The heart shape fills ~40% of its bounding box, so thresholds
+        are lower than a centre-point sample.
         """
         count = 0.0
         for i in range(10):
@@ -183,14 +360,18 @@ class RegionReader:
             pixels = crop.reshape(-1, 3)
             red_mask = (pixels[:, 0] > 150) & (pixels[:, 1] < 80) & (pixels[:, 2] < 80)
             red_ratio = red_mask.sum() / len(pixels)
-            if red_ratio > 0.15:
-                count += 2.0 if red_ratio > 0.5 else 1.0
+            if red_ratio > 0.30:
+                count += 2.0   # Full heart (~40% of bounding box)
+            elif red_ratio > 0.12:
+                count += 1.0   # Half heart (~20%)
         return min(count, 20.0)
 
     def _read_hunger(self, image: np.ndarray) -> float:
         """Count drumsticks → hunger (0-20 half-shanks).
 
         Drumstick: red cap (R>150, G<80, B<80) + brown body.
+        The drumstick shape fills ~19% of its bounding box, so
+        thresholds are lower than a centre-point sample.
         """
         count = 0.0
         for i in range(10):
@@ -209,8 +390,10 @@ class RegionReader:
                 ~red_mask
             )
             food_ratio = (red_mask | brown_mask).sum() / len(pixels)
-            if food_ratio > 0.08:
-                count += 2.0 if food_ratio > 0.25 else 1.0
+            if food_ratio > 0.12:
+                count += 2.0   # Full drumstick (~19% of bounding box)
+            elif food_ratio > 0.05:
+                count += 1.0   # Half drumstick (~10%)
         return min(count, 20.0)
 
     def _read_air(self, image: np.ndarray) -> int:

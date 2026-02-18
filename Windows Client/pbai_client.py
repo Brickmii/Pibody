@@ -585,10 +585,11 @@ class PBAIClient:
                 }
                 world_state["screen_mode"] = region_data.get("screen_mode", "hud")
                 logger.info(f"MasterFrame: health={region_data['health']} hunger={region_data['hunger']} air={region_data.get('air', '?')}")
-                if not self._region_debug_saved:
+                if not self._region_debug_saved or getattr(self.region_reader, '_force_debug_resave', False):
                     self.region_reader.debug_overlay(image)
                     self._region_debug_saved = True
-                    logger.info("Saved masterframe_debug.png")
+                    self.region_reader._force_debug_resave = False
+                    logger.info("Saved masterframe_debug.png (calibrated=%s)", self.region_reader._calibrated)
             except Exception as e:
                 logger.warning(f"RegionReader error: {e}")
         elif self.hud_reader is not None:
@@ -680,10 +681,11 @@ class PBAIClient:
                 region_data = self.region_reader.read_all(image)
                 hud_data = region_data  # Unify into same variable for merge below
                 hud_data["screen_mode"] = region_data.get("screen_mode", "hud")
-                if not self._region_debug_saved:
+                if not self._region_debug_saved or getattr(self.region_reader, '_force_debug_resave', False):
                     self.region_reader.debug_overlay(image)
                     self._region_debug_saved = True
-                    logger.info("Saved masterframe_debug.png")
+                    self.region_reader._force_debug_resave = False
+                    logger.info("Saved masterframe_debug.png (calibrated=%s)", self.region_reader._calibrated)
             except Exception as e:
                 logger.warning(f"RegionReader error: {e}")
         if hud_data is None and self.hud_reader is not None:

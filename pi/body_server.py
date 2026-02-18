@@ -408,7 +408,13 @@ class BodyServer:
             # Send masterframe so client knows the screen layout
             masterframe_data = None
             if self.daemon and self.daemon.env_core:
+                # Try active driver first, fall back to any driver with a masterframe
                 driver = self.daemon.env_core.get_active_driver()
+                if not driver:
+                    for d in self.daemon.env_core.drivers.values():
+                        if hasattr(d, 'masterframe') and d.masterframe:
+                            driver = d
+                            break
                 if driver and hasattr(driver, 'masterframe') and driver.masterframe:
                     masterframe_data = driver.masterframe.to_dict()
                     logger.info(f"Sending masterframe to client ({len(masterframe_data.get('modes', {}).get('hud', {}).get('regions', {}))} regions)")

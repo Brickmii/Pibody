@@ -254,7 +254,12 @@ def calculate_fire_map(width: int, height: int) -> np.ndarray:
     fire_map[norm_dist < 0.40] = 4
     fire_map[norm_dist < 0.25] = 5
     fire_map[norm_dist < 0.10] = 6  # Center = Fire 6 (body temp)
-    
+
+    # Hotbar boost: bottom strip gets Fire 4 so item icons register as peaks
+    # At 512x512, hotbar spans roughly y=483..510 (bottom ~5% of screen)
+    hotbar_top = int(h * 0.945)  # ~484 at 512
+    fire_map[hotbar_top:, :] = np.maximum(fire_map[hotbar_top:, :], 4)
+
     return fire_map
 
 

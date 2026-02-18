@@ -1168,13 +1168,9 @@ class EnvironmentCore:
                 if heat_value > 0:
                     reward += min(heat_value * 0.1, K * 0.1)
                 self.manifold.conscience_node.add_heat_unchecked(reward)
-            # Bonus to identity/ego on high-value outcomes
-            if heat_value > 0:
-                heat_gain = min(heat_value * 0.1, K * 0.1)
-                if self.manifold.identity_node:
-                    self.manifold.identity_node.add_heat(heat_gain * 0.236)
+                # Ego gets 1/6th of conscience's reward — the doer benefits from good judgment
                 if self.manifold.ego_node:
-                    self.manifold.ego_node.add_heat(heat_gain * 0.146)
+                    self.manifold.ego_node.add_heat_unchecked(reward / 6.0)
         elif not success and heat_value < 0:
             # Conscience made a bad call (negative outcome, not just disconnection)
             if self.manifold.conscience_node:
@@ -1801,6 +1797,16 @@ class EnvironmentCore:
             self._integrate_action_result(chain.action, chain.result)
 
         self.loop_count += 1
+
+        # Ego sustain: rebate per decision + emergence bonus every 44
+        if self.manifold and self.manifold.ego_node:
+            from core.node_constants import EGO_DECISION_REBATE, EGO_EMERGENCE_BONUS, EGO_EMERGENCE_INTERVAL
+            # Per-decision rebate: offsets COST_ACTION_EGO (net-zero action cost)
+            self.manifold.ego_node.add_heat_unchecked(EGO_DECISION_REBATE)
+            # Emergence bonus: every 44 decisions, 4 actions worth of heat
+            if self.loop_count % EGO_EMERGENCE_INTERVAL == 0:
+                self.manifold.ego_node.add_heat_unchecked(EGO_EMERGENCE_BONUS)
+
         chain.timings['evaluate'] = time() - t0
 
         total = sum(chain.timings.values())

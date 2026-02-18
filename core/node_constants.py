@@ -1090,6 +1090,15 @@ PERCEPTION_SUSTAIN = 1.0              # Heat gained per perception (balances COS
 COST_TICK = COST_MOVEMENT             # Base cost per tick
 COST_COLLAPSE = COST_BETA             # Wave function collapse (choice)
 
+# Ego sustain: offsets action cost + periodic refuel at emergence threshold
+# Each decision: ego earns back COST_ACTION_EGO (net-zero on action cost)
+# Every 44 decisions (THRESHOLD_DENOMINATOR): ego gets 4 actions worth
+#   44 decisions ÷ 12 max per action = ~4 actions → 4 × COST_ACTION_EGO bonus
+#   At the 45th (emergence), the refuel lands
+EGO_DECISION_REBATE = COST_EXISTENCE                              # 0.236 (1/φ³) per decision — existence threshold rebate
+EGO_EMERGENCE_BONUS = QUADRATIC * COST_ACTION_EGO                # 4 × 0.200 = 0.800
+EGO_EMERGENCE_INTERVAL = THRESHOLD_DENOMINATOR                   # Every 44 decisions
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # TIME AS HEAT (t_K) - Time indexed by the primitive
 # ═══════════════════════════════════════════════════════════════════════════════

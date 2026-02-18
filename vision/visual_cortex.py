@@ -374,6 +374,13 @@ class VisualCortex:
                     if block_name and confidence > 0.3:
                         concept = block_name
                         identified += 1
+                        # Identity earns heat for successful identification
+                        if self.manifold.identity_node:
+                            id_reward = 0.0382 * confidence  # Scaled by confidence
+                            self.manifold.identity_node.add_heat_unchecked(id_reward)
+                            # Ego gets 1/6th cut from identity's identification success
+                            if self.manifold.ego_node:
+                                self.manifold.ego_node.add_heat_unchecked(id_reward / 6.0)
                     else:
                         _logger.debug(f"Vision: no match for rgb({r},{g},{b}) → {block_name}({confidence:.2f})")
                 elif not driver:

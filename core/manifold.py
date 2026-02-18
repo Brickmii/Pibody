@@ -801,12 +801,14 @@ class Manifold:
         child = self._get_or_create_overflow_child(node)
         return self.add_axis_safe(child, direction, target_id, polarity)
 
-    def _get_or_create_overflow_child(self, parent: Node) -> Node:
+    def _get_or_create_overflow_child(self, parent: Node, _depth: int = 0) -> Node:
         """Find existing child with room, create new, or promote at 44-limit.
 
         Children accumulate axes up to 44 before overflowing themselves.
         At 44 children, the 45th triggers promotion — ego selects the best
-        child to become a sub-parent, routed through conscience.
+        child to become a sub-parent, then recurses into it.
+
+        Promotion is cached in node metadata so we only score once per parent.
         """
         children = self.get_overflow_children(parent)
         for child in children:
@@ -817,8 +819,23 @@ class Manifold:
         if len(children) < MAX_ORDER_TOKENS:
             return self._create_overflow_child(parent)
 
-        # AT 44 CHILDREN: promote one to sub-parent (internal ego action)
-        return self._promote_overflow_child(parent, children)
+        # AT 44 CHILDREN: use cached promoted sub-parent or run promotion
+        # Cache avoids re-scoring all 44 children on every axis add
+        if not hasattr(self, '_promotion_cache'):
+            self._promotion_cache = {}
+
+        cached_id = self._promotion_cache.get(parent.concept)
+        promoted = self.nodes.get(cached_id) if cached_id else None
+
+        if not promoted or promoted.concept not in self.nodes_by_concept:
+            promoted = self._promote_overflow_child(parent, children)
+            self._promotion_cache[parent.concept] = promoted.id
+
+        # Recurse into promoted child (depth cap prevents runaway)
+        if _depth < 20:
+            return self._get_or_create_overflow_child(promoted, _depth + 1)
+        # Safety: if 20 levels deep and still full, just create a child
+        return self._create_overflow_child(promoted)
 
     def _create_overflow_child(self, parent: Node) -> Node:
         """Birth a child node to carry overflow from a full parent.
